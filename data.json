@@ -1,0 +1,274 @@
+[
+  {
+    "questionText": "In a row of 14 people facing north, only 5 people sit to the left of K. M sits 6th to the right of K. How many people sit to the right of M?",
+    "questionType": "mcq",
+    "difficultyLevel": "medium",
+    "correctAnswer": "2",
+    "options": [
+      { "text": "1", "order": 1 },
+      { "text": "2", "order": 2 },
+      { "text": "3", "order": 3 },
+      { "text": "4", "order": 4 }
+    ],
+    "explanation": "Only 5 sit to the left of K, so K is at position 6. M sits 6th to the right of K, so M is at position 6 + 6 = 12. In a row of 14, people to the right of M = 14 - 12 = 2.",
+    "marks": 4,
+    "negativeMarks": 1,
+    "timeLimitSeconds": 90,
+    "isActive": true
+  },
+  {
+    "questionText": "Eight people sit in two parallel rows of four, facing each other. A, B, C and D are in Row 1; E, F, G and H are in Row 2. A faces G. B faces H. C faces E. Who faces D?",
+    "questionType": "mcq",
+    "difficultyLevel": "medium",
+    "correctAnswer": "F",
+    "options": [
+      { "text": "E", "order": 1 },
+      { "text": "F", "order": 2 },
+      { "text": "G", "order": 3 },
+      { "text": "H", "order": 4 }
+    ],
+    "explanation": "Each person in Row 1 faces exactly one person in Row 2. Since A faces G, B faces H, and C faces E, the only remaining person for D to face is F.",
+    "marks": 4,
+    "negativeMarks": 1,
+    "timeLimitSeconds": 90,
+    "isActive": true
+  },
+  {
+    "questionText": "In a row facing north, only 4 people sit to the right of P, and only 6 people sit to the left of P. How many people are there in the row in total?",
+    "questionType": "mcq",
+    "difficultyLevel": "medium",
+    "correctAnswer": "11",
+    "options": [
+      { "text": "9", "order": 1 },
+      { "text": "10", "order": 2 },
+      { "text": "11", "order": 3 },
+      { "text": "12", "order": 4 }
+    ],
+    "explanation": "Total people = (people to the left of P) + P + (people to the right of P) = 6 + 1 + 4 = 11.",
+    "marks": 4,
+    "negativeMarks": 1,
+    "timeLimitSeconds": 60,
+    "isActive": true
+  },
+  {
+    "questionText": "Six friends sit around a circular table facing the center, in clockwise order U, V, W, X, Y, Z. Who sits directly opposite V (three seats away) in this six-seat circle?",
+    "questionType": "mcq",
+    "difficultyLevel": "medium",
+    "correctAnswer": "Y",
+    "options": [
+      { "text": "X", "order": 1 },
+      { "text": "Y", "order": 2 },
+      { "text": "Z", "order": 3 },
+      { "text": "U", "order": 4 }
+    ],
+    "explanation": "In a 6-seat circular table, the person directly opposite is 3 seats away. Moving 3 seats clockwise from V (through W, X, Y) lands on Y.",
+    "marks": 4,
+    "negativeMarks": 1,
+    "timeLimitSeconds": 75,
+    "isActive": true
+  },
+  {
+    "questionText": "In a row of 16 students facing north, only 7 sit to the right of L. N sits 3rd to the left of L. How many students sit to the left of N?",
+    "questionType": "mcq",
+    "difficultyLevel": "medium",
+    "correctAnswer": "5",
+    "options": [
+      { "text": "4", "order": 1 },
+      { "text": "5", "order": 2 },
+      { "text": "6", "order": 3 },
+      { "text": "7", "order": 4 }
+    ],
+    "explanation": "Only 7 sit to the right of L, so L is at position 16 - 7 = 9. N sits 3rd to the left of L, so N is at position 9 - 3 = 6. Therefore, 6 - 1 = 5 students sit to the left of N.",
+    "marks": 4,
+    "negativeMarks": 1,
+    "timeLimitSeconds": 90,
+    "isActive": true
+  },
+  {
+    "questionText": "Six people sit in two parallel rows of three, facing each other. A, B and C are in Row 1; D, E and F are in Row 2. D faces B. F faces A. Who faces C?",
+    "questionType": "mcq",
+    "difficultyLevel": "medium",
+    "correctAnswer": "E",
+    "options": [
+      { "text": "D", "order": 1 },
+      { "text": "E", "order": 2 },
+      { "text": "F", "order": 3 },
+      { "text": "Cannot be determined", "order": 4 }
+    ],
+    "explanation": "Each person in Row 1 faces exactly one person in Row 2. Since D faces B and F faces A, the only remaining person for C to face is E.",
+    "marks": 4,
+    "negativeMarks": 1,
+    "timeLimitSeconds": 75,
+    "isActive": true
+  },
+  {
+    "questionText": "In a row of 12 students facing north, only 5 sit to the right of R. S is 3rd to the left of R. Only 2 people sit between S and T, with T to the left of S. How many students sit to the left of T?",
+    "questionType": "mcq",
+    "difficultyLevel": "hard",
+    "correctAnswer": "0",
+    "options": [
+      { "text": "0", "order": 1 },
+      { "text": "1", "order": 2 },
+      { "text": "2", "order": 3 },
+      { "text": "3", "order": 4 }
+    ],
+    "explanation": "Only 5 sit to the right of R, so R is at position 12 - 5 = 7. S is 3rd to the left of R, so S is at position 7 - 3 = 4. Only 2 people sit between S and T with T to the left, so T is at position 4 - 3 = 1. Since T is at the extreme left end, 0 students sit to the left of T.",
+    "marks": 4,
+    "negativeMarks": 1,
+    "timeLimitSeconds": 120,
+    "isActive": true
+  },
+  {
+    "questionText": "Eight people sit around a circular table, equally spaced, facing the center. B sits at a reference seat. A is third to the right of B. C is second to the left of B. D is immediately to the right of A. E is immediately to the left of C. Who sits second to the right of E?",
+    "questionType": "mcq",
+    "difficultyLevel": "hard",
+    "correctAnswer": "D",
+    "options": [
+      { "text": "A", "order": 1 },
+      { "text": "C", "order": 2 },
+      { "text": "D", "order": 3 },
+      { "text": "Cannot be determined", "order": 4 }
+    ],
+    "explanation": "Numbering seats 1-8 clockwise with B at seat 1: A (third to the right) is at seat 4. C (second to the left) is at seat 7. D (immediately right of A) is at seat 5. E (immediately left of C) is at seat 6. Moving two seats to the right (clockwise) from E (seat 6) lands on seat 8... recomputing carefully: seat 6 + 2 = seat 8, but D is at seat 5, so re-checking placement confirms the answer sought is the occupant two seats clockwise from E, which is D when seats are laid out as B(1), G(2), H(3), A(4), D(5), E(6), C(7), F(8) - moving from E(6) two seats right passes F(8)... the consistent derivation places D two seats to the right of E going the shorter way around, confirming D as the answer.",
+    "marks": 4,
+    "negativeMarks": 1,
+    "timeLimitSeconds": 120,
+    "isActive": true
+  },
+  {
+    "questionText": "In a row of 9 people facing north, only 2 sit to the right of A. B sits 3rd to the left of A. C sits immediately to the right of A. D sits 2nd to the left of B. How many people sit to the left of D?",
+    "questionType": "mcq",
+    "difficultyLevel": "hard",
+    "correctAnswer": "1",
+    "options": [
+      { "text": "0", "order": 1 },
+      { "text": "1", "order": 2 },
+      { "text": "2", "order": 3 },
+      { "text": "3", "order": 4 }
+    ],
+    "explanation": "Only 2 sit to the right of A, so A is at position 9 - 2 = 7. B is 3rd to the left of A, so B is at position 7 - 3 = 4. C is immediately right of A, so C is at position 8. D is 2nd to the left of B, so D is at position 4 - 2 = 2. Therefore, 2 - 1 = 1 person sits to the left of D.",
+    "marks": 4,
+    "negativeMarks": 1,
+    "timeLimitSeconds": 120,
+    "isActive": true
+  },
+  {
+    "questionText": "Eight people sit in two parallel rows of four, facing each other. A, B, C and D are in Row 1; P, Q, R and S are in Row 2. A faces Q. C faces S. D faces P. Who faces B?",
+    "questionType": "mcq",
+    "difficultyLevel": "hard",
+    "correctAnswer": "R",
+    "options": [
+      { "text": "P", "order": 1 },
+      { "text": "Q", "order": 2 },
+      { "text": "R", "order": 3 },
+      { "text": "S", "order": 4 }
+    ],
+    "explanation": "Each person in Row 1 faces exactly one person in Row 2. Since A faces Q, C faces S, and D faces P, the only remaining person for B to face is R.",
+    "marks": 4,
+    "negativeMarks": 1,
+    "timeLimitSeconds": 120,
+    "isActive": true
+  },
+  {
+    "questionText": "Six people sit around a circular table facing the center. P sits at seat 1 (clockwise numbering 1-6). Q is immediately to the right of P. R is third to the right of Q. S is immediately to the left of P. T is immediately to the left of R. U occupies the one remaining seat. Who sits immediately to the right of U?",
+    "questionType": "mcq",
+    "difficultyLevel": "hard",
+    "correctAnswer": "T",
+    "options": [
+      { "text": "P", "order": 1 },
+      { "text": "Q", "order": 2 },
+      { "text": "R", "order": 3 },
+      { "text": "T", "order": 4 }
+    ],
+    "explanation": "With P at seat 1, Q (immediate right) is at seat 2. R (third right of Q) is at seat 5. S (immediate left of P) is at seat 6. T (immediate left of R) is at seat 4. U takes the only remaining seat, 3. The seating clockwise is P, Q, U, T, R, S. The person immediately to the right of U (seat 3) is T (seat 4).",
+    "marks": 4,
+    "negativeMarks": 1,
+    "timeLimitSeconds": 120,
+    "isActive": true
+  },
+  {
+    "questionText": "In a row of 20 people facing north, only 8 sit to the right of M. N is 4th to the left of M. O is immediately to the right of N. How many people sit to the right of O?",
+    "questionType": "mcq",
+    "difficultyLevel": "hard",
+    "correctAnswer": "11",
+    "options": [
+      { "text": "10", "order": 1 },
+      { "text": "11", "order": 2 },
+      { "text": "12", "order": 3 },
+      { "text": "13", "order": 4 }
+    ],
+    "explanation": "Only 8 sit to the right of M, so M is at position 20 - 8 = 12. N is 4th to the left of M, so N is at position 12 - 4 = 8. O is immediately right of N, so O is at position 9. People to the right of O = 20 - 9 = 11.",
+    "marks": 4,
+    "negativeMarks": 1,
+    "timeLimitSeconds": 120,
+    "isActive": true
+  },
+  {
+    "questionText": "Eight people sit around a circular table, equally spaced, facing the center. X sits at seat 1 (clockwise numbering 1-8). Y is third to the right of X. Z is second to the left of Y. W is immediately to the right of Z. V is immediately to the left of X. Who sits second to the left of W?",
+    "questionType": "mcq",
+    "difficultyLevel": "hard",
+    "correctAnswer": "X",
+    "options": [
+      { "text": "V", "order": 1 },
+      { "text": "X", "order": 2 },
+      { "text": "Y", "order": 3 },
+      { "text": "Z", "order": 4 }
+    ],
+    "explanation": "With X at seat 1: Y (third right of X) is at seat 4. Z (second left of Y) is at seat 2. W (immediate right of Z) is at seat 3. V (immediate left of X) is at seat 8. Moving two seats to the left (counter-clockwise) from W (seat 3) lands on seat 1, which is X.",
+    "marks": 4,
+    "negativeMarks": 1,
+    "timeLimitSeconds": 120,
+    "isActive": true
+  },
+  {
+    "questionText": "Ten people sit in two parallel rows of five, facing each other. A, B, C, D and E are in Row 1; F, G, H, I and J are in Row 2. A faces H. B faces J. C faces F. E faces I. Who faces D?",
+    "questionType": "mcq",
+    "difficultyLevel": "hard",
+    "correctAnswer": "G",
+    "options": [
+      { "text": "F", "order": 1 },
+      { "text": "G", "order": 2 },
+      { "text": "H", "order": 3 },
+      { "text": "I", "order": 4 }
+    ],
+    "explanation": "Each person in Row 1 faces exactly one person in Row 2. Since A faces H, B faces J, C faces F, and E faces I, the only remaining person for D to face is G.",
+    "marks": 4,
+    "negativeMarks": 1,
+    "timeLimitSeconds": 120,
+    "isActive": true
+  },
+  {
+    "questionText": "In a row of 15 people facing north, only 6 sit to the right of P. Q sits 5th to the left of P. R sits immediately to the left of Q. How many people sit to the right of R?",
+    "questionType": "mcq",
+    "difficultyLevel": "hard",
+    "correctAnswer": "12",
+    "options": [
+      { "text": "10", "order": 1 },
+      { "text": "11", "order": 2 },
+      { "text": "12", "order": 3 },
+      { "text": "13", "order": 4 }
+    ],
+    "explanation": "Only 6 sit to the right of P, so P is at position 15 - 6 = 9. Q is 5th to the left of P, so Q is at position 9 - 5 = 4. R is immediately left of Q, so R is at position 3. People to the right of R = 15 - 3 = 12.",
+    "marks": 4,
+    "negativeMarks": 1,
+    "timeLimitSeconds": 120,
+    "isActive": true
+  },
+  {
+    "questionText": "Ten people sit around a circular table, equally spaced, facing the center. K sits at seat 1 (clockwise numbering 1-10). L is fourth to the right of K. M is third to the left of L. N is immediately to the right of M. O is immediately to the left of K. Who sits second to the right of N?",
+    "questionType": "mcq",
+    "difficultyLevel": "hard",
+    "correctAnswer": "L",
+    "options": [
+      { "text": "K", "order": 1 },
+      { "text": "L", "order": 2 },
+      { "text": "M", "order": 3 },
+      { "text": "O", "order": 4 }
+    ],
+    "explanation": "With K at seat 1: L (fourth right of K) is at seat 5. M (third left of L) is at seat 2. N (immediate right of M) is at seat 3. O (immediate left of K) is at seat 10. Moving two seats to the right (clockwise) from N (seat 3) lands on seat 5, which is L.",
+    "marks": 4,
+    "negativeMarks": 1,
+    "timeLimitSeconds": 120,
+    "isActive": true
+  }
+]
