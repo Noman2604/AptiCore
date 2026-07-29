@@ -266,7 +266,7 @@ export default function AdminCategoriesPage() {
                       />
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2 mb-2">
                       <div className="text-sm font-medium">Color code (optional)</div>
                       <Input
                         value={catColorCode}

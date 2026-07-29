@@ -17,6 +17,7 @@ import {
   Users,
   Flag,
   Medal,
+  Award,
   X,
 } from "lucide-react"
 
@@ -155,6 +156,13 @@ function SidebarContent({
             href="/admin/categories"
             icon={<Layers size={18} />}
             active={isActive("/admin/categories")}
+            onNavigate={onNavigate}
+          />
+          <NavItem
+            label="Achievements"
+            href="/admin/achievements"
+            icon={<Award size={18} />}
+            active={isActive("/admin/achievements")}
             onNavigate={onNavigate}
           />
         </Section>

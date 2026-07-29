@@ -1,7 +1,8 @@
 "use client"
-import Link from "next/link"
-import { Zap, PlayCircle, Mail } from "lucide-react"
+
 import Image from "next/image"
+import Link from "next/link"
+import { ArrowUpRight, Mail, Sparkles, Zap } from "lucide-react"
 
 const footerLinks = {
   Product: [
@@ -11,8 +12,8 @@ const footerLinks = {
     { label: "Leaderboard", href: "/leaderboard" },
   ],
   Resources: [
-    { label: "Docs", href: "/docs",},
-    { label: "Guides", href: "/guides"},
+    { label: "Docs", href: "/docs" },
+    { label: "Guides", href: "/guides" },
     { label: "Help Center", href: "/help" },
     { label: "Community", href: "/community" },
   ],
@@ -52,65 +53,94 @@ const socials = [
 
 export default function Footer() {
   return (
-    <footer className="mt-24 border-t border-[hsl(var(--border))]">
-      <div className="max-w-8xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-5">
-          <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="mb-4 flex items-center gap-2">
+    <footer className="relative mt-16 overflow-hidden border-t border-[hsl(var(--border))] bg-[hsl(var(--background))]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.12),transparent_30%),radial-gradient(circle_at_top_right,rgba(168,85,247,0.12),transparent_28%),linear-gradient(to_bottom,transparent,rgba(15,23,42,0.04))]" />
+
+      <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-4 lg:py-12">
+        <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr]">
+          <div className="max-w-xl">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 px-3 py-2 "
+            >
               <Image
                 src="/logo.png"
                 alt="AptiCore Logo"
-                width={28}
-                height={28}
-                className="h-7 w-7"
+                width={32}
+                height={32}
+                className="h-8 w-8"
               />
-              <span className="font-display gradient-text text-xl font-bold">
+              <span className="font-display gradient-text text-2xl font-bold tracking-tight">
                 AptiCore
               </span>
             </Link>
-            <p className="mb-4 text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">
-              India's most advanced platform for placement preparation and
-              aptitude mastery.
+
+            <p className="mt-5 max-w-lg text-sm leading-7 text-[hsl(var(--muted-foreground))] sm:text-base">
+              India&apos;s most advanced platform for placement preparation and aptitude mastery.
+              Build confidence, improve faster, and track every milestone in one place.
             </p>
-            <div className="flex items-center gap-3">
+
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/20 bg-sky-500/10 px-4 py-2 text-sm font-medium text-sky-400">
+                <Sparkles className="h-4 w-4" />
+                Built for serious learners
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-400">
+                <Zap className="h-4 w-4" />
+                Practice. Improve. Repeat.
+              </div>
+            </div>
+
+            <div className="mt-8 flex items-center gap-3">
               {socials.map((s) => (
                 <a
                   key={s.label}
                   href={s.href}
                   aria-label={s.label}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] transition-all hover:border-sky-500 hover:bg-sky-500/10 hover:text-[hsl(var(--foreground))]"
+                  className="group flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-[hsl(var(--muted-foreground))] transition-all hover:-translate-y-0.5 hover:border-sky-500/40 hover:bg-sky-500/10 hover:text-[hsl(var(--foreground))]"
                 >
-                  <s.icon className="h-4 w-4" />
+                  <s.icon className="h-4 w-4 transition-transform group-hover:scale-110" />
                 </a>
               ))}
             </div>
           </div>
-          {Object.entries(footerLinks).map(([section, links]) => (
-            <div key={section}>
-              <h4 className="mb-4 text-xl font-semibold text-[hsl(var(--foreground))]">
-                {section}
-              </h4>
-              <ul className="space-y-2.5">
-                {links.map((link) => (
-                  <li key={link.label}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-gray-400 transition-colors hover:text-[hsl(var(--foreground))]"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+
+          <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-4">
+            {Object.entries(footerLinks).map(([section, links]) => (
+              <div key={section}>
+                <h4 className="text-sm font-semibold uppercase tracking-[0.2em] text-[hsl(var(--foreground))]">
+                  {section}
+                </h4>
+                <ul className="mt-5 space-y-3">
+                  {links.map((link) => (
+                    <li key={link.label}>
+                      <Link
+                        href={link.href}
+                        className="group inline-flex items-center gap-1 text-sm text-gray transition-colors hover:text-[hsl(var(--foreground))]"
+                      >
+                        <span>{link.label}</span>
+                        <ArrowUpRight className="h-3.5 w-3.5 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:opacity-100" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-[hsl(var(--border))] pt-8 sm:flex-row">
+
+        <div className="mt-14 flex flex-col gap-4 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
             © {new Date().getFullYear()} AptiCore. All rights reserved.
           </p>
-          <div className="flex items-center gap-1 text-sm text-[hsl(var(--muted-foreground))]">
-            <span>Biuld for placement success</span>
+
+          <div className="flex flex-wrap items-center gap-4 text-sm text-[hsl(var(--muted-foreground))]">
+            <span className="inline-flex items-center gap-2">
+              <Mail className="h-4 w-4 text-sky-400" />
+              support@apticore.com
+            </span>
+            <span className="hidden h-1 w-1 rounded-full bg-white/20 sm:inline-flex" />
+            <span>Built for placement success</span>
           </div>
         </div>
       </div>

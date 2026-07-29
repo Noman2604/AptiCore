@@ -5,27 +5,27 @@ import { Target, Users, Award, Globe, Zap, Heart } from "lucide-react"
 
 const team = [
   {
-    name: "Vikram Agarwal",
+    name: "Noman Patel",
     role: "CEO & Co-founder",
-    avatar: "VA",
+    avatar: "NP",
     bg: "from-sky-500 to-blue-600",
   },
   {
-    name: "Meera Iyer",
+    name: "Mrunal Waghare",
     role: "CTO",
-    avatar: "MI",
+    avatar: "MW",
     bg: "from-purple-500 to-pink-600",
   },
   {
-    name: "Sanjay Reddy",
+    name: "Shubham Kasare",
     role: "Head of Content",
-    avatar: "SR",
+    avatar: "SK",
     bg: "from-amber-500 to-orange-600",
   },
   {
-    name: "Pooja Nair",
+    name: "Aman Sharma",
     role: "Head of Design",
-    avatar: "PN",
+    avatar: "AS",
     bg: "from-emerald-500 to-teal-600",
   },
 ]

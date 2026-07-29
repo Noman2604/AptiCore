@@ -36,7 +36,7 @@ export default function Navbar() {
   }, [theme])
 
   const navLinks = [
-    { label: "Practice", href: "/practice", icon: BookOpen },
+    { label: "Practice", href: "/tests", icon: BookOpen },
     { label: "Contests", href: "/contest", icon: Trophy },
     { label: "Leaderboard", href: "/leaderboard", icon: BarChart2 },
   ]

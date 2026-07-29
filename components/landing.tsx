@@ -1,5 +1,4 @@
 "use client"
-import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import {
   Zap,
@@ -34,60 +33,6 @@ import Footer from "@/components/Footer"
 import { cn, formatNumber } from "@/lib/utils"
 import axios from "axios"
 
-const categoryIcons: Record<string, React.ElementType> = {
-  quantitative: Target,
-  logical: Brain,
-  data: BarChart2,
-  verbal: FileText,
-  coding: Code2,
-  sql: Database,
-  technical: Cpu,
-  hr: MessageSquare,
-}
-
-function AnimatedCounter({
-  end,
-  suffix = "",
-  duration = 2000,
-}: {
-  end: number
-  suffix?: string
-  duration?: number
-}) {
-  const [count, setCount] = useState(0)
-  const ref = useRef<HTMLDivElement>(null)
-  const animated = useRef(false)
-
-  useEffect(() => {
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !animated.current) {
-          animated.current = true
-          const step = end / (duration / 16)
-          let current = 0
-          const timer = setInterval(() => {
-            current = Math.min(current + step, end)
-            setCount(Math.floor(current))
-            if (current >= end) clearInterval(timer)
-          }, 16)
-        }
-      },
-      { threshold: 0.5 }
-    )
-    if (ref.current) obs.observe(ref.current)
-    return () => obs.disconnect()
-  }, [end, duration])
-
-  return (
-    <div
-      ref={ref}
-      className="font-display gradient-text text-3xl font-bold md:text-4xl"
-    >
-      {count >= 1000 ? formatNumber(count) : count}
-      {suffix}
-    </div>
-  )
-}
 
 const companies = [
   "TCS",
@@ -141,77 +86,17 @@ const features = [
   {
     icon: Lock,
     title: "Detailed Solutions",
-    desc: "Every question comes with step-by-step video and text explanations",
+    desc: "Every question comes with step-by-step text explanations",
     color: "text-red-500 bg-red-500/10",
   },
 ]
 
-const testimonials = [
-  {
-    name: "Rohit Verma",
-    college: "NIT Trichy",
-    company: "TCS Digital",
-    quote:
-      "AptitudeX helped me crack TCS NQT in my first attempt. The mock tests are identical to the real exam!",
-    avatar: "RV",
-    rating: 5,
-  },
-  {
-    name: "Ananya Singh",
-    college: "VIT Vellore",
-    company: "Infosys",
-    quote:
-      "The logical reasoning section here is unmatched. I went from 60% to 95% accuracy in just 3 weeks.",
-    avatar: "AS",
-    rating: 5,
-  },
-  {
-    name: "Deepak Kumar",
-    college: "BITS Pilani",
-    company: "Google",
-    quote:
-      "DSA MCQs and SQL questions are incredibly comprehensive. Highly recommend for coding placement prep.",
-    avatar: "DK",
-    rating: 5,
-  },
-]
-
 export default function LandingPage() {
-  const [activeCategory, setActiveCategory] = useState("all")
-  const [categories, setCategories] = useState([])
-  const [featuredTests, setFeaturedTests] = useState([])
-  const [leaderboard, setLeaderboard] = useState([])
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalQuestions: 0,
-    totalTests: 0,
-    companiesCovered: 0,
-  })
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [categoriesRes, testsRes, leaderboardRes, statsRes] =
-          await Promise.all([
-            axios.get("/api/categories"),
-            axios.get("/api/tests"),
-            axios.get("/api/leaderboard"),
-            axios.get("/api/stats"),
-          ])
+ 
 
-        setCategories(categoriesRes.data)
-        setFeaturedTests(testsRes.data)
-        setLeaderboard(leaderboardRes.data)
-        setStats(statsRes.data)
-      } catch (error) {
-        console.error(error)
-      }
-    }
-
-    fetchData()
-  }, [])
 
   return (
-    <div className="dark min-h-screen bg-[hsl(var(--background))]">
+    <div className=" min-h-screen bg-[hsl(var(--background))]">
       <Navbar />
 
       {/* Hero Section */}
@@ -417,78 +302,6 @@ export default function LandingPage() {
         <style>{`@keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }`}</style>
       </section>
 
-      {/* Stats Section */}
-      <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
-          {[
-            {
-              value: stats.totalUsers,
-              suffix: "+",
-              label: "Active Students",
-              icon: Users,
-              color: "text-sky-400",
-            },
-            {
-              value: stats.totalQuestions,
-              suffix: "+",
-              label: "Questions",
-              icon: BookOpen,
-              color: "text-purple-400",
-            },
-            {
-              value: stats.totalTests,
-              suffix: "+",
-              label: "Practice Tests",
-              icon: Trophy,
-              color: "text-amber-400",
-            },
-            {
-              value: stats.companiesCovered,
-              suffix: "+",
-              label: "Companies Covered",
-              icon: Award,
-              color: "text-emerald-400",
-            },
-          ].map((s) => (
-            <div key={s.label} className="group text-center">
-              <div
-                className={cn(
-                  "mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[hsl(var(--surface-hover))] text-2xl transition-transform group-hover:scale-110",
-                  s.color
-                )}
-              >
-                <s.icon className="h-6 w-6" />
-              </div>
-              <AnimatedCounter end={s.value} suffix={s.suffix} />
-              <div className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">
-                {s.label}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Featured Tests */}
-      <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-        <div className="mb-12 flex items-center justify-between">
-          <div>
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-1.5 text-xs font-medium text-amber-400">
-              <Trophy className="h-3.5 w-3.5" />
-              Top Tests
-            </div>
-            <h2 className="font-display text-4xl font-bold">
-              Featured <span className="gradient-text">Mock Tests</span>
-            </h2>
-          </div>
-          <Link
-            href="/tests"
-            className="hidden items-center gap-1 text-sm font-medium text-sky-400 transition-colors hover:text-sky-300 md:flex"
-          >
-            View all <ChevronRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </section>
-
       {/* Features Grid */}
       <section className="border-y border-[hsl(var(--border))] bg-[hsl(var(--surface))] py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -524,53 +337,7 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
-      {/* Testimonials */}
-      <section className="border-y border-[hsl(var(--border))] bg-[hsl(var(--surface))] py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-12 text-center">
-            <h2 className="font-display mb-4 text-4xl font-bold">
-              Loved by <span className="gradient-text">Students</span>
-            </h2>
-            <p className="text-[hsl(var(--muted-foreground))]">
-              Join thousands who cracked their placements with AptitudeX
-            </p>
-          </div>
-          <div className="grid gap-6 md:grid-cols-3">
-            {testimonials.map((t: any) => (
-              <div
-                key={t.name}
-                className="card-hover rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6"
-              >
-                <div className="mb-4 flex items-center gap-1">
-                  {Array.from({ length: t.rating }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className="h-4 w-4 fill-current text-amber-400"
-                    />
-                  ))}
-                </div>
-                <p className="mb-6 text-sm leading-relaxed text-[hsl(var(--muted-foreground))] italic">
-                  "{t.quote}"
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-sky-500 to-purple-600 text-sm font-bold text-white">
-                    {t.avatar}
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold">{t.name}</div>
-                    <div className="text-xs text-[hsl(var(--muted-foreground))]">
-                      {t.college} →{" "}
-                      <span className="text-sky-400">{t.company}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
+      
       {/* CTA */}
       <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
         <div className="relative overflow-hidden rounded-3xl border border-sky-500/20 bg-linear-to-br from-sky-900/50 to-purple-900/50 p-12 text-center">
