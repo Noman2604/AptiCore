@@ -21,17 +21,60 @@ async function getUserId(request: NextRequest) {
 }
 
 function profilePayload(body: any) {
-  return {
+  const payload: Record<string, unknown> = {
     bio: body.bio,
     phone: body.phone,
     dateOfBirth: body.dateOfBirth,
-    college: body.college,
-    degree: body.degree,
-    specialization: body.specialization,
     location: body.location,
-    avatarUrl: body.avatarUrl || " ",
-    linkedinUrl: body.linkedinUrl || " ",
+    avatarUrl:
+      body.avatarUrl === undefined ? undefined : body.avatarUrl || "",
+    resumeUrl: body.resumeUrl === undefined ? undefined : body.resumeUrl || "",
+    linkedinUrl: body.linkedinUrl || undefined,
   }
+
+  if (Array.isArray(body.education) && body.education.length > 0) {
+    payload.education = body.education.map((item: any) => ({
+      level: item.level || "Graduation",
+      status: item.status || "Completed",
+      institutionName: item.institutionName || item.college || "",
+      degree: item.degree,
+      specialization: item.specialization,
+      universityOrBoard: item.universityOrBoard,
+      stream: item.stream,
+      medium: item.medium,
+      cgpa: item.cgpa,
+      percentage: item.percentage,
+      startYear: item.startYear,
+      endYear: item.endYear,
+      passingYear: item.passingYear,
+      currentlyStudying: item.currentlyStudying,
+    }))
+  } else {
+    const educationProvided = body.college || body.degree || body.specialization
+
+    if (educationProvided) {
+      payload.education = [
+        {
+          level: body.level || "Graduation",
+          status: body.status || "Completed",
+          institutionName: body.college || "",
+          degree: body.degree || "",
+          specialization: body.specialization || "",
+          universityOrBoard: body.universityOrBoard || "",
+          stream: body.stream || "",
+          medium: body.medium || "",
+          cgpa: body.cgpa|| undefined,
+          percentage: body.percentage || undefined,
+          startYear: body.startYear || undefined,
+          endYear: body.endYear || undefined,
+          passingYear: body.passingYear || undefined,
+          currentlyStudying: body.currentlyStudying || false,
+        },
+      ]
+    }
+  }
+
+  return payload
 }
 
 export async function GET(request: NextRequest) {
@@ -74,34 +117,14 @@ export async function PATCH(request: NextRequest) {
 
     const userId = await getUserId(request)
 
-    const {
-      bio,
-      phone,
-      dateOfBirth,
-      college,
-      degree,
-      specialization,
-      location,
-      avatarUrl,
-      linkedinUrl,
-    } = await request.json()
+    const body = await request.json()
 
     const profile = await UserProfile.findOneAndUpdate(
       {
         userId,
       },
       {
-        $set: profilePayload({
-          bio,
-          phone,
-          dateOfBirth,
-          college,
-          degree,
-          specialization,
-          location,
-          avatarUrl,
-          linkedinUrl,
-        }),
+        $set: profilePayload(body),
       },
       {
         new: true,
@@ -109,6 +132,8 @@ export async function PATCH(request: NextRequest) {
         runValidators: true,
       }
     )
+
+    console.log("Updated profile:", profile)
 
     return NextResponse.json(
       {

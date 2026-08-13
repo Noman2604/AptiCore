@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Textarea } from "@/components/ui/textarea"
 
 type ReportRow = {
   _id: string
@@ -25,39 +26,65 @@ type ReportRow = {
   adminNotes?: string
   createdAt?: string
   reportedBy?: { name?: string; email?: string } | null
+  questionId?: string
 }
 
 export default function AdminReportsPage() {
   const [loading, setLoading] = useState(true)
   const [rows, setRows] = useState<ReportRow[]>([])
   const [search, setSearch] = useState("")
+  const [notes, setNotes] = useState<Record<string, string>>({})
+
+  const loadReports = async () => {
+    try {
+      setLoading(true)
+      const res = await fetch("/api/admin/reports?status=all&limit=200", {
+        credentials: "include",
+      })
+      const json = await res.json()
+
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Failed to load reports")
+      }
+
+      setRows(json.data ?? [])
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Failed to load admin reports"
+      )
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const run = async () => {
-      try {
-        setLoading(true)
-
-        // Admin report APIs are not currently present in the repo tree we inspected.
-        // This page uses the UI scaffolding and expects a backend endpoint.
-        const res = await fetch("/api/reports?status=pending&limit=200")
-        const json = await res.json()
-
-        if (!res.ok || !json.success) {
-          throw new Error(json.error || "Failed to load reports")
-        }
-
-        setRows(json.data ?? [])
-      } catch (e) {
-        toast.error(
-          e instanceof Error ? e.message : "Failed to load admin reports"
-        )
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    void run()
+    void loadReports()
   }, [])
+
+  const actOnReport = async (id: string, action: "resolve" | "reject" | "reopen") => {
+    try {
+      const res = await fetch("/api/admin/reports", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          id,
+          action,
+          adminNotes: notes[id] ?? "",
+        }),
+      })
+      const json = await res.json()
+
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Failed to update report")
+      }
+
+      toast.success(`Report ${action === "resolve" ? "resolved" : action === "reject" ? "rejected" : "reopened"}`)
+      await loadReports()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update report")
+    }
+  }
 
   const filtered = rows.filter((r) => {
     const q = search.trim().toLowerCase()
@@ -65,7 +92,9 @@ export default function AdminReportsPage() {
     return (
       r.reason.toLowerCase().includes(q) ||
       r.reportType.toLowerCase().includes(q) ||
-      r.status.toLowerCase().includes(q)
+      r.status.toLowerCase().includes(q) ||
+      r.reportedBy?.name?.toLowerCase().includes(q) ||
+      r.reportedBy?.email?.toLowerCase().includes(q)
     )
   })
 
@@ -107,19 +136,21 @@ export default function AdminReportsPage() {
                   <TableHead>Type</TableHead>
                   <TableHead>Reason</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>User</TableHead>
                   <TableHead className="hidden xl:table-cell">Created</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-28 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="h-28 text-center text-muted-foreground">
                       Loading...
                     </TableCell>
                   </TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-28 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="h-28 text-center text-muted-foreground">
                       No reports found.
                     </TableCell>
                   </TableRow>
@@ -128,7 +159,6 @@ export default function AdminReportsPage() {
                     <TableRow key={r._id}>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Flag className="h-4 w-4 text-muted-foreground" />
                           <Badge variant="outline">{r.reportType}</Badge>
                         </div>
                       </TableCell>
@@ -150,8 +180,35 @@ export default function AdminReportsPage() {
                           {r.status}
                         </Badge>
                       </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <div className="font-medium">{r.reportedBy?.name ?? "Unknown"}</div>
+                          <div className="text-xs text-muted-foreground">{r.reportedBy?.email ?? "—"}</div>
+                        </div>
+                      </TableCell>
                       <TableCell className="hidden xl:table-cell">
                         {r.createdAt ? new Date(r.createdAt).toLocaleString() : "—"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-2">
+                          <Textarea
+                            value={notes[r._id] ?? r.adminNotes ?? ""}
+                            onChange={(e) => setNotes((prev) => ({ ...prev, [r._id]: e.target.value }))}
+                            placeholder="Admin note"
+                            className="min-h-20"
+                          />
+                          <div className="flex flex-wrap gap-2">
+                            <Button size="sm" variant="outline" onClick={() => actOnReport(r._id, "resolve")}>
+                              Resolve
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => actOnReport(r._id, "reject")}>
+                              Reject
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => actOnReport(r._id, "reopen")}>
+                              Reopen
+                            </Button>
+                          </div>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -163,8 +220,7 @@ export default function AdminReportsPage() {
       </Card>
 
       <div className="text-xs text-muted-foreground">
-        Note: report admin API endpoint was not found in the inspected repo tree, so this page expects
-        a REST endpoint at <span className="font-mono">/api/reports</span>.
+        This page uses the admin reports API at <span className="font-mono">/api/admin/reports</span>.
       </div>
     </div>
   )

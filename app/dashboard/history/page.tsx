@@ -1,19 +1,28 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import Link from "next/link"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+  Trophy,
+  FileText,
+  Star,
+  ChevronLeft,
+  ChevronRight,
+  MessageSquareText,
+  Activity,
+  Zap,
+  Award,
+  Inbox,
+  AlertCircle,
+  ArrowRight,
+} from "lucide-react"
+
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Trophy, FileText, Star, ChevronLeft, ChevronRight } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
+
 interface ResultHistoryItem {
   _id: string
   testName: string
@@ -26,6 +35,16 @@ interface ResultHistoryItem {
   totalMarks: number
   status: string
   submittedAt?: string
+  timeSpentSeconds?: number
+  testId?: {
+    _id?: string
+    title?: string
+    totalQuestions?: number
+    totalMarks?: number
+    durationMinutes?: number
+    categoryId?: { slug?: string; name?: string }
+    subcategory?: { slug?: string; name?: string }
+  }
 }
 
 interface AchievementHistoryItem {
@@ -46,6 +65,24 @@ interface XpHistoryItem {
   createdAt?: string
 }
 
+interface FeedbackHistoryItem {
+  _id: string
+  feedbackType: "feedback" | "comment"
+  targetType: "question" | "test" | "result" | "page" | "platform"
+  title?: string
+  content: string
+  status: "pending" | "published" | "hidden" | "resolved"
+  rating?: number
+  createdAt?: string
+  resolvedAt?: string
+}
+
+type SectionKey = "tests" | "xp" | "achievements" | "feedback"
+
+/* ============================================================
+   CONSTANTS — logic unchanged, only presentation tokens added
+   ============================================================ */
+
 const sourceLabels: Record<string, string> = {
   achievement: "Achievement",
   test_completion: "Test Completion",
@@ -54,9 +91,29 @@ const sourceLabels: Record<string, string> = {
   bonus: "Bonus",
 }
 
+const FEEDBACK_STATUS_STYLES: Record<
+  FeedbackHistoryItem["status"],
+  { color: string; bg: string; border: string; label: string }
+> = {
+  pending: { color: "#F59E0B", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.3)", label: "Pending" },
+  resolved: { color: "#10B981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.3)", label: "Resolved" },
+  hidden: { color: "#94A3B8", bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.3)", label: "Hidden" },
+  published: { color: "#10B981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.3)", label: "Published" },
+}
+
+const TEST_STATUS_STYLES: Record<
+  string,
+  { color: string; bg: string; border: string; progress: string }
+> = {
+  completed: { color: "#10B981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.3)", progress: "#10B981" },
+  in_progress: { color: "#F59E0B", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.3)", progress: "#F59E0B" },
+  abandoned: { color: "#94A3B8", bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.3)", progress: "#94A3B8" },
+}
+
+const ITEMS_PER_PAGE = 10
+
 function formatDate(value?: string) {
   if (!value) return "Recent"
-
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
@@ -66,17 +123,194 @@ function formatDate(value?: string) {
   }).format(new Date(value))
 }
 
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  accent,
+}: {
+  icon: typeof FileText
+  label: string
+  value: string | number
+  accent: string
+}) {
+  return (
+    <Card
+      className=" overflow-hidden  border hover:shadow-lg"
+      style={{ borderColor: "#1F2937", backgroundColor: "#111827" }}
+    >
+      <CardContent className=" p-4 sm:p-5 flex items-center justify-center gap-1.5">
+        <div className="flex items-center justify-center">
+          <div
+            className="flex sm:h-10 sm:w-10 h-8 w-8 items-center justify-center  rounded-sm border"
+            style={{ borderColor: `${accent}40`, backgroundColor: `${accent}14`, color: accent }}
+          >
+            <Icon className="h-5 w-5" />
+          </div>
+        </div>
+        <div className="ml-3 flex flex-col items-start justify-center ">
+          <p className="text-sm font-bold tracking-tight text-[#F9FAFB] sm:text-3xl">
+            {value}
+          </p>
+          <p className="mt-1 text-xs font-medium text-[#94A3B8] sm:text-sm">{label}</p>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  ctaLabel,
+  ctaHref,
+}: {
+  icon: typeof Inbox
+  title: string
+  description: string
+  ctaLabel?: string
+  ctaHref?: string
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-14 text-center" style={{ borderColor: "#1F2937" }}>
+      <div
+        className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border"
+        style={{ borderColor: "#1F2937", backgroundColor: "#111827" }}
+      >
+        <Icon className="h-7 w-7 text-[#94A3B8]" />
+      </div>
+      <h3 className="text-base font-semibold text-[#F9FAFB]">{title}</h3>
+      <p className="mt-1.5 max-w-sm text-sm leading-6 text-[#94A3B8]">{description}</p>
+      {ctaLabel && ctaHref && (
+        <Button asChild className="mt-5 gap-2 bg-[#10B981] text-[#09090B] hover:bg-[#10B981]/90">
+          <Link href={ctaHref}>
+            {ctaLabel}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Button>
+      )}
+    </div>
+  )
+}
+
+function SkeletonCards({ count = 4 }: { count?: number }) {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="flex items-center justify-between rounded-2xl border p-4"
+          style={{ borderColor: "#1F2937", backgroundColor: "#111827" }}
+        >
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-40 bg-[#1F2937]" />
+            <Skeleton className="h-3 w-24 bg-[#1F2937]" />
+          </div>
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-8 w-14 bg-[#1F2937]" />
+            <Skeleton className="h-8 w-16 rounded-full bg-[#1F2937]" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function Pagination({
+  currentPage,
+  totalPages,
+  totalItems,
+  onPageChange,
+}: {
+  currentPage: number
+  totalPages: number
+  totalItems: number
+  onPageChange: (page: number) => void
+}) {
+  if (totalPages <= 1) return null
+
+  const getPages = () => {
+    const pages: number[] = []
+    let start = Math.max(1, currentPage - 2)
+    let end = Math.min(totalPages, currentPage + 2)
+    if (currentPage <= 3) end = Math.min(5, totalPages)
+    if (currentPage >= totalPages - 2) start = Math.max(1, totalPages - 4)
+    for (let i = start; i <= end; i++) pages.push(i)
+    return pages
+  }
+
+  const rangeStart = (currentPage - 1) * ITEMS_PER_PAGE + 1
+  const rangeEnd = Math.min(currentPage * ITEMS_PER_PAGE, totalItems)
+
+  return (
+    <div
+      className="mt-6 flex flex-col items-center justify-between gap-4 border-t pt-5 sm:flex-row"
+      style={{ borderColor: "#1F2937" }}
+    >
+      <p className="text-xs text-[#94A3B8] sm:text-sm">
+        Showing{" "}
+        <span className="font-semibold text-[#F9FAFB]">
+          {rangeStart}–{rangeEnd}
+        </span>{" "}
+        of <span className="font-semibold text-[#F9FAFB]">{totalItems}</span>
+      </p>
+
+      <div className="flex items-center gap-1.5">
+        <Button
+          variant="outline"
+          size="icon"
+          disabled={currentPage === 1}
+          onClick={() => onPageChange(currentPage - 1)}
+          className="h-8 w-8 border-[#1F2937] bg-transparent text-[#94A3B8] hover:border-[#374151] hover:bg-[#1F2937] hover:text-[#F9FAFB]"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+
+        {getPages().map((page) => (
+          <Button
+            key={page}
+            size="icon"
+            onClick={() => onPageChange(page)}
+            className={cn(
+              "h-8 w-8 text-xs font-semibold",
+              page === currentPage
+                ? "bg-[#10B981] text-[#09090B] hover:bg-[#10B981]/90"
+                : "border border-[#1F2937] bg-transparent text-[#94A3B8] hover:border-[#374151] hover:bg-[#1F2937] hover:text-[#F9FAFB]"
+            )}
+          >
+            {page}
+          </Button>
+        ))}
+
+        <Button
+          variant="outline"
+          size="icon"
+          disabled={currentPage === totalPages}
+          onClick={() => onPageChange(currentPage + 1)}
+          className="h-8 w-8 border-[#1F2937] bg-transparent text-[#94A3B8] hover:border-[#374151] hover:bg-[#1F2937] hover:text-[#F9FAFB]"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+
 export default function HistoryPage() {
+  const [section, setSection] = useState<SectionKey>("tests")
   const [results, setResults] = useState<ResultHistoryItem[]>([])
   const [achievements, setAchievements] = useState<AchievementHistoryItem[]>([])
   const [xpHistory, setXpHistory] = useState<XpHistoryItem[]>([])
+  const [feedbackHistory, setFeedbackHistory] = useState<FeedbackHistoryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const ITEMS_PER_PAGE = 10
-
   const [testPage, setTestPage] = useState(1)
   const [xpPage, setXpPage] = useState(1)
   const [achievementPage, setAchievementPage] = useState(1)
+  const [feedbackPage, setFeedbackPage] = useState(1)
 
   useEffect(() => {
     let isMounted = true
@@ -86,45 +320,50 @@ export default function HistoryPage() {
         setLoading(true)
         setError(null)
 
-        const [resultsRes, achievementsRes, xpRes] = await Promise.all([
-          fetch("/api/results?limit=10", { credentials: "include" }),
-          fetch("/api/achievements/user", { credentials: "include" }),
-          fetch("/api/xp-history", { credentials: "include" }),
-        ])
+        const [resultsRes, achievementsRes, xpRes, feedbackRes] =
+          await Promise.all([
+            fetch("/api/results?limit=10", { credentials: "include" }),
+            fetch("/api/achievements/user", { credentials: "include" }),
+            fetch("/api/xp-history", { credentials: "include" }),
+            fetch("/api/feedback?mine=true&limit=100", {
+              credentials: "include",
+            }),
+          ])
 
         const resultsJson = await resultsRes.json()
         const achievementsJson = await achievementsRes.json()
         const xpJson = await xpRes.json()
+        const feedbackJson = await feedbackRes.json()
 
         if (!resultsRes.ok || !resultsJson.success) {
           throw new Error(resultsJson.error || "Failed to load results")
         }
-
         if (!achievementsRes.ok || !achievementsJson.success) {
           throw new Error(
             achievementsJson.error || "Failed to load achievements history"
           )
         }
-
         if (!xpRes.ok || !xpJson.success) {
           throw new Error(xpJson.error || "Failed to load XP history")
+        }
+        if (!feedbackRes.ok || !feedbackJson.success) {
+          throw new Error(
+            feedbackJson.error || "Failed to load feedback history"
+          )
         }
 
         if (isMounted) {
           setResults(resultsJson.data || [])
           setAchievements(achievementsJson.data || [])
           setXpHistory(xpJson.data || [])
+          setFeedbackHistory(feedbackJson.data || [])
         }
       } catch (err: unknown) {
         if (isMounted) {
-          setError(
-            err instanceof Error ? err.message : "Unable to load history"
-          )
+          setError(err instanceof Error ? err.message : "Unable to load history")
         }
       } finally {
-        if (isMounted) {
-          setLoading(false)
-        }
+        if (isMounted) setLoading(false)
       }
     }
 
@@ -138,287 +377,412 @@ export default function HistoryPage() {
     const start = (testPage - 1) * ITEMS_PER_PAGE
     return results.slice(start, start + ITEMS_PER_PAGE)
   }, [results, testPage])
-
   const totalTestPages = Math.ceil(results.length / ITEMS_PER_PAGE)
 
   const paginatedAchievements = useMemo(() => {
     const start = (achievementPage - 1) * ITEMS_PER_PAGE
     return achievements.slice(start, start + ITEMS_PER_PAGE)
   }, [achievements, achievementPage])
-
   const totalAchievementPages = Math.ceil(achievements.length / ITEMS_PER_PAGE)
 
   const paginatedXP = useMemo(() => {
     const start = (xpPage - 1) * ITEMS_PER_PAGE
     return xpHistory.slice(start, start + ITEMS_PER_PAGE)
   }, [xpHistory, xpPage])
-
   const totalXpPages = Math.ceil(xpHistory.length / ITEMS_PER_PAGE)
 
-  return (
-    <div className="min-h-screen mt-18 sm:mt-2 bg-background p-2 md:p-8">
-      <div className="mb-6 flex flex-col gap-4 md:flex-col md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 sm:text-3xl dark:text-slate-200">
-            Activity History
-          </h1>
-          <p className="mt-2 text-sm  text-muted-foreground">
-            Review your recent test performance, earned achievements, 
-            and XP history.
-          </p>
-        </div>
-      </div>
+  const paginatedFeedback = useMemo(() => {
+    const start = (feedbackPage - 1) * ITEMS_PER_PAGE
+    return feedbackHistory.slice(start, start + ITEMS_PER_PAGE)
+  }, [feedbackHistory, feedbackPage])
+  const totalFeedbackPages = Math.ceil(feedbackHistory.length / ITEMS_PER_PAGE)
 
-      <Tabs defaultValue="tests" className="space-y-4">
-        <TabsList className="inline-flex w-max min-w-full md:grid md:grid-cols-3">
-          <TabsTrigger
-            value="tests"
-            className="flex min-w-25 items-center gap-2"
-          >
-            <FileText className="h-4 w-4" />
-            Tests
-          </TabsTrigger>
-
-          <TabsTrigger value="xp" className="flex min-w-25 items-center gap-2">
-            <Star className="h-4 w-4" />
-            XP
-          </TabsTrigger>
-
-          <TabsTrigger
-            value="achievements"
-            className="flex min-w-35 items-center gap-2"
-          >
-            <Trophy className="h-4 w-4" />
-            Achievements
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Test History */}
-        <TabsContent value="tests" className="p-0">
-          <Card>
-            <CardHeader>
-              <CardTitle>Test History</CardTitle>
-            </CardHeader>
-
-            <CardContent className=" overflow-x">
-              <Table>
-                <TableHeader >
-                  <TableRow >
-                    <TableHead>Test</TableHead>
-                    <TableHead>Score</TableHead>
-                    <TableHead>Accuracy</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="hidden sm:block">Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  {paginatedTests.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center">
-                        No test history found.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    paginatedTests.map((item) => (
-                      <TableRow key={item._id}>
-                        <TableCell className="font-sm text-[10px]">{item.testName}</TableCell>
-                        <TableCell className="font-sm text-[10px]">
-                          {item.marksObtained}/{item.totalMarks}
-                        </TableCell >
-                        <TableCell className="font-sm text-[10px]">{item.accuracy}%</TableCell>
-                        <TableCell className="font-sm ">
-                          <Badge className="text-[10px]">{item.status}</Badge>
-                        </TableCell>
-                        <TableCell className="hidden sm:block">{formatDate(item.submittedAt)}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-            <Pagination
-              currentPage={testPage}
-              totalPages={totalTestPages}
-              onPageChange={setTestPage}
-            />
-          </Card>
-        </TabsContent>
-
-        {/* XP History */}
-        <TabsContent value="xp" >
-          <Card>
-            <CardHeader>
-              <CardTitle>XP History</CardTitle>
-            </CardHeader>
-
-            <CardContent className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>XP</TableHead>
-                    <TableHead>Source</TableHead>
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  {paginatedXP.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center">
-                        No XP history found.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    paginatedXP.map((item) => (
-                      <TableRow key={item._id}>
-                        <TableCell>{formatDate(item.createdAt)}</TableCell>
-
-                        <TableCell>
-                          {item.xpPoints > 0
-                            ? `+${item.xpPoints}`
-                            : item.xpPoints}
-                        </TableCell>
-
-                        <TableCell>
-                          {sourceLabels[item.sourceType] || item.sourceType}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-            <Pagination
-              currentPage={xpPage}
-              totalPages={totalXpPages}
-              onPageChange={setXpPage}
-            />
-          </Card>
-        </TabsContent>
-
-        {/* Achievement History */}
-        <TabsContent value="achievements">
-          <Card>
-            <CardHeader>
-              <CardTitle>Achievement History</CardTitle>
-            </CardHeader>
-
-            <CardContent className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Achievement</TableHead>
-                    <TableHead>Points</TableHead>
-                    <TableHead>Unlocked</TableHead>
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  {paginatedAchievements.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-center">
-                        No achievements found.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    paginatedAchievements.map((item) => (
-                      <TableRow key={item._id}>
-                        <TableCell>{item.achievementId.name}</TableCell>
-
-                        <TableCell>
-                          +{item.achievementId.pointsReward}
-                        </TableCell>
-
-                        <TableCell>{formatDate(item.unlockedAt)}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-            <Pagination
-              currentPage={achievementPage}
-              totalPages={totalAchievementPages}
-              onPageChange={setAchievementPage}
-            />
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+  // Hero stats — derived only, no logic change to underlying data
+  const totalXPEarned = useMemo(
+    () =>
+      xpHistory
+        .filter((item) => item.xpPoints > 0)
+        .reduce((sum, item) => sum + item.xpPoints, 0),
+    [xpHistory]
   )
-}
 
-interface PaginationProps {
-  currentPage: number
-  totalPages: number
-  onPageChange: (page: number) => void
-}
+  const sections: {
+    key: SectionKey
+    label: string
+    icon: typeof FileText
+    count: number
+  }[] = [
+    { key: "tests", label: "Tests", icon: FileText, count: results.length },
+    { key: "xp", label: "XP", icon: Star, count: xpHistory.length },
+    { key: "achievements", label: "Achievements", icon: Award, count: achievements.length },
+    { key: "feedback", label: "Feedback", icon: MessageSquareText, count: feedbackHistory.length },
+  ]
 
-function Pagination({
-  currentPage,
-  totalPages,
-  onPageChange,
-}: PaginationProps) {
-  if (totalPages <= 1) return null
+  const buildResultHref = (item: ResultHistoryItem) => {
+    const slug = item.testId?.categoryId?.slug
+    const subSlug = item.testId?.subcategory?.slug
 
-  const getPages = () => {
-    const pages: number[] = []
-
-    let start = Math.max(1, currentPage - 2)
-    let end = Math.min(totalPages, currentPage + 2)
-
-    if (currentPage <= 3) {
-      end = Math.min(5, totalPages)
+    if (slug && subSlug) {
+      return `/results?resultId=${item._id}`
     }
 
-    if (currentPage >= totalPages - 2) {
-      start = Math.max(1, totalPages - 4)
-    }
-
-    for (let i = start; i <= end; i++) {
-      pages.push(i)
-    }
-
-    return pages
+    return `/results?resultId=${item._id}`
   }
 
   return (
-    <div className="mx-5 my-6 flex sm:flex-row justify-between">
-      <p className="text-sm text-muted-foreground">
-        Page <span className="font-semibold">{currentPage}</span> of{" "}
-        <span className="font-semibold">{totalPages}</span>
-      </p>
+    <div className="min-h-screen bg-[#0a0e14] font-sans" style={{ color: "#F9FAFB" }}>
+      <div className="mx-auto max-w-6xl px-4 pt-20 pb-16 sm:px-6 md:pt-10 lg:px-8">
+        {/* ============ HERO ============ */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3">
+            <div
+              className="flex h-11 w-11 items-center justify-center rounded-xl p-2 border"
+              style={{ borderColor: "rgba(16,185,129,0.35)", backgroundColor: "rgba(16,185,129,0.1)" }}
+            >
+              <Activity className="h-5.5 w-5.5 text-[#10B981]" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                Activity History
+              </h1>
+              <p className="mt-0.5 text-sm text-[#94A3B8]">
+                Review your recent test performance, earned achievements, and
+                XP history.
+              </p>
+            </div>
+          </div>
 
-      <div className="flex items-center justify-center gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          disabled={currentPage === 1}
-          onClick={() => onPageChange(currentPage - 1)}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
+          {/* Stat cards */}
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+            <StatCard icon={FileText} label="Total Tests complete" value={results.length} accent="#10B981" />
+            <StatCard icon={Zap} label="Total XP Earned" value={totalXPEarned.toLocaleString()} accent="#8B5CF6" />
+            <StatCard icon={Award} label="All Achievements" value={achievements.length} accent="#F59E0B" />
+            <StatCard icon={MessageSquareText} label="Feedback Submitted" value={feedbackHistory.length} accent="#10B981" />
+          </div>
+        </div>
 
-        {getPages().map((page) => (
-          <Button
-            key={page}
-            size="icon"
-            variant={page === currentPage ? "default" : "outline"}
-            onClick={() => onPageChange(page)}
+        {/* ============ SECTION NAV ============ */}
+        <div className="scrollbar-none mb-6 grid grid-cols-2 lg:grid-cols-4 gap-2.5 overflow-x-auto pb-1 pt-1">
+          {sections.map((s) => {
+            const active = section === s.key
+            return (
+              <button 
+                key={s.key}
+                onClick={() => setSection(s.key)}
+                className={cn(
+                  "flex shrink-0 items-center gap-2.5 rounded-xl border px-2 py-3 text-xs lg:text-sm font-semibold transition-all duration-200",
+                  active
+                    ? "border-transparent bg-linear-to-br from-[#10B981] to-[#0d9c6f] text-[#09090B] shadow-lg shadow-emerald-500/20"
+                    : "border-[#1F2937] bg-[#111827] text-[#94A3B8] hover:-translate-y-0.5 hover:border-[#374151] hover:text-[#F9FAFB]"
+                )}
+              >
+                <s.icon className="h-4 w-4" />
+                {s.label}
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                    active ? "bg-black/15 text-[#09090B]" : "bg-[#1F2937] text-[#94A3B8]"
+                  )}
+                >
+                  {s.count}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* ============ CONTENT ============ */}
+        {loading ? (
+          <SkeletonCards count={5} />
+        ) : error ? (
+          <div
+            className="flex items-center gap-3 rounded-2xl border p-6"
+            style={{ borderColor: "rgba(239,68,68,0.3)", backgroundColor: "rgba(239,68,68,0.06)" }}
           >
-            {page}
-          </Button>
-        ))}
+            <AlertCircle className="h-5 w-5 shrink-0 text-[#EF4444]" />
+            <p className="text-sm text-[#EF4444]">{error}</p>
+          </div>
+        ) : (
+          <Card className="border" style={{ borderColor: "#1F2937", backgroundColor: "#111827" }}>
+            <CardContent className="p-4 sm:p-6">
+              {/* ---------- TESTS ---------- */}
+              {section === "tests" && (
+                <>
+                  <h2 className="mb-4 text-base font-bold sm:text-lg">Test History</h2>
+                  {paginatedTests.length === 0 ? (
+                    <EmptyState
+                      icon={FileText}
+                      title="No Tests Yet"
+                      description="Take your first aptitude test to begin tracking your progress."
+                      ctaLabel="Browse tests"
+                      ctaHref="/dashboard/tests"
+                    />
+                  ) : (
+                    <div className="space-y-3">
+                      {paginatedTests.map((item) => {
+                        const style = TEST_STATUS_STYLES[item.status] || TEST_STATUS_STYLES.abandoned
+                        return (
+                          <div
+                            key={item._id}
+                            className="group rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-5"
+                            style={{ borderColor: "#1F2937", backgroundColor: "#0d1220" }}
+                          >
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-semibold text-[#F9FAFB] sm:text-base">
+                                  {item.testName}
+                                </p>
+                                <p className="mt-1 text-xs text-[#94A3B8]">
+                                  {formatDate(item.submittedAt)} · {item.attemptedQuestions}/
+                                  {item.totalQuestions} attempted
+                                </p>
+                              </div>
 
-        <Button
-          variant="outline"
-          size="icon"
-          disabled={currentPage === totalPages}
-          onClick={() => onPageChange(currentPage + 1)}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+                              <div className="flex flex-wrap items-center gap-5 sm:justify-end">
+                                <div className="text-right">
+                                  <div className="text-base font-bold sm:text-lg">
+                                    {item.marksObtained}/{item.totalMarks}
+                                  </div>
+                                  <div className="text-[10px] tracking-wide text-[#94A3B8] uppercase">
+                                    Score
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-base font-bold text-[#10B981] sm:text-lg">
+                                    {item.accuracy}%
+                                  </div>
+                                  <div className="text-[10px] tracking-wide text-[#94A3B8] uppercase">
+                                    Accuracy
+                                  </div>
+                                </div>
+                                <Badge
+                                  className="border font-semibold capitalize"
+                                  style={{ color: style.color, borderColor: style.border, backgroundColor: style.bg }}
+                                >
+                                  {item.status.replace("_", " ")}
+                                </Badge>
+                              </div>
+                            </div>
+
+                            <div className="mt-4 flex justify-end">
+                              <Button asChild className="bg-[#10B981] text-[#09090B] hover:bg-[#10B981]/90">
+                                <Link href={buildResultHref(item)}>
+                                  View result
+                                </Link>
+                              </Button>
+                            </div>
+
+                            {/* Progress bar */}
+                            <div className="mt-3.5 h-1.5 w-full overflow-hidden rounded-full bg-[#1F2937]">
+                              <div
+                                className="h-full rounded-full transition-[width] duration-700 ease-out"
+                                style={{
+                                  width: `${Math.min(100, Math.max(0, item.accuracy))}%`,
+                                  backgroundColor: style.progress,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                  <Pagination
+                    currentPage={testPage}
+                    totalPages={totalTestPages}
+                    totalItems={results.length}
+                    onPageChange={setTestPage}
+                  />
+                </>
+              )}
+
+              {/* ---------- XP TIMELINE ---------- */}
+              {section === "xp" && (
+                <>
+                  <h2 className="mb-4 text-base font-bold sm:text-lg">XP History</h2>
+                  {paginatedXP.length === 0 ? (
+                    <EmptyState
+                      icon={Zap}
+                      title="No XP Yet"
+                      description="Complete tests and unlock achievements to start earning XP."
+                    />
+                  ) : (
+                    <div className="relative space-y-0">
+                      {paginatedXP.map((item, idx) => {
+                        const positive = item.xpPoints > 0
+                        const isLast = idx === paginatedXP.length - 1
+                        return (
+                          <div key={item._id} className="relative flex gap-4 pb-6 last:pb-0">
+                            {/* Timeline rail */}
+                            <div className="relative flex flex-col items-center">
+                              <span
+                                className="z-10 flex h-3 w-3 shrink-0 rounded-full ring-4"
+                                style={{
+                                  backgroundColor: positive ? "#10B981" : "#EF4444",
+                                  boxShadow: `0 0 0 4px ${positive ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)"}`,
+                                }}
+                              />
+                              {!isLast && (
+                                <span className="mt-1 w-px flex-1" style={{ backgroundColor: "#1F2937" }} />
+                              )}
+                            </div>
+
+                            <div className="flex flex-1 items-center justify-between gap-3 pt-[-2px]">
+                              <div>
+                                <p className="text-sm font-semibold text-[#F9FAFB]">
+                                  {sourceLabels[item.sourceType] || item.sourceType}
+                                </p>
+                                <p className="mt-0.5 text-xs text-[#94A3B8]">
+                                  {formatDate(item.createdAt)}
+                                </p>
+                              </div>
+                              <span
+                                className="shrink-0 text-base font-bold"
+                                style={{ color: positive ? "#10B981" : "#EF4444" }}
+                              >
+                                {positive ? `+${item.xpPoints}` : item.xpPoints} XP
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                  <Pagination
+                    currentPage={xpPage}
+                    totalPages={totalXpPages}
+                    totalItems={xpHistory.length}
+                    onPageChange={setXpPage}
+                  />
+                </>
+              )}
+
+              {/* ---------- ACHIEVEMENTS ---------- */}
+              {section === "achievements" && (
+                <>
+                  <h2 className="mb-4 text-base font-bold sm:text-lg">Achievement History</h2>
+                  {paginatedAchievements.length === 0 ? (
+                    <EmptyState
+                      icon={Trophy}
+                      title="No Achievements Yet"
+                      description="Keep practicing — achievements unlock automatically as you hit milestones."
+                    />
+                  ) : (
+                    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+                      {paginatedAchievements.map((item) => (
+                        <div
+                          key={item._id}
+                          className="group relative overflow-hidden rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                          style={{ borderColor: "rgba(245,158,11,0.25)", backgroundColor: "rgba(245,158,11,0.05)" }}
+                        >
+                          <div
+                            className="pointer-events-none absolute -top-6 -right-6 h-24 w-24 rounded-full opacity-0 blur-2xl transition-opacity duration-200 group-hover:opacity-100"
+                            style={{ backgroundColor: "rgba(245,158,11,0.25)" }}
+                          />
+                          <div className="relative flex items-start gap-3">
+                            <div
+                              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border"
+                              style={{ borderColor: "rgba(245,158,11,0.35)", backgroundColor: "rgba(245,158,11,0.12)" }}
+                            >
+                              <Trophy className="h-5 w-5 text-[#F59E0B]" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-semibold text-[#F9FAFB]">
+                                {item.achievementId.name}
+                              </p>
+                              <p className="mt-0.5 text-xs text-[#94A3B8]">
+                                {formatDate(item.unlockedAt)}
+                              </p>
+                              <span className="mt-2 inline-block text-sm font-bold text-[#F59E0B]">
+                                +{item.achievementId.pointsReward} XP
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <Pagination
+                    currentPage={achievementPage}
+                    totalPages={totalAchievementPages}
+                    totalItems={achievements.length}
+                    onPageChange={setAchievementPage}
+                  />
+                </>
+              )}
+
+              {/* ---------- FEEDBACK ---------- */}
+              {section === "feedback" && (
+                <>
+                  <h2 className="mb-4 text-base font-bold sm:text-lg">Feedback History</h2>
+                  {paginatedFeedback.length === 0 ? (
+                    <EmptyState
+                      icon={MessageSquareText}
+                      title="No Feedback Yet"
+                      description="Share your thoughts to help us improve AptiCore."
+                      ctaLabel="Send feedback"
+                      ctaHref="/dashboard/feedback"
+                    />
+                  ) : (
+                    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                      {paginatedFeedback.map((item) => {
+                        const style = FEEDBACK_STATUS_STYLES[item.status]
+                        return (
+                          <div
+                            key={item._id}
+                            className="flex flex-col rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                            style={{ borderColor: "#1F2937", backgroundColor: "#0d1220" }}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-0.5">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className="h-3.5 w-3.5"
+                                    style={{
+                                      color: "#F59E0B",
+                                      fill: item.rating && i < item.rating ? "#F59E0B" : "transparent",
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                              <Badge
+                                className="border text-[10px] font-semibold tracking-wide uppercase"
+                                style={{ color: style.color, borderColor: style.border, backgroundColor: style.bg }}
+                              >
+                                {style.label}
+                              </Badge>
+                            </div>
+
+                            {item.title && (
+                              <p className="mt-3 text-sm font-semibold text-[#F9FAFB]">
+                                {item.title}
+                              </p>
+                            )}
+                            <p className="mt-1 line-clamp-2 flex-1 text-xs leading-5 text-[#94A3B8]">
+                              {item.content}
+                            </p>
+
+                            <div className="mt-3 flex items-center justify-between border-t pt-3 text-[11px] text-[#94A3B8]" style={{ borderColor: "#1F2937" }}>
+                              <span className="capitalize">{item.feedbackType} · {item.targetType}</span>
+                              <span>{formatDate(item.createdAt)}</span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                  <Pagination
+                    currentPage={feedbackPage}
+                    totalPages={totalFeedbackPages}
+                    totalItems={feedbackHistory.length}
+                    onPageChange={setFeedbackPage}
+                  />
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )

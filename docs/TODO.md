@@ -1,12 +1,21 @@
-# TODO: Create `/api/stats` Landing Page Stats Endpoint
+# Enhancement Plan - Static Pages
 
-- [x] 1. Plan approved by user
-- [x] 2. Create `app/api/stats/route.ts` with GET handler
-  - [x] Use `connectDB()`
-  - [x] Query `User.countDocuments({ role: "user", isActive: true })` for `totalUsers`
-  - [x] Query `Question.countDocuments({ isActive: true })` for `totalQuestions`
-  - [x] Query `Test.countDocuments({ isPublished: true })` for `totalTests`
-  - [x] Static `companiesCovered: 85`
-  - [x] Return `{ success: true, data: { ... } }` following existing patterns
-- [x] 3. API is consumed by `components/landing.tsx` — no changes needed, it already fetches from `/api/stats`
+## Completed Steps
+- [x] Read all existing placeholder pages
+- [x] Read design patterns from About/Contact pages
+- [x] Plan approved by user
+
+## Implementation Steps
+- [x] 1. `app/policy/page.tsx` — Privacy Policy with full sections
+- [x] 2. `app/terms/page.tsx` — Terms of Service with full sections
+- [x] 3. `app/cookies/page.tsx` — Cookie Policy with detailed content
+- [x] 4. `app/careers/page.tsx` — Careers with job listings and perks
+- [x] 5. `app/blog/page.tsx` — Blog with post cards and featured post
+- [x] 6. `app/docs/page.tsx` — Documentation with sidebar and content
+- [x] 7. `app/guides/page.tsx` — Guides with cards and filters
+- [x] 8. `app/help/page.tsx` — Help Center with FAQ accordion
+- [x] 9. `app/community/page.tsx` — Community with stats and testimonials
+
+## Verification
+- [ ] Build check with `npm run build`
 

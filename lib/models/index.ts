@@ -39,3 +39,4 @@ export {
   default as AccessPolicy,
   type IAccessPolicyDocument,
 } from "./AccessPolicy"
+export { default as Feedback, type IFeedbackDocument } from "./Feedback"

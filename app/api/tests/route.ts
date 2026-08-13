@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import connectDB from "@/lib/db"
+import mongoose from "mongoose"
 import Test from "@/lib/models/Test"
+import Category from "@/lib/models/Category"
 import { verifyAccessToken } from "@/lib/jwt"
 
 // GET /api/tests - List tests with filters
@@ -17,10 +19,24 @@ export async function GET(request: NextRequest) {
     const query: Record<string, unknown> = { isPublished: true }
 
     if (category) {
-      query.categoryId = category
+      const isObjectId = mongoose.Types.ObjectId.isValid(category)
+      if (isObjectId) {
+        query.categoryId = category
+      } else {
+        const catDoc = await Category.findOne({ slug: category.toLowerCase().trim() }).select("_id")
+        if (!catDoc) {
+          return NextResponse.json({
+            success: true,
+            data: [],
+            meta: { total: 0, limit, offset },
+          })
+        }
+        query.categoryId = catDoc._id
+      }
     }
 
     const total = await Test.countDocuments(query)
+    
     let tests = await Test.find(query)
       .populate("categoryId", "name slug")
       .populate("createdBy", "name email role")

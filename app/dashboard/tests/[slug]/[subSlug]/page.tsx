@@ -1,8 +1,10 @@
 "use client"
 
-import { use, useEffect, useMemo, useState } from "react"
+import { use, useCallback, useEffect, useMemo, useState } from "react"
 import axios from "axios"
 import { useRouter } from "next/navigation"
+
+const CELEBRATION_EVENT = "apticore:celebrate"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import TestRunner from "@/components/tests/TestRunner"
@@ -31,6 +33,12 @@ const SubcategoryTestPage = ({
   const [loading, setLoading] = useState(true)
   const [testStartedAt, setTestStartedAt] = useState<Date | null>(null)
   const [submitLoading, setSubmitLoading] = useState(false)
+  const [testStatus, setTestStatus] = useState<"in-progress" | "completed" | "abandoned">("in-progress")
+  const [currentAttemptId, setCurrentAttemptId] = useState<string>(() => 
+    `attempt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  )
+  const [hasUnsavedProgress, setHasUnsavedProgress] = useState(false)
+  const [currentProgress, setCurrentProgress] = useState<any>(null)
 
   useEffect(() => {
     async function loadQuestions() {
@@ -50,6 +58,7 @@ const SubcategoryTestPage = ({
         )
         setQuestions(questionRes.data.data || [])
         setTestStartedAt(new Date())
+        setTestStatus("in-progress")
       } catch (error) {
         console.error(error)
       } finally {
@@ -60,17 +69,79 @@ const SubcategoryTestPage = ({
     void loadQuestions()
   }, [slug, subSlug])
 
+  // Auto-save test progress periodically
+  useEffect(() => {
+    if (!testStartedAt || !category || !subcategory || testStatus !== "in-progress" || !hasUnsavedProgress || !currentProgress) {
+      return
+    }
+
+    const autoSaveTimer = setInterval(async () => {
+      try {
+        console.log("Auto-saving test progress...", currentAttemptId)
+        await fetch("/api/results/save-progress", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            attemptId: currentAttemptId,
+            categoryId: category._id,
+            subcategoryId: subcategory._id,
+            testStatus: "in-progress",
+            progress: currentProgress,
+            startedAt: testStartedAt,
+          }),
+        })
+      } catch (error) {
+        console.error("Auto-save failed:", error)
+      }
+    }, 30000) // Auto-save every 30 seconds
+
+    return () => clearInterval(autoSaveTimer)
+  }, [testStartedAt, category, subcategory, testStatus, currentAttemptId, hasUnsavedProgress, currentProgress])
+
+  // Warn user before leaving mid-test
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (testStatus === "in-progress" && hasUnsavedProgress) {
+        e.preventDefault()
+        e.returnValue = "You have an in-progress test. Are you sure you want to leave?"
+        return "You have an in-progress test. Are you sure you want to leave?"
+      }
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
+  }, [testStatus, hasUnsavedProgress])
+
+  // Mark test as abandoned when component unmounts
+  useEffect(() => {
+    return () => {
+      if (testStatus === "in-progress" && testStartedAt && category && subcategory) {
+        // Mark test as abandoned
+        fetch("/api/results/mark-abandoned", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            categoryId: category._id,
+            subcategoryId: subcategory._id,
+            testStatus: "abandoned",
+            startedAt: testStartedAt,
+          }),
+        }).catch((error) => console.error("Failed to mark test as abandoned:", error))
+      }
+    }
+  }, [testStatus, testStartedAt, category, subcategory])
+
   const test = useMemo(
     () => ({
       title: subcategory?.name
-        ? `${subcategory.name} Practice Session`
+        ? `${subcategory.name} — Mock Test`
         : "Subcategory Practice Session",
       description:
         subcategory?.description ||
         `Questions from ${subcategory?.name || "this subcategory"}`,
       totalQuestions: questions.length,
       totalMarks: questions.reduce(
-        (sum, question) => sum + (question.marks || 1),
+        (sum, question) => sum + (question.marks || 4),
         0
       ),
       durationMinutes: Math.ceil((questions.length || 10) * 1.5) || 10,
@@ -89,9 +160,10 @@ const SubcategoryTestPage = ({
     timeSpentSeconds: number
     marksObtained: number
   }) => {
-    if (!testStartedAt || !category || !subcategory) return
+    if (!testStartedAt || !category || !subcategory || submitLoading) return
 
     setSubmitLoading(true)
+    setTestStatus("completed")
 
     try {
       const body = {
@@ -111,6 +183,7 @@ const SubcategoryTestPage = ({
         answers: payload.answers,
         startedAt: testStartedAt,
         sessionType: "subcategory",
+        testStatus: "completed",
       }
 
       const res = await fetch("/api/results", {
@@ -125,13 +198,34 @@ const SubcategoryTestPage = ({
       }
 
       const resultId = json?.data?._id
+      const isPerfect = payload.accuracy === 100
+      const nextLevel = (json?.meta?.nextLevel ?? 0) as number | undefined
+      const unlockedAchievements = Array.isArray(json?.meta?.unlockedAchievements)
+        ? json.meta.unlockedAchievements
+        : []
+
+      if (isPerfect || nextLevel || unlockedAchievements.length) {
+        window.dispatchEvent(
+          new CustomEvent(CELEBRATION_EVENT, {
+            detail: {
+              perfectScore: isPerfect,
+              levelUp: Boolean(nextLevel),
+              newLevel: nextLevel,
+              unlockedAchievements,
+            },
+          })
+        )
+      }
+
+      setHasUnsavedProgress(false)
       router.push(
         resultId
-          ? `/dashboard/tests/${slug}/${subSlug}/results?resultId=${resultId}`
-          : `/dashboard/tests/${slug}/${subSlug}/results`
+          ? `/results?resultId=${resultId}`
+          : `/results`
       )
     } catch (error) {
       console.error(error)
+      setTestStatus("in-progress")
     } finally {
       setSubmitLoading(false)
     }
@@ -139,47 +233,35 @@ const SubcategoryTestPage = ({
 
   if (loading) {
     return (
-      <div className="p-10 text-center">
-        <div className="inline-block animate-spin">Loading...</div>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0e14] font-[Inter,sans-serif] text-[#e7ecf3]">
+        <div className="inline-block animate-pulse font-[JetBrains_Mono,monospace] text-sm">
+          Loading test...
+        </div>
       </div>
     )
   }
-  if (!category) {
-    return <div className="p-10">Test category or subcategory not found.</div>
+
+  if (!category || questions.length === 0) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0e14] font-[Inter,sans-serif] text-[#e7ecf3]">
+        Test category or questions not found.
+      </div>
+    )
   }
 
+  const handleProgressChange = useCallback((progress: any) => {
+    setCurrentProgress(progress)
+    setHasUnsavedProgress(true)
+  }, [])
+
   return (
-    <div className="min-h-screen p-6 mt-12 sm:mt-2">
-      <div className="mb-8 flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Practice Session</p>
-            <h1 className="text-3xl font-semibold">{test.title}</h1>
-            <p className="text-sm text-muted-foreground">
-              Question 1 of {questions.length}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground uppercase">Timer</p>
-            <p className="text-xl font-semibold">
-              {Math.max(test.durationMinutes, 8)}:00
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-          <span>{questions.length} questions</span>
-          <span>{subcategory.name}</span>
-          <span>{category.name}</span>
-        </div>
-      </div>
-
-      <TestRunner
-        test={test}
-        questions={questions as unknown as any}
-        onSubmit={handleSubmit}
-      />
-    </div>
+    <TestRunner
+      test={test}
+      questions={questions as unknown as any}
+      sectionLabel={subcategory?.name || category?.name}
+      onProgressChange={handleProgressChange}
+      onSubmit={handleSubmit}
+    />
   )
 }
 

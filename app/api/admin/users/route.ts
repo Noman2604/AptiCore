@@ -96,7 +96,6 @@ export async function POST(request: NextRequest) {
       level: Number(profile?.level ?? 1),
       currentStreak: Number(profile?.currentStreak ?? 0),
       longestStreak: Number(profile?.longestStreak ?? 0),
-      college: profile?.college,
       location: profile?.location,
       phone: profile?.phone,
     })

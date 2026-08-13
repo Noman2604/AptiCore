@@ -255,7 +255,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Update user XP, level, and streak for this completion event
-    const xpEarned = Math.round(marksObtained * 10)
+    const xpEarned = Math.round((correctAnswers || 0) * 10)
     const now = new Date()
     const todayStr = now.toISOString().split("T")[0]
 
@@ -304,6 +304,7 @@ export async function POST(request: NextRequest) {
 
     const currentXP = existingProfile ? existingProfile.totalXP || 0 : 0
     const newXP = currentXP + xpEarned
+    const previousLevel = existingProfile?.level ?? 1
     const newLevel = Math.max(1, Math.floor(newXP / 500) + 1)
 
     const profile = await UserProfile.findOneAndUpdate(
@@ -364,12 +365,24 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    const awardedAchievements: Array<{
+      name: string
+      description?: string
+      pointsReward?: number
+    }> = []
+
     if (achievementsToAward.length > 0) {
       for (const achievement of achievementsToAward) {
         try {
           await UserAchievement.create({
             userId: decoded.userId,
             achievementId: achievement._id,
+          })
+
+          awardedAchievements.push({
+            name: achievement.name,
+            description: achievement.description,
+            pointsReward: achievement.pointsReward,
           })
 
           await UserProfile.findOneAndUpdate(
@@ -449,6 +462,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: result,
+      meta: {
+        nextLevel: newLevel > previousLevel ? newLevel : undefined,
+        unlockedAchievements: awardedAchievements,
+      },
     })
   } catch (error) {
     console.error("Submit result error:", error)

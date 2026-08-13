@@ -325,7 +325,7 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="space-y-6 p-6 lg:p-8 mt-10 sm:mt-2">
+    <div className="mt-10 space-y-6 p-6 sm:mt-2 lg:p-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold md:text-3xl">User Management</h1>
@@ -333,10 +333,6 @@ export default function AdminUsersPage() {
             Manage accounts, roles, status, and profile progress
           </p>
         </div>
-        <Button className="gap-2" onClick={openCreateSheet}>
-          <Plus className="h-4 w-4" />
-          Add User
-        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -546,11 +542,9 @@ export default function AdminUsersPage() {
       <Sheet open={showUserSheet} onOpenChange={setShowUserSheet}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
           <SheetHeader>
-            <SheetTitle>
-              {selectedUser ? "Edit User" : "Add New User"}
-            </SheetTitle>
+            <SheetTitle>Edit User</SheetTitle>
             <SheetDescription>
-              Manage account details, access role, and profile progress.
+              Update account details, access role, and profile progress.
             </SheetDescription>
           </SheetHeader>
           <div className="space-y-6 py-6">
@@ -585,24 +579,6 @@ export default function AdminUsersPage() {
                 />
               </div>
             </div>
-
-            {!selectedUser && (
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  className="mt-1.5"
-                  type="password"
-                  value={form.password}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      password: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-            )}
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
@@ -759,11 +735,7 @@ export default function AdminUsersPage() {
                 Cancel
               </Button>
               <Button onClick={saveUser} disabled={saving}>
-                {saving
-                  ? "Saving..."
-                  : selectedUser
-                    ? "Update User"
-                    : "Create User"}
+                {saving ? "Saving..." : "Update User"}
               </Button>
             </div>
           </div>

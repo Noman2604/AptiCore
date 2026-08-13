@@ -74,6 +74,38 @@ type QuestionOption = {
   isCorrect: boolean
 }
 
+type QuestionReport = {
+  _id?: string
+  questionId?: string | Question
+  userId?:
+    | {
+        name?: string
+        email?: string
+        role?: string
+      }
+    | string
+  message: string
+  reason:
+    | "wrong_answer"
+    | "incorrect_question"
+    | "typo"
+    | "duplicate"
+    | "outdated"
+    | "other"
+  isResolved: boolean | null
+  resolvedBy?:
+    | {
+        name?: string
+        email?: string
+        role?: string
+      }
+    | string
+    | null
+  resolvedAt?: string | null
+  adminRemark?: string | null
+  createdAt?: string
+}
+
 type Question = {
   _id: string
   categoryId: Category | string
@@ -120,8 +152,8 @@ const blankForm: QuestionForm = {
   options: ["", "", "", ""],
   correctOption: "0",
   explanation: "",
-  marks: "1",
-  negativeMarks: "0.25",
+  marks: "4",
+  negativeMarks: "1",
   timeLimitSeconds: "15",
 }
 
@@ -158,6 +190,7 @@ const formatDate = (value?: string) => {
 
 export default function AdminQuestionsPage() {
   const [questions, setQuestions] = useState<Question[]>([])
+  const [questionReports, setQuestionReports] = useState<QuestionReport[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
@@ -178,34 +211,37 @@ export default function AdminQuestionsPage() {
     (category) => category._id === form.categoryId
   )
   const availableSubcategories = selectedCategory?.subcategories ?? []
-  const selectedSubcategory = availableSubcategories.find(
-    (subcategory) => subcategory._id === form.subcategoryId
-  )
-
+ 
   const loadData = async () => {
     try {
       setLoading(true)
 
-      const [questionsRes, categoriesRes] = await Promise.all([
+      const [questionsRes, categoriesRes, reportsRes] = await Promise.all([
         fetch("/api/questions?limit=200&includeInactive=true"),
         fetch("/api/categories"),
+        fetch("/api/question-reports?limit=500", { credentials: "include" }),
       ])
 
       const questionsJson = await questionsRes.json()
       const categoriesJson = await categoriesRes.json()
+      const reportsJson = await reportsRes.json()
 
       if (!questionsJson.success)
         throw new Error(questionsJson.error || "Failed to fetch questions")
       if (!categoriesJson.success)
         throw new Error(categoriesJson.error || "Failed to fetch categories")
+      if (!reportsJson.success)
+        throw new Error(reportsJson.error || "Failed to fetch question reports")
 
       setQuestions(questionsJson.data ?? [])
       setCategories(categoriesJson.data ?? [])
+      setQuestionReports(reportsJson.data ?? [])
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to load admin question data"
+          : "Failed to load admin question data",
+        { duration: 2000 }
       )
     } finally {
       setLoading(false)
@@ -256,7 +292,26 @@ export default function AdminQuestionsPage() {
 
   const activeCount = questions.filter((question) => question.isActive).length
   const inactiveCount = questions.length - activeCount
-  const reportedCount = 0
+  const questionReportMap = useMemo(() => {
+    return questionReports.reduce<Record<string, QuestionReport[]>>(
+      (acc, report) => {
+        const questionId =
+          typeof report.questionId === "string"
+            ? report.questionId
+            : report.questionId?._id
+
+        if (!questionId) return acc
+        acc[questionId] = acc[questionId] ? [...acc[questionId], report] : [report]
+        return acc
+      },
+      {}
+    )
+  }, [questionReports])
+
+  const reportedQuestions = questions.filter(
+    (question) => (questionReportMap[question._id]?.length ?? 0) > 0
+  )
+  const reportedCount = questionReports.length
 
   const getDifficultyBadge = (difficulty: string) => {
     switch (difficulty) {
@@ -273,12 +328,20 @@ export default function AdminQuestionsPage() {
 
   const makeFormFromQuestion = (question: Question): QuestionForm => {
     const options = question.options?.length
-      ? question.options
+      ? [...question.options]
           .sort((a, b) => a.order - b.order)
           .map((option) => option.text)
       : ["", "", "", ""]
-    const correctIndex =
-      question.options?.find((option) => option.isCorrect)?.order ?? 0
+    const correctOption =
+      question.questionType === "true_false"
+        ? question.correctAnswer?.toLowerCase() === "false"
+          ? "1"
+          : "0"
+        : question.questionType === "mcq" || question.questionType === "msq"
+          ? String(
+              question.options?.find((option) => option.isCorrect)?.order ?? 0
+            )
+          : question.correctAnswer ?? ""
 
     return {
       categoryId: getId(question.categoryId),
@@ -287,10 +350,10 @@ export default function AdminQuestionsPage() {
       questionType: question.questionType,
       difficultyLevel: question.difficultyLevel,
       options: [...options, "", "", "", ""].slice(0, 4),
-      correctOption: String(correctIndex),
+      correctOption,
       explanation: question.explanation ?? "",
-      marks: String(question.marks ?? 1),
-      negativeMarks: String(question.negativeMarks ?? 0.25),
+      marks: String(question.marks ?? 4),
+      negativeMarks: String(question.negativeMarks ?? 1),
       timeLimitSeconds: String(question.timeLimitSeconds ?? 60),
     }
   }
@@ -342,13 +405,69 @@ export default function AdminQuestionsPage() {
     }))
   }
 
+  const handleQuestionTypeChange = (value: Question["questionType"]) => {
+    setForm((current) => {
+      const nextOptions =
+        value === "mcq" || value === "msq"
+          ? current.options.length >= 4
+            ? current.options.slice(0, 4)
+            : [...current.options, "", "", "", ""].slice(0, 4)
+          : ["", "", "", ""]
+
+      const nextCorrectOption =
+        value === "true_false"
+          ? current.correctOption === "0" || current.correctOption === "1"
+            ? current.correctOption
+            : "0"
+          : value === "mcq" || value === "msq"
+            ? "0"
+            : ""
+
+      return {
+        ...current,
+        questionType: value,
+        options: nextOptions,
+        correctOption: nextCorrectOption,
+      }
+    })
+  }
+
   const buildPayload = () => {
-    const optionIndex = Number(form.correctOption)
-    const options = form.options.map((option, index) => ({
-      text: option.trim(),
-      order: index,
-      isCorrect: index === optionIndex,
-    }))
+    const isChoiceQuestion = form.questionType === "mcq" || form.questionType === "msq"
+    const isTrueFalse = form.questionType === "true_false"
+    const trimmedCorrectAnswer = form.correctOption.trim()
+    const correctOptionIndex = Number.isInteger(Number(trimmedCorrectAnswer))
+      ? Number(trimmedCorrectAnswer)
+      : 0
+
+    const options = isChoiceQuestion
+      ? form.options.slice(0, 4).map((option, index) => ({
+          text: option.trim(),
+          order: index,
+          isCorrect: index === correctOptionIndex,
+        }))
+      : isTrueFalse
+        ? [
+            {
+              text: "True",
+              order: 0,
+              isCorrect: trimmedCorrectAnswer === "0" || trimmedCorrectAnswer.toLowerCase() === "true",
+            },
+            {
+              text: "False",
+              order: 1,
+              isCorrect: trimmedCorrectAnswer === "1" || trimmedCorrectAnswer.toLowerCase() === "false",
+            },
+          ]
+        : []
+
+    const correctAnswer = isChoiceQuestion
+      ? options[correctOptionIndex]?.text || ""
+      : isTrueFalse
+        ? trimmedCorrectAnswer === "1" || trimmedCorrectAnswer.toLowerCase() === "false"
+          ? "False"
+          : "True"
+        : trimmedCorrectAnswer
 
     return {
       categoryId: form.categoryId,
@@ -356,7 +475,7 @@ export default function AdminQuestionsPage() {
       questionText: form.questionText.trim(),
       questionType: form.questionType,
       options,
-      correctAnswer: options[optionIndex]?.text || form.correctOption,
+      correctAnswer,
       explanation: form.explanation.trim(),
       difficultyLevel: form.difficultyLevel,
       marks: Number(form.marks),
@@ -368,17 +487,31 @@ export default function AdminQuestionsPage() {
   const saveQuestion = async () => {
     try {
       if (!form.categoryId) {
-        toast.error("Select a category first")
+        toast.error("Select a category first", { duration: 2000 })
         return
       }
 
       if (!form.questionText.trim()) {
-        toast.error("Question text is required")
+        toast.error("Question text is required", { duration: 2000 })
         return
       }
 
-      if (form.options.some((option) => !option.trim())) {
-        toast.error("Fill all four answer options")
+      const isChoiceQuestion = form.questionType === "mcq" || form.questionType === "msq"
+      const isTrueFalse = form.questionType === "true_false"
+      const isTextQuestion = ["fill_blank", "numerical", "coding"].includes(form.questionType)
+
+      if (isChoiceQuestion && form.options.some((option) => !option.trim())) {
+        toast.error("Fill all answer options", { duration: 2000 })
+        return
+      }
+
+      if (isTrueFalse && !["0", "1"].includes(form.correctOption)) {
+        toast.error("Select a true/false answer", { duration: 2000 })
+        return
+      }
+
+      if (isTextQuestion && !form.correctOption.trim()) {
+        toast.error("Enter the correct answer", { duration: 2000 })
         return
       }
 
@@ -399,13 +532,14 @@ export default function AdminQuestionsPage() {
 
       if (!json.success) throw new Error(json.error || "Question save failed")
 
-      toast.success(selectedQuestion ? "Question updated" : "Question created")
+      toast.success(selectedQuestion ? "Question updated" : "Question created", { duration: 2000 })
       setShowAddSheet(false)
       setSelectedQuestion(null)
       await loadData()
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to save question"
+        error instanceof Error ? error.message : "Failed to save question",
+        { duration: 2000 }
       )
     } finally {
       setSaving(false)
@@ -425,13 +559,14 @@ export default function AdminQuestionsPage() {
 
       if (!json.success) throw new Error(json.error || "Question delete failed")
 
-      toast.success("Question deleted")
+      toast.success("Question deleted", { duration: 2000 })
       setShowDeleteDialog(false)
       setSelectedQuestion(null)
       await loadData()
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete question"
+        error instanceof Error ? error.message : "Failed to delete question",
+        { duration: 2000 }
       )
     } finally {
       setSaving(false)
@@ -459,13 +594,15 @@ export default function AdminQuestionsPage() {
       if (!json.success) throw new Error(json.error || "Status update failed")
 
       toast.success(
-        `Question is now ${question.isActive ? "inactive" : "active"}`
+        `Question is now ${question.isActive ? "inactive" : "active"}`,
+        { duration: 2000 }
       )
       setSelectedQuestion(null)
       await loadData()
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update status"
+        error instanceof Error ? error.message : "Failed to update status",
+        { duration: 2000 }
       )
     }
   }
@@ -730,6 +867,95 @@ export default function AdminQuestionsPage() {
         </div>
       </div>
 
+      <Card>
+        <CardContent className="pt-6">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold">Reported Questions</h2>
+              <p className="text-sm text-muted-foreground">
+                Embedded reports pulled from the dedicated report collection.
+              </p>
+            </div>
+            <Badge variant="secondary">{reportedCount} reports</Badge>
+          </div>
+
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Question</TableHead>
+                  <TableHead className="hidden md:table-cell">Reason</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="hidden xl:table-cell">
+                    Reported At
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {reportedQuestions.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      No reported questions yet.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  reportedQuestions.flatMap((question) =>
+                    (questionReportMap[question._id] ?? []).map((report, index) => (
+                      <TableRow key={`${question._id}-${report._id ?? index}`}>
+                        <TableCell>
+                          <div>
+                            <p className="line-clamp-1 font-medium">
+                              {question.questionText}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {getName(question.categoryId)} /{" "}
+                              {getName(question.subcategoryId)}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <div className="max-w-72 truncate">
+                            <Badge variant="outline" className="mr-2">
+                              {report.reason}
+                            </Badge>
+                            {report.message}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={
+                              report.isResolved === true
+                                ? "bg-emerald-600 text-white"
+                                : report.isResolved === false
+                                  ? "bg-rose-600 text-white"
+                                  : "bg-amber-500 text-white"
+                            }
+                          >
+                            {report.isResolved === true
+                              ? "resolved"
+                              : report.isResolved === false
+                                ? "rejected"
+                                : "pending"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden xl:table-cell">
+                          {report.createdAt
+                            ? new Date(report.createdAt).toLocaleString()
+                            : "Not available"}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
       <Sheet open={showAddSheet} onOpenChange={setShowAddSheet}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
           <SheetHeader>
@@ -815,10 +1041,7 @@ export default function AdminQuestionsPage() {
                   <Select
                     value={form.questionType}
                     onValueChange={(value: Question["questionType"]) =>
-                      setForm((current) => ({
-                        ...current,
-                        questionType: value,
-                      }))
+                      handleQuestionTypeChange(value)
                     }
                   >
                     <SelectTrigger id="question-type" className="mt-1.5">
@@ -855,44 +1078,93 @@ export default function AdminQuestionsPage() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="correct-answer">Correct</Label>
-                  <Select
-                    value={form.correctOption}
-                    onValueChange={(value) =>
-                      setForm((current) => ({
-                        ...current,
-                        correctOption: value,
-                      }))
-                    }
-                  >
-                    <SelectTrigger id="correct-answer" className="mt-1.5">
-                      <SelectValue placeholder="Correct answer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">Option A</SelectItem>
-                      <SelectItem value="1">Option B</SelectItem>
-                      <SelectItem value="2">Option C</SelectItem>
-                      <SelectItem value="3">Option D</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="correct-answer">
+                    {form.questionType === "true_false"
+                      ? "Correct Answer"
+                      : form.questionType === "fill_blank" ||
+                          form.questionType === "numerical" ||
+                          form.questionType === "coding"
+                        ? "Correct Answer"
+                        : "Correct Option"}
+                  </Label>
+                  {form.questionType === "true_false" ? (
+                    <Select
+                      value={form.correctOption}
+                      onValueChange={(value) =>
+                        setForm((current) => ({
+                          ...current,
+                          correctOption: value,
+                        }))
+                      }
+                    >
+                      <SelectTrigger id="correct-answer" className="mt-1.5">
+                        <SelectValue placeholder="Select true/false" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">True</SelectItem>
+                        <SelectItem value="1">False</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : form.questionType === "mcq" || form.questionType === "msq" ? (
+                    <Select
+                      value={form.correctOption}
+                      onValueChange={(value) =>
+                        setForm((current) => ({
+                          ...current,
+                          correctOption: value,
+                        }))
+                      }
+                    >
+                      <SelectTrigger id="correct-answer" className="mt-1.5">
+                        <SelectValue placeholder="Select correct option" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">Option A</SelectItem>
+                        <SelectItem value="1">Option B</SelectItem>
+                        <SelectItem value="2">Option C</SelectItem>
+                        <SelectItem value="3">Option D</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      id="correct-answer"
+                      className="mt-1.5"
+                      value={form.correctOption}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          correctOption: event.target.value,
+                        }))
+                      }
+                      placeholder={
+                        form.questionType === "fill_blank"
+                          ? "Enter the correct fill-in answer"
+                          : form.questionType === "numerical"
+                            ? "Enter the numeric answer"
+                            : "Enter the expected code output or solution"
+                      }
+                    />
+                  )}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Options</Label>
+              {(form.questionType === "mcq" || form.questionType === "msq") && (
                 <div className="space-y-2">
-                  {form.options.map((option, index) => (
-                    <Input
-                      key={index}
-                      placeholder={`Option ${String.fromCharCode(65 + index)}`}
-                      value={option}
-                      onChange={(event) =>
-                        handleOptionChange(index, event.target.value)
-                      }
-                    />
-                  ))}
+                  <Label>Options</Label>
+                  <div className="space-y-2">
+                    {form.options.slice(0, 4).map((option, index) => (
+                      <Input
+                        key={index}
+                        placeholder={`Option ${String.fromCharCode(65 + index)}`}
+                        value={option}
+                        onChange={(event) =>
+                          handleOptionChange(index, event.target.value)
+                        }
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <Label htmlFor="explanation">Explanation</Label>
@@ -951,6 +1223,7 @@ export default function AdminQuestionsPage() {
                   <Input
                     id="time-limit"
                     className="mt-1.5"
+                    step="15"
                     type="number"
                     min="15"
                     value={form.timeLimitSeconds}

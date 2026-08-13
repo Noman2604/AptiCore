@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next"
 import "./globals.css"
 import { ThemeProvider } from "next-themes"
+import NetworkStatus from "@/components/NetworkStatus"
+import CelebrationProvider from "@/components/ui/celebration-provider"
+import { Toaster } from "@/components/ui/sonner"
 
 export const metadata: Metadata = {
   title: {
@@ -12,9 +15,6 @@ export const metadata: Metadata = {
   keywords: [
     "aptitude test",
     "placement preparation",
-    "TCS",
-    "Infosys",
-    "Wipro",
     "coding MCQ",
     "logical reasoning",
   ],
@@ -30,10 +30,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0f1e" },
-  ],
+  themeColor: "#0a0e14",
 }
 
 export default function RootLayout({
@@ -51,14 +48,19 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
       </head>
 
-      <body className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))] antialiased">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <div id="root">{children}</div>
+      <body className="min-h-screen bg-[#0a0e14] text-[#e7ecf3] antialiased">
+        <ThemeProvider attribute="class" defaultTheme="dark" forcedTheme="dark">
+          <NetworkStatus>
+            <CelebrationProvider>
+              <div id="root">{children}</div>
+              <Toaster richColors position="top-right" />
+            </CelebrationProvider>
+          </NetworkStatus>
         </ThemeProvider>
       </body>
     </html>

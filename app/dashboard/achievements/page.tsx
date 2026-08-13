@@ -14,13 +14,6 @@ import {
   Zap,
 } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-
 type AchievementRarity = "common" | "rare" | "epic" | "legendary"
 type AchievementCriteria =
   | "score"
@@ -57,25 +50,11 @@ type ApiResponse<T> = {
   error?: string
 }
 
-const rarityColors: Record<AchievementRarity, string> = {
-  common: "from-slate-500/20 to-slate-500/5 border-slate-500/30",
-  rare: "from-sky-500/20 to-sky-500/5 border-sky-500/30",
-  epic: "from-purple-500/20 to-purple-500/5 border-purple-500/30",
-  legendary: "from-yellow-500/20 to-yellow-500/5 border-yellow-500/30",
-}
-
-const rarityTextColors: Record<AchievementRarity, string> = {
-  common: "text-slate-400",
-  rare: "text-sky-400",
-  epic: "text-purple-400",
-  legendary: "text-yellow-400",
-}
-
-const rarityBadgeColors: Record<AchievementRarity, string> = {
-  common: "bg-slate-500/20 text-slate-400 border-slate-500/30",
-  rare: "bg-sky-500/20 text-sky-400 border-sky-500/30",
-  epic: "bg-purple-500/20 text-purple-400 border-purple-500/30",
-  legendary: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+const RARITY_ACCENT: Record<AchievementRarity, string> = {
+  common: "#8a96a8",
+  rare: "#6ee7c9",
+  epic: "#8b7cf6",
+  legendary: "#f5a623",
 }
 
 const criteriaLabels: Record<AchievementCriteria, string> = {
@@ -135,6 +114,9 @@ function formatDate(value?: string) {
 
 export default function AchievementsPage() {
   const [filter, setFilter] = useState<"all" | "unlocked" | "locked">("all")
+  const [rarityFilter, setRarityFilter] = useState<"all" | AchievementRarity>(
+    "all"
+  )
   const [achievements, setAchievements] = useState<Achievement[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -178,6 +160,7 @@ export default function AchievementsPage() {
         const mergedAchievements = (achievementsJson.data || []).map(
           (achievement) => ({
             ...achievement,
+            earned: unlockedDates.has(achievement._id),
             unlockedAt: unlockedDates.get(achievement._id),
           })
         )
@@ -208,11 +191,13 @@ export default function AchievementsPage() {
   const filteredAchievements = useMemo(
     () =>
       achievements.filter((achievement) => {
-        if (filter === "unlocked") return achievement.earned
-        if (filter === "locked") return !achievement.earned
+        if (filter === "unlocked" && !achievement.earned) return false
+        if (filter === "locked" && achievement.earned) return false
+        if (rarityFilter !== "all" && achievement.rarity !== rarityFilter)
+          return false
         return true
       }),
-    [achievements, filter]
+    [achievements, filter, rarityFilter]
   )
 
   const totalUnlocked = achievements.filter(
@@ -221,16 +206,19 @@ export default function AchievementsPage() {
   const totalXP = achievements
     .filter((achievement) => achievement.earned)
     .reduce((sum, achievement) => sum + achievement.pointsReward, 0)
+  const rareEarned = achievements.filter(
+    (a) => a.rarity === "rare" && a.earned
+  ).length
+  const legendaryEarned = achievements.filter(
+    (a) => a.rarity === "legendary" && a.earned
+  ).length
 
   const handleShare = async (achievementName: string) => {
     const shareText = `I unlocked the "${achievementName}" achievement on AptiCore!`
 
     if (navigator.share) {
       await navigator
-        .share({
-          title: "AptiCore Achievement",
-          text: shareText,
-        })
+        .share({ title: "AptiCore Achievement", text: shareText })
         .catch(() => undefined)
       return
     }
@@ -238,283 +226,256 @@ export default function AchievementsPage() {
     await navigator.clipboard?.writeText(shareText)
   }
 
+  const summaryCards = [
+    { label: "Total Earned", value: totalUnlocked, icon: Trophy, color: "#e7ecf3" },
+    { label: "Total XP", value: totalXP, icon: Zap, color: "#8b7cf6" },
+    { label: "Rare Earned", value: rareEarned, icon: Star, color: "#6ee7c9" },
+    { label: "Legendaries", value: legendaryEarned, icon: Crown, color: "#f5a623" },
+  ]
+
   return (
-    <div className="min-h-screen mt-15 sm:mt-2 space-y-6 bg-linear-to-b from-background to-background/50 p-4 md:p-8">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="bg-linear-to-r from-sky-400 via-purple-400 to-yellow-400 bg-clip-text text-3xl font-bold text-transparent md:text-4xl">
-            Achievements
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            Track your milestones and earn rewards
-          </p>
+    <div
+      className="min-h-screen bg-[#0a0e14] font-[Inter,sans-serif] text-[#e7ecf3]"
+      style={{
+        backgroundImage:
+          "radial-gradient(circle at 15% 0%, rgba(139,124,246,0.06), transparent 40%), radial-gradient(circle at 85% 10%, rgba(110,231,201,0.05), transparent 40%)",
+      }}
+    >
+      <div className="mx-auto max-w-6xl space-y-6 px-4 pt-20 pb-12 sm:px-6 md:pt-8 lg:px-10">
+        {/* Header */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="bg-linear-to-r from-[#6ee7c9] via-[#8b7cf6] to-[#f5a623] bg-clip-text font-[Space_Grotesk,sans-serif] text-3xl font-bold text-transparent md:text-4xl">
+              Achievements
+            </h1>
+            <p className="mt-2 text-[13.5px] text-[#8a96a8]">
+              Track your milestones and earn rewards
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="flex items-center gap-1.5 rounded-full border border-[rgba(110,231,201,0.35)] bg-[rgba(110,231,201,0.1)] px-3 py-1.5 font-[JetBrains_Mono,monospace] text-[11.5px] font-semibold text-[#6ee7c9]">
+              <Trophy className="h-3 w-3" />
+              {totalUnlocked}/{achievements.length} Unlocked
+            </span>
+            <span className="flex items-center gap-1.5 rounded-full border border-[rgba(139,124,246,0.35)] bg-[rgba(139,124,246,0.1)] px-3 py-1.5 font-[JetBrains_Mono,monospace] text-[11.5px] font-semibold text-[#8b7cf6]">
+              <Zap className="h-3 w-3" />
+              {totalXP} XP Earned
+            </span>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline" className="gap-1.5 border-sky-500/30 bg-sky-500/10 text-sky-400">
-            <Trophy className="h-3 w-3" />
-            {totalUnlocked}/{achievements.length} Unlocked
-          </Badge>
-          <Badge variant="secondary" className="gap-1.5 border-purple-500/30 bg-purple-500/10 text-purple-400">
-            <Zap className="h-3 w-3" />
-            {totalXP} XP Earned
-          </Badge>
-        </div>
-      </div>
 
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant={filter === "all" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFilter("all")}
-          className={filter === "all" ? "bg-linear-to-r from-sky-500 to-sky-600" : ""}
-        >
-          All
-        </Button>
-        <Button
-          variant={filter === "unlocked" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFilter("unlocked")}
-          className={`gap-2 ${filter === "unlocked" ? "bg-linear-to-r from-gray-250 to-gray-300" : ""}`}
-        >
-          <Trophy className="h-4 w-4" />
-          Unlocked
-        </Button>
-        <Button
-          variant={filter === "locked" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFilter("locked")}
-          className={`gap-2 ${filter === "locked" ? "bg-linear-to-r from-gray-250 to-gray-300" : ""}`}
-        >
-          <Lock className="h-4 w-4" />
-          Locked
-        </Button>
-      </div>
-
-      {error ? (
-        <Card className="border-2 border-red-500/30 bg-linear-to-br from-red-500/10 to-red-500/5">
-          <CardContent className="py-12 text-center">
-            <Trophy className="mx-auto mb-4 h-12 w-12 text-red-400/50" />
-            <p className="font-medium text-red-400">Could not load achievements</p>
-            <p className="mt-1 text-sm text-muted-foreground">{error}</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <Tabs defaultValue="all" className="w-full">
-          <TabsList className="grid h-auto w-full grid-cols-5 gap-1">
-            {rarityTabs.map((rarity) => (
-              <TabsTrigger 
-                key={rarity} 
-                value={rarity} 
-                className="capitalize text-xs data-[state=active]:bg-linear-to-r data-[state=active]:from-sky-500 data-[state=active]:to-sky-600 data-[state=active]:text-white"
-              >
-                {rarity}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          {rarityTabs.map((rarity) => {
-            const tabAchievements = filteredAchievements.filter(
-              (achievement) => rarity === "all" || achievement.rarity === rarity
-            )
-
+        {/* Unlocked / locked filter */}
+        <div className="flex flex-wrap gap-2">
+          {(["all", "unlocked", "locked"] as const).map((key) => {
+            const Icon = key === "unlocked" ? Trophy : key === "locked" ? Lock : null
             return (
-              <TabsContent key={rarity} value={rarity} className="mt-6">
-                {isLoading ? (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {Array.from({ length: 6 }).map((_, index) => (
-                      <Card key={index}>
-                        <CardContent className="space-y-4 pt-6">
-                          <div className="flex items-start justify-between">
-                            <Skeleton className="h-12 w-12 rounded-lg" />
-                            <Skeleton className="h-6 w-20" />
-                          </div>
-                          <div className="space-y-2">
-                            <Skeleton className="h-5 w-3/4" />
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-4 w-2/3" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : tabAchievements.length > 0 ? (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {tabAchievements.map((achievement) => {
-                      const Icon =
-                        criteriaIcons[achievement.criteriaType] || Medal
-                      const progressValue = achievement.earned ? 100 : 0
-
-                      return (
-                        <Card
-                          key={achievement._id}
-                          className={`relative overflow-hidden border-2 bg-linear-to-br ${
-                            rarityColors[achievement.rarity]
-                          } ${!achievement.earned ? "opacity-60 backdrop-blur-sm" : ""}`}
-                        >
-                          <CardContent className="pt-6">
-                            <div className="mb-4 flex items-start justify-between">
-                              <div
-                                className={`rounded-xl p-3 ${
-                                  achievement.earned
-                                    ? "bg-linear-to-br from-background to-background/80"
-                                    : "bg-muted/50"
-                                }`}
-                              >
-                                <Icon
-                                  className={`h-6 w-6 ${
-                                    achievement.earned
-                                      ? rarityTextColors[achievement.rarity]
-                                      : "text-muted-foreground/50"
-                                  }`}
-                                />
-                              </div>
-                              <Badge
-                                className={`capitalize border-2 font-semibold ${
-                                  rarityBadgeColors[achievement.rarity]
-                                }`}
-                              >
-                                {achievement.rarity}
-                              </Badge>
-                            </div>
-
-                            <h3 className="mb-2 text-lg font-bold">
-                              {achievement.name}
-                            </h3>
-                            <p className="mb-4 min-h-10 text-sm text-muted-foreground">
-                              {achievement.description ||
-                                `${criteriaLabels[achievement.criteriaType]}: ${formatRequirement(
-                                  achievement
-                                )}`}
-                            </p>
-
-                            {achievement.earned ? (
-                              <div className="space-y-3">
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className={`flex items-center gap-1.5 text-sm font-medium ${rarityTextColors[achievement.rarity]}`}>
-                                    <Trophy className="h-4 w-4" />
-                                    <span>
-                                      {formatDate(achievement.unlockedAt)}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="flex items-center justify-between gap-2">
-                                  <Badge variant="outline" className={`gap-1 border-2 ${rarityBadgeColors[achievement.rarity]}`}>
-                                    <Zap className="h-3 w-3" />+
-                                    {achievement.pointsReward} XP
-                                  </Badge>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() =>
-                                      handleShare(achievement.name)
-                                    }
-                                    className="h-8 w-8"
-                                    aria-label={`Share ${achievement.name}`}
-                                  >
-                                    <Share2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="space-y-3">
-                                <div className="flex items-center justify-between gap-3 text-sm">
-                                  <span className="text-muted-foreground">
-                                    {criteriaLabels[achievement.criteriaType]}
-                                  </span>
-                                  <span className="font-semibold">
-                                    {formatRequirement(achievement)}
-                                  </span>
-                                </div>
-                                <Progress
-                                  value={progressValue}
-                                  className="h-2.5"
-                                />
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                  <Zap className="h-3 w-3" />
-                                  <span>
-                                    {achievement.pointsReward} XP reward
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-                          </CardContent>
-
-                          {!achievement.earned && (
-                            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/40 backdrop-blur-xs/20">
-                              <Lock className="h-8 w-8 text-muted-foreground/50" />
-                            </div>
-                          )}
-                        </Card>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <Card className="border-2 border-sky-500/30 bg-linear-to-br from-sky-500/10 to-sky-500/5">
-                    <CardContent className="py-12 text-center">
-                      <Trophy className="mx-auto mb-4 h-12 w-12 text-sky-400/50" />
-                      <p className="text-muted-foreground">
-                        No achievements found
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
+              <button
+                key={key}
+                onClick={() => setFilter(key)}
+                className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-[13px] font-semibold capitalize transition ${
+                  filter === key
+                    ? "border-transparent bg-linear-to-r from-[#6ee7c9] to-[#57c9a8] text-[#06120d]"
+                    : "border-[#212a37] bg-[#10151d] text-[#8a96a8] hover:border-[#3a4a5e] hover:text-[#e7ecf3]"
+                }`}
+              >
+                {Icon && <Icon className="h-4 w-4" />}
+                {key}
+              </button>
             )
           })}
-        </Tabs>
-      )}
+        </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="border-2 border-slate-500/30 bg-linear-to-br from-slate-500/10 to-slate-500/5">
-          <CardContent className="pt-6">
-            <div className="mb-3 flex items-center gap-2 text-slate-400">
-              <Trophy className="h-5 w-5" />
-              <span className="text-sm font-medium">Total Earned</span>
-            </div>
-            <p className="text-3xl font-bold text-slate-400">{totalUnlocked}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-2 border-purple-500/30 bg-linear-to-br from-purple-500/10 to-purple-500/5">
-          <CardContent className="pt-6">
-            <div className="mb-3 flex items-center gap-2 text-purple-400">
-              <Zap className="h-5 w-5" />
-              <span className="text-sm font-medium">Total XP</span>
-            </div>
-            <p className="text-3xl font-bold text-purple-400">{totalXP}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-2 border-sky-500/30 bg-linear-to-br from-sky-500/10 to-sky-500/5">
-          <CardContent className="pt-6">
-            <div className="mb-3 flex items-center gap-2 text-sky-400">
-              <Star className="h-5 w-5" />
-              <span className="text-sm font-medium">Rare Earned</span>
-            </div>
-            <p className="text-3xl font-bold text-sky-400">
-              {
-                achievements.filter(
-                  (achievement) =>
-                    achievement.rarity === "rare" && achievement.earned
-                ).length
-              }
+        {error ? (
+          <div className="rounded-2xl border-2 border-[rgba(242,85,90,0.3)] bg-[rgba(242,85,90,0.06)] py-12 text-center">
+            <Trophy className="mx-auto mb-4 h-12 w-12 text-[#f2555a]/50" />
+            <p className="font-semibold text-[#f2555a]">
+              Could not load achievements
             </p>
-          </CardContent>
-        </Card>
-        <Card className="border-2 border-yellow-500/30 bg-linear-to-br from-yellow-500/10 to-yellow-500/5">
-          <CardContent className="pt-6">
-            <div className="mb-3 flex items-center gap-2 text-yellow-400">
-              <Crown className="h-5 w-5" />
-              <span className="text-sm font-medium">Legendaries</span>
+            <p className="mt-1 text-[13px] text-[#8a96a8]">{error}</p>
+          </div>
+        ) : (
+          <>
+            {/* Rarity tabs */}
+            <div className="grid grid-cols-5 gap-1.5 rounded-xl border border-[#212a37] bg-[#10151d] p-1.5">
+              {rarityTabs.map((rarity) => (
+                <button
+                  key={rarity}
+                  onClick={() => setRarityFilter(rarity)}
+                  className={`rounded-lg px-2 py-2 font-[JetBrains_Mono,monospace] text-[11px] font-semibold capitalize transition ${
+                    rarityFilter === rarity
+                      ? "bg-linear-to-r from-[#6ee7c9] to-[#57c9a8] text-[#06120d]"
+                      : "text-[#8a96a8] hover:text-[#e7ecf3]"
+                  }`}
+                >
+                  {rarity}
+                </button>
+              ))}
             </div>
-            <p className="text-3xl font-bold text-yellow-400">
-              {
-                achievements.filter(
-                  (achievement) =>
-                    achievement.rarity === "legendary" && achievement.earned
-                ).length
-              }
-            </p>
-          </CardContent>
-        </Card>
+
+            {isLoading ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="space-y-4 rounded-2xl border border-[#212a37] bg-[#10151d] p-5"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="h-12 w-12 animate-pulse rounded-lg bg-[#212a37]" />
+                      <div className="h-6 w-20 animate-pulse rounded-full bg-[#212a37]" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-5 w-3/4 animate-pulse rounded bg-[#212a37]" />
+                      <div className="h-4 w-full animate-pulse rounded bg-[#212a37]" />
+                      <div className="h-4 w-2/3 animate-pulse rounded bg-[#212a37]" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredAchievements.length > 0 ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {filteredAchievements.map((achievement) => {
+                  const Icon = criteriaIcons[achievement.criteriaType] || Medal
+                  const accent = RARITY_ACCENT[achievement.rarity]
+
+                  return (
+                    <div
+                      key={achievement._id}
+                      className={`relative overflow-hidden rounded-2xl border p-5 transition ${
+                        achievement.earned ? "" : "opacity-55"
+                      }`}
+                      style={{
+                        borderColor: `${accent}40`,
+                        background: achievement.earned
+                          ? `linear-gradient(135deg, ${accent}14, #10151d)`
+                          : "#10151d",
+                      }}
+                    >
+                      <div className="mb-4 flex items-start justify-between">
+                        <div
+                          className="rounded-xl border p-3"
+                          style={{
+                            borderColor: achievement.earned
+                              ? `${accent}45`
+                              : "#212a37",
+                            backgroundColor: achievement.earned
+                              ? `${accent}14`
+                              : "#141b25",
+                          }}
+                        >
+                          <Icon
+                            className="h-6 w-6"
+                            style={{
+                              color: achievement.earned ? accent : "#5b6577",
+                            }}
+                          />
+                        </div>
+                        <span
+                          className="rounded-full border px-2.5 py-1 font-[JetBrains_Mono,monospace] text-[10px] font-semibold tracking-wide uppercase"
+                          style={{ color: accent, borderColor: `${accent}55` }}
+                        >
+                          {achievement.rarity}
+                        </span>
+                      </div>
+
+                      <h3 className="mb-1.5 font-[Space_Grotesk,sans-serif] text-[16px] font-bold">
+                        {achievement.name}
+                      </h3>
+                      <p className="mb-4 min-h-10 text-[13px] leading-5.5 text-[#8a96a8]">
+                        {achievement.description ||
+                          `${criteriaLabels[achievement.criteriaType]}: ${formatRequirement(achievement)}`}
+                      </p>
+
+                      {achievement.earned ? (
+                        <div className="space-y-3">
+                          <div
+                            className="flex items-center gap-1.5 font-[JetBrains_Mono,monospace] text-[12px] font-semibold"
+                            style={{ color: accent }}
+                          >
+                            <Trophy className="h-3.5 w-3.5" />
+                            {formatDate(achievement.unlockedAt)}
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <span
+                              className="flex items-center gap-1 rounded-full border px-2.5 py-1 font-[JetBrains_Mono,monospace] text-[11px] font-semibold"
+                              style={{
+                                color: accent,
+                                borderColor: `${accent}55`,
+                                backgroundColor: `${accent}12`,
+                              }}
+                            >
+                              <Zap className="h-3 w-3" />+
+                              {achievement.pointsReward} XP
+                            </span>
+                            <button
+                              onClick={() => handleShare(achievement.name)}
+                              aria-label={`Share ${achievement.name}`}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#212a37] text-[#8a96a8] transition hover:border-[#3a4a5e] hover:text-[#e7ecf3]"
+                            >
+                              <Share2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between gap-3 text-[13px]">
+                            <span className="text-[#5b6577]">
+                              {criteriaLabels[achievement.criteriaType]}
+                            </span>
+                            <span className="font-semibold">
+                              {formatRequirement(achievement)}
+                            </span>
+                          </div>
+                          <div className="h-2 w-full overflow-hidden rounded-full bg-[#212a37]" />
+                          <div className="flex items-center gap-1 font-[JetBrains_Mono,monospace] text-[11px] text-[#5b6577]">
+                            <Zap className="h-3 w-3" />
+                            {achievement.pointsReward} XP reward
+                          </div>
+                        </div>
+                      )}
+
+                      {!achievement.earned && (
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-[#0a0e14]/35 backdrop-blur-[1px]">
+                          <Lock className="h-8 w-8 text-[#5b6577]/60" />
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="rounded-2xl border-2 border-[rgba(110,231,201,0.3)] bg-[rgba(110,231,201,0.05)] py-12 text-center">
+                <Trophy className="mx-auto mb-4 h-12 w-12 text-[#6ee7c9]/40" />
+                <p className="text-[13.5px] text-[#8a96a8]">
+                  No achievements found
+                </p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Summary cards */}
+        <div className="grid gap-3.5 md:grid-cols-4">
+          {summaryCards.map((card) => (
+            <div
+              key={card.label}
+              className="rounded-2xl border border-[#212a37] bg-[#10151d] p-5"
+            >
+              <div
+                className="mb-3 flex items-center gap-2 font-[JetBrains_Mono,monospace] text-[11px] tracking-wider uppercase"
+                style={{ color: card.color }}
+              >
+                <card.icon className="h-5 w-5" />
+                {card.label}
+              </div>
+              <p
+                className="font-[Space_Grotesk,sans-serif] text-3xl font-bold"
+                style={{ color: card.color }}
+              >
+                {card.value}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

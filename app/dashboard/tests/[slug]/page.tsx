@@ -2,36 +2,57 @@
 
 import { use, useEffect, useState } from "react"
 import axios from "axios"
-import {
-  Calculator,
-  CheckCircle2,
-  Play,
-  Search,
-  BookOpen,
-  Clock,
-  Zap,
-  ArrowRight,
-} from "lucide-react"
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+
+interface Question {
+  _id: string
+  subcategoryId?: string | { _id: string }
+  difficultyLevel?: string
+}
+
+interface Subcategory {
+  _id: string
+  name: string
+  slug: string
+  description?: string
+}
+
+interface SubcategoryWithQuestions extends Subcategory {
+  questionCount: number
+  questions: Question[]
+}
+
+interface CategoryData {
+  _id: string
+  name: string
+  slug: string
+  description?: string
+  subcategories?: Subcategory[]
+}
+
+interface AdminTest {
+  _id: string
+  title: string
+  description?: string
+  totalQuestions: number
+  durationMinutes: number
+  difficultyLevel?: string
+  createdBy?: { name?: string }
+}
+
+const DIFFICULTY_OPTIONS = [
+  { value: "all", label: "All Difficulties" },
+  { value: "easy", label: "Easy" },
+  { value: "medium", label: "Medium" },
+  { value: "hard", label: "Hard" },
+]
 
 function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
 
-  const [category, setCategory] = useState<any>(null)
-  const [questions, setQuestions] = useState<any[]>([])
-  const [adminTests, setAdminTests] = useState<any[]>([])
+  const [category, setCategory] = useState<CategoryData | null>(null)
+  const [questions, setQuestions] = useState<Question[]>([])
+  const [adminTests, setAdminTests] = useState<AdminTest[]>([])
   const [stats, setStats] = useState({
     totalQuestions: 0,
     completedQuestions: 0,
@@ -40,7 +61,10 @@ function Page({ params }: { params: Promise<{ slug: string }> }) {
   })
   const [searchTerm, setSearchTerm] = useState("")
   const [difficultyFilter, setDifficultyFilter] = useState("all")
-  const [filteredSubcategories, setFilteredSubcategories] = useState<any[]>([])
+  const [difficultyMenuOpen, setDifficultyMenuOpen] = useState(false)
+  const [filteredSubcategories, setFilteredSubcategories] = useState<
+    SubcategoryWithQuestions[]
+  >([])
   const [completedSubcategories, setCompletedSubcategories] = useState<
     string[]
   >([])
@@ -50,15 +74,17 @@ function Page({ params }: { params: Promise<{ slug: string }> }) {
   useEffect(() => {
     async function getCategoryData() {
       try {
-        const [categoriesRes, questionsRes, resultsRes, adminTestsRes] = await Promise.all([
-          axios.get("/api/categories"),
-          axios.get(`/api/questions?category=${slug}&limit=1000`),
-          axios
-            .get("/api/results?limit=1000")
-            .catch(() => ({ data: { data: [] } })),
-          axios.get(`/api/tests?category=${slug}&adminOnly=true&limit=100`)
-            .catch(() => ({ data: { data: [] } })),
-        ])
+        const [categoriesRes, questionsRes, resultsRes, adminTestsRes] =
+          await Promise.all([
+            axios.get("/api/categories"),
+            axios.get(`/api/questions?category=${slug}&limit=1000`),
+            axios
+              .get("/api/results?limit=1000")
+              .catch(() => ({ data: { data: [] } })),
+            axios
+              .get(`/api/tests?category=${slug}&adminOnly=true&limit=100`)
+              .catch(() => ({ data: { data: [] } })),
+          ])
 
         const filteredCategory = categoriesRes.data.data.find(
           (item: any) => item.slug === slug
@@ -119,10 +145,10 @@ function Page({ params }: { params: Promise<{ slug: string }> }) {
     if (!category) return
 
     const subcategoriesWithQuestions = (category.subcategories || []).map(
-      (sub: any) => {
-        const subQuestions = questions.filter((question: any) => {
+      (sub) => {
+        const subQuestions = questions.filter((question) => {
           const currentSubcategoryId =
-            question.subcategoryId?._id || question.subcategoryId
+            (question.subcategoryId as any)?._id || question.subcategoryId
           return currentSubcategoryId === sub._id
         })
 
@@ -135,22 +161,23 @@ function Page({ params }: { params: Promise<{ slug: string }> }) {
     )
 
     let filtered = subcategoriesWithQuestions.filter(
-      (sub: any) => sub.questionCount > 0
+      (sub) => sub.questionCount > 0
     )
 
     if (searchTerm) {
       filtered = filtered.filter(
-        (sub: any) =>
+        (sub) =>
           sub.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           sub.description?.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
 
     if (difficultyFilter !== "all") {
-      filtered = filtered.filter((sub: any) =>
+      filtered = filtered.filter((sub) =>
         sub.questions.some(
-          (question: any) =>
-            (question.difficultyLevel || "").toLowerCase() === difficultyFilter
+          (question) =>
+            (question.difficultyLevel || "").toLowerCase() ===
+            difficultyFilter
         )
       )
     }
@@ -160,240 +187,291 @@ function Page({ params }: { params: Promise<{ slug: string }> }) {
 
   if (loading) {
     return (
-      <div className="p-10 text-center">
-        <div className="inline-block animate-spin">Loading...</div>
+      <div
+        className="flex min-h-screen items-center justify-center bg-[#0a0e14] font-[Inter,sans-serif] text-[#e7ecf3]"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 15% 0%, rgba(139,124,246,0.06), transparent 40%), radial-gradient(circle at 85% 10%, rgba(110,231,201,0.05), transparent 40%)",
+        }}
+      >
+        <div className="flex items-center gap-2.5 font-[JetBrains_Mono,monospace] text-sm text-[#8a96a8]">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#6ee7c9]" />
+          Loading...
+        </div>
       </div>
     )
   }
 
   if (!category) {
-    return <div className="p-10">Category not found</div>
+    return (
+      <div
+        className="flex min-h-screen items-center justify-center bg-[#0a0e14] font-[Inter,sans-serif] text-[#e7ecf3]"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 15% 0%, rgba(139,124,246,0.06), transparent 40%), radial-gradient(circle at 85% 10%, rgba(110,231,201,0.05), transparent 40%)",
+        }}
+      >
+        <p className="text-sm text-[#8a96a8]">Category not found</p>
+      </div>
+    )
   }
 
   const completionPercentage = stats.subcategoriesCount
-    ? Math.min(100, (stats.completedQuestions / stats.subcategoriesCount) * 100)
+    ? Math.min(
+        100,
+        (stats.completedQuestions / stats.subcategoriesCount) * 100
+      )
     : 0
 
   return (
-    <div className="min-h-screen space-y-8 p-6 mt-12 sm:mt-0">
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight">{category.name}</h1>
-          <p className="mt-2 text-lg text-muted-foreground">
-            {category.description}
-          </p>
-        </div>
+    <div
+      className="min-h-screen bg-[#0a0e14] font-[Inter,sans-serif] text-[#e7ecf3]"
+      style={{
+        backgroundImage:
+          "radial-gradient(circle at 15% 0%, rgba(139,124,246,0.06), transparent 40%), radial-gradient(circle at 85% 10%, rgba(110,231,201,0.05), transparent 40%)",
+      }}
+    >
+      <div className="mx-auto max-w-7xl space-y-8 px-4 pt-20 pb-10 sm:px-6 sm:pt-5 lg:px-5">
+        {/* Header */}
+        <div className="space-y-5">
+          <div>
+            <h1 className="mt-1 font-[Space_Grotesk,sans-serif] text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">
+              {category.name}
+            </h1>
+            <p className="mt-2 max-w-2xl text-[14.5px] leading-6 text-[#8a96a8]">
+              {category.description}
+            </p>
+          </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card className="border-border bg-card">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
+          <div className="grid gap-3.5 sm:grid-cols-3">
+            <div className="rounded-2xl border border-[#212a37] bg-[#10151d] p-5">
+              <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-[#5b6577] uppercase">
                     Total Questions
                   </p>
-                  <p className="mt-2 text-3xl font-bold">
+                  <p className="mt-2 font-[Space_Grotesk,sans-serif] text-[26px] font-bold">
                     {stats.totalQuestions}
                   </p>
                 </div>
-                <div className="rounded-lg bg-primary/10 p-3">
-                  <Calculator className="h-6 w-6 text-primary" />
+                <div className="rounded-lg border border-[rgba(110,231,201,0.3)] bg-[rgba(110,231,201,0.1)] p-2.5 text-[#6ee7c9]">
+                  <span className="text-lg">Σ</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card className="border-border bg-card">
-            <CardContent className="pt-6">
-              <div>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Completed
-                  </p>
-                  <CheckCircle2 className="h-5 w-5 text-green-500" />
-                </div>
-                <p className="mt-2 text-3xl font-bold">
-                  {stats.completedQuestions}
-                </p>
-                <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-secondary">
-                  <div
-                    className="h-full bg-green-500 transition-all"
-                    style={{ width: `${completionPercentage}%` }}
-                  />
-                </div>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {completionPercentage.toFixed(1)}% Complete
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border bg-card">
-            <CardContent className="pt-6">
+            <div className="rounded-2xl border border-[#212a37] bg-[#10151d] p-5">
               <div className="flex items-center justify-between">
+                <p className="font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-[#5b6577] uppercase">
+                  Completed
+                </p>
+                <span className="text-[#3ecf8e]">✓</span>
+              </div>
+              <p className="mt-2 font-[Space_Grotesk,sans-serif] text-[26px] font-bold">
+                {stats.completedQuestions}
+              </p>
+              <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-[#212a37]">
+                <div
+                  className="h-full rounded-full bg-linear-to-r from-[#6ee7c9] to-[#3ecf8e] transition-[width] duration-500"
+                  style={{ width: `${completionPercentage}%` }}
+                />
+              </div>
+              <p className="mt-2 font-[JetBrains_Mono,monospace] text-[10.5px] text-[#5b6577]">
+                {completionPercentage.toFixed(1)}% complete
+                {mixedCompleted ? " · mixed session done" : ""}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-[#212a37] bg-[#10151d] p-5">
+              <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-[#5b6577] uppercase">
                     Subtopics
                   </p>
-                  <p className="mt-2 text-3xl font-bold">
+                  <p className="mt-2 font-[Space_Grotesk,sans-serif] text-[26px] font-bold">
                     {stats.subcategoriesCount}
                   </p>
                 </div>
-                <div className="rounded-lg bg-blue-500/10 p-3">
-                  <BookOpen className="h-6 w-6 text-blue-500" />
+                <div className="rounded-lg border border-[rgba(139,124,246,0.3)] bg-[rgba(139,124,246,0.1)] p-2.5 text-[#8b7cf6]">
+                  <span className="text-lg">▤</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {adminTests.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-bold">Admin Tests</h2>
-            <Badge className="bg-amber-500/20 text-amber-700">{adminTests.length} Tests</Badge>
+            </div>
           </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {adminTests.map((test: any) => (
-              <Card key={test._id} className="group cursor-pointer transition-all hover:border-primary hover:shadow-lg border-amber-200">
-                <CardHeader>
+        </div>
+
+        {/* Admin tests */}
+        {adminTests.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2.5">
+              <h2 className="font-[Space_Grotesk,sans-serif] text-xl font-bold sm:text-2xl">
+                Admin Tests
+              </h2>
+              <span className="rounded-full border border-[rgba(245,166,35,0.35)] bg-[rgba(245,166,35,0.1)] px-2.5 py-1 font-[JetBrains_Mono,monospace] text-[10.5px] font-semibold text-[#f5a623]">
+                {adminTests.length} tests
+              </span>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {adminTests.map((test) => (
+                <div
+                  key={test._id}
+                  className="flex flex-col rounded-2xl border border-[rgba(245,166,35,0.3)] bg-[#10151d] p-5 transition hover:border-[rgba(245,166,35,0.55)]"
+                >
                   <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-lg">{test.title}</CardTitle>
-                    <Badge className="bg-amber-500/20 text-amber-700 text-xs">Admin</Badge>
+                    <h3 className="font-[Space_Grotesk,sans-serif] text-[16px] font-bold">
+                      {test.title}
+                    </h3>
+                    <span className="shrink-0 rounded-full border border-[rgba(245,166,35,0.35)] bg-[rgba(245,166,35,0.1)] px-2 py-0.5 font-[JetBrains_Mono,monospace] text-[9.5px] font-semibold tracking-wider text-[#f5a623] uppercase">
+                      Admin
+                    </span>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="mt-2 text-[13px] leading-5.5 text-[#8a96a8]">
                     {test.description || "Admin-created test"}
                   </p>
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Calculator className="h-3 w-3" />
-                      <span>{test.totalQuestions} questions</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      <span>{test.durationMinutes} min</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Zap className="h-3 w-3" />
-                      <span className="capitalize">{test.difficultyLevel}</span>
-                    </div>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-[JetBrains_Mono,monospace] text-[11px] text-[#5b6577]">
+                    <span>Σ {test.totalQuestions} questions</span>
+                    <span>⏱ {test.durationMinutes} min</span>
+                    <span className="capitalize">⚡ {test.difficultyLevel}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Created by: <span className="font-medium">{test.createdBy?.name || 'Admin'}</span>
+                  <p className="mt-2 font-[JetBrains_Mono,monospace] text-[10.5px] text-[#5b6577]">
+                    Created by{" "}
+                    <span className="text-[#8a96a8]">
+                      {test.createdBy?.name || "Admin"}
+                    </span>
                   </p>
-                  <Button className="w-full" size="sm">
-                    Start Test <ArrowRight className="ml-2 h-3 w-3" />
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                  <div className="flex-1" />
+                  <button
+                    type="button"
+                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-linear-to-br from-[#f5a623] to-[#e0901a] py-2.5 text-[13px] font-bold text-[#241503] transition hover:brightness-105"
+                  >
+                    Start Test <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Explore subtopics */}
+        <div className="space-y-4">
+          <h2 className="font-[Space_Grotesk,sans-serif] text-xl font-bold sm:text-2xl">
+            Explore Subtopics
+          </h2>
+
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="relative flex-1">
+              <span className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[#5b6577]">
+                ⌕
+              </span>
+              <input
+                placeholder="Search topics..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-lg border border-[#212a37] bg-[#10151d] py-2.5 pr-3.5 pl-9 text-[13.5px] text-[#e7ecf3] outline-none transition placeholder:text-[#5b6577] focus:border-[#6ee7c9]"
+              />
+            </div>
+
+            <div className="relative w-full md:w-52">
+              <button
+                type="button"
+                onClick={() => setDifficultyMenuOpen((open) => !open)}
+                className="flex w-full items-center justify-between rounded-lg border border-[#212a37] bg-[#10151d] px-3.5 py-2.5 text-[13.5px] text-[#e7ecf3] transition hover:border-[#3a4a5e]"
+              >
+                {
+                  DIFFICULTY_OPTIONS.find((o) => o.value === difficultyFilter)
+                    ?.label
+                }
+                <span className="text-[#5b6577]">▾</span>
+              </button>
+              {difficultyMenuOpen && (
+                <div className="absolute z-20 mt-1.5 w-full overflow-hidden rounded-lg border border-[#212a37] bg-[#141b25] shadow-[0_10px_30px_rgba(0,0,0,0.4)]">
+                  {DIFFICULTY_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => {
+                        setDifficultyFilter(option.value)
+                        setDifficultyMenuOpen(false)
+                      }}
+                      className={`block w-full px-3.5 py-2.5 text-left text-[13px] transition hover:bg-[#1a212b] ${
+                        difficultyFilter === option.value
+                          ? "text-[#6ee7c9]"
+                          : "text-[#c3cbd8]"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      )}
 
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Explore Subtopics</h2>
-
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="relative flex-1">
-            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search topics..."
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-
-          <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
-            <SelectTrigger className="w-full md:w-48">
-              <SelectValue placeholder="All Difficulties" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Difficulties</SelectItem>
-              <SelectItem value="easy">Easy</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="hard">Hard</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredSubcategories.length > 0 ? (
-          filteredSubcategories.map((sub: any) => (
-            <Card
-              key={sub._id}
-              className="group cursor-pointer transition-all hover:border-primary hover:shadow-lg"
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <CardTitle className="text-lg">{sub.name}</CardTitle>
-                  <Badge variant="secondary" className="text-xs">
-                    {sub.slug}
-                  </Badge>
-                </div>
-              </CardHeader>
-
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  {sub.description || "Master this topic through practice"}
-                </p>
-
-                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <BookOpen className="h-3 w-3" />
-                    <span>{sub.questionCount} questions</span>
+        {/* Subtopic grid */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredSubcategories.length > 0 ? (
+            filteredSubcategories.map((sub) => {
+              const isCompleted = completedSubcategories.includes(sub._id)
+              return (
+                <div
+                  key={sub._id}
+                  className="flex flex-col rounded-2xl border border-[#212a37] bg-[#10151d] p-5 transition hover:border-[#37465a]"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-[Space_Grotesk,sans-serif] text-[16px] font-bold">
+                      {sub.name}
+                    </h3>
+                    <span className="shrink-0 rounded-full border border-[#212a37] bg-[#141b25] px-2 py-0.5 font-[JetBrains_Mono,monospace] text-[9.5px] text-[#5b6577]">
+                      {sub.slug}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Zap className="h-3 w-3" />
-                    <span>Practice</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    <span>Timed</span>
-                  </div>
-                </div>
 
-                <div className="flex gap-2">
+                  <p className="mt-2 text-[13px] leading-5.5 text-[#8a96a8]">
+                    {sub.description || "Master this topic through practice"}
+                  </p>
+
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-[JetBrains_Mono,monospace] text-[11px] text-[#5b6577]">
+                    <span>▤ {sub.questionCount} questions</span>
+                    <span>⚡ Practice</span>
+                    <span>⏱ Timed</span>
+                  </div>
+
+                  <div className="flex-1" />
+
                   <Link
                     href={`/dashboard/tests/${slug}/${sub.slug}`}
-                    className="flex-1"
+                    className="mt-4"
                   >
-                    <Button
-                      variant={
-                        completedSubcategories.includes(sub._id)
-                          ? "secondary"
-                          : "default"
-                      }
-                      size="sm"
-                      className="w-full"
-                      disabled={completedSubcategories.includes(sub._id)}
+                    <button
+                      type="button"
+                      disabled={isCompleted}
+                      className={`flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-[13px] font-bold transition ${
+                        isCompleted
+                          ? "cursor-not-allowed border border-[#212a37] bg-[#141b25] text-[#5b6577]"
+                          : "bg-linear-to-br from-[#6ee7c9] to-[#57c9a8] text-[#06120d] hover:brightness-105"
+                      }`}
                     >
-                      {completedSubcategories.includes(sub._id) ? (
+                      {isCompleted ? (
                         "Completed"
                       ) : (
                         <>
-                          <Play className="mr-2 h-4 w-4" />
-                          Start Test
+                          <span aria-hidden="true">▶</span> Start Test
                         </>
                       )}
-                    </Button>
+                    </button>
                   </Link>
                 </div>
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <div className="col-span-full rounded-lg border border-dashed border-muted-foreground/25 p-12 text-center">
-            <p className="text-muted-foreground">
-              No topics found matching your search
-            </p>
-          </div>
-        )}
+              )
+            })
+          ) : (
+            <div className="col-span-full rounded-2xl border border-dashed border-[#212a37] bg-[#10151d] p-12 text-center">
+              <p className="text-[13.5px] text-[#5b6577]">
+                No topics found matching your search
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

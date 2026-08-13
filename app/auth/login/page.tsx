@@ -3,7 +3,6 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
-  Zap,
   Mail,
   Lock,
   Eye,
@@ -16,7 +15,6 @@ import {
   Target,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import axios from "axios"
 import api from "@/lib/api"
 import Image from "next/image"
 
@@ -77,48 +75,50 @@ export default function LoginPage() {
   if (!mounted) return null
 
   return (
-    <div className="dark flex min-h-screen bg-[hsl(var(--background))]">
+    <div className="flex min-h-screen bg-[#0a0e14] font-[Inter,sans-serif] text-[#e7ecf3]">
       {/* ── Left panel ─────────────────────────────────────────── */}
-      <div className="relative hidden w-[52%] flex-col justify-between overflow-hidden bg-linear-to-br from-[#050d1a] via-[#0a1628] to-[#0d1f3c] p-14 lg:flex">
+      <div className="relative hidden w-[52%] flex-col justify-between overflow-hidden bg-linear-to-br from-[#080b10] via-[#0a0e14] to-[#0c1119] p-14 lg:flex">
         {/* Background elements */}
         <div
           className="absolute inset-0"
           style={{
             backgroundImage:
-              "radial-gradient(rgba(14,165,233,0.08) 1px,transparent 1px)",
+              "radial-gradient(rgba(110,231,201,0.08) 1px,transparent 1px)",
             backgroundSize: "32px 32px",
           }}
         />
-        <div className="absolute top-0 right-0 h-150 w-150 translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-500/5 blur-3xl" />
-        <div className="absolute bottom-0 left-0 h-100 w-100 -translate-x-1/2 translate-y-1/2 rounded-full bg-purple-500/8 blur-3xl" />
+        <div className="absolute top-0 right-0 h-150 w-150 translate-x-1/2 -translate-y-1/2 rounded-full bg-[#6ee7c9]/6 blur-3xl" />
+        <div className="absolute bottom-0 left-0 h-100 w-100 -translate-x-1/2 translate-y-1/2 rounded-full bg-[#8b7cf6]/8 blur-3xl" />
 
         {/* Logo */}
         <Link href="/" className="relative flex w-fit items-center gap-2.5">
-          <Image
-            src="/logo.png"
-            alt="AptiCore Logo"
-            width={36}
-            height={36}
-            className="rounded-lg"
-          />
-
-          <span className="font-display bg-linear-to-r from-sky-400 to-blue-400 bg-clip-text text-2xl font-bold text-transparent">
+          <div className="">
+            <Image
+              loading="lazy"
+              src="/logo.png"
+              alt="AptiCore Logo"
+              width={32}
+              height={32}
+              className="h-10 w-10 rounded-full object-cover sm:h-10 sm:w-10"
+            />
+          </div>
+          <span className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text font-[Space_Grotesk,sans-serif] text-2xl font-bold text-transparent">
             AptiCore
           </span>
         </Link>
 
         {/* Main pitch */}
         <div className="relative">
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1.5 text-xs font-medium text-sky-400">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-[rgba(110,231,201,0.3)] bg-[rgba(110,231,201,0.1)] px-3 py-1.5 font-[JetBrains_Mono,monospace] text-xs font-medium text-[#6ee7c9]">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#3ecf8e]" />
             4,200 students active right now
           </div>
 
-          <h1 className="font-display mb-5 text-5xl leading-[1.08] font-extrabold text-white xl:text-6xl">
+          <h1 className="mb-5 font-[Space_Grotesk,sans-serif] text-5xl leading-[1.08] font-extrabold text-white xl:text-6xl">
             Your placement
             <br />
             starts{" "}
-            <span className="bg-linear-to-r from-sky-400 to-blue-400 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text text-transparent">
               here.
             </span>
           </h1>
@@ -135,7 +135,7 @@ export default function LoginPage() {
                 key={h.text}
                 className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70"
               >
-                <h.icon className="h-4 w-4 text-sky-400" />
+                <h.icon className="h-4 w-4 text-[#6ee7c9]" />
                 {h.text}
               </div>
             ))}
@@ -152,7 +152,7 @@ export default function LoginPage() {
                 key={l}
                 className="rounded-2xl border border-white/8 bg-white/5 p-4"
               >
-                <div className="font-display bg-linear-to-r from-sky-400 to-blue-300 bg-clip-text text-2xl font-bold text-transparent">
+                <div className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text font-[Space_Grotesk,sans-serif] text-2xl font-bold text-transparent">
                   {v}
                 </div>
                 <div className="mt-0.5 text-xs text-white/50">{l}</div>
@@ -160,47 +160,41 @@ export default function LoginPage() {
             ))}
           </div>
         </div>
-
-        {/* Testimonial */}
       </div>
 
       {/* ── Right panel (form) ──────────────────────────────────── */}
       <div className="relative flex flex-1 items-center justify-center overflow-hidden p-8">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(14,165,233,0.03)_0%,transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(110,231,201,0.04)_0%,transparent_70%)]" />
 
         <div className="relative w-full max-w-105">
           {/* Mobile logo */}
           <Link href="/" className="mb-8 flex items-center gap-2 lg:hidden">
-            <Image
-              src="/logo.png"
-              alt="AptiCore Logo"
-              width={36}
-              height={36}
-              className="rounded-lg"
-            />
-            <span className="font-display bg-linear-to-r from-sky-400 to-blue-400 bg-clip-text text-xl font-bold text-transparent">
-              AptiCore
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] bg-linear-to-br from-[#6ee7c9] to-[#8b7cf6] font-[Space_Grotesk,sans-serif] text-sm font-bold text-[#08110d]">
+              AC
+            </div>
+            <span className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text font-[Space_Grotesk,sans-serif] text-xl font-bold text-transparent">
+              ApticCore
             </span>
           </Link>
 
           <div className="mb-8">
-            <h2 className="font-display mb-1.5 text-[2rem] font-bold tracking-tight">
+            <h2 className="mb-1.5 font-[Space_Grotesk,sans-serif] text-[2rem] font-bold tracking-tight">
               Welcome back
             </h2>
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+            <p className="text-sm text-[#8a96a8]">
               Sign in to continue your preparation journey
             </p>
           </div>
 
           {/* Alerts */}
           {error && (
-            <div className="animate-fade-in mb-4 flex items-start gap-2.5 rounded-xl border border-red-500/20 bg-red-500/10 p-3.5 text-sm text-red-400">
+            <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-[rgba(242,85,90,0.3)] bg-[rgba(242,85,90,0.1)] p-3.5 text-sm text-[#f2555a]">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
           {success && (
-            <div className="animate-fade-in mb-4 flex items-center gap-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3.5 text-sm text-emerald-400">
+            <div className="mb-4 flex items-center gap-2.5 rounded-xl border border-[rgba(62,207,142,0.3)] bg-[rgba(62,207,142,0.1)] p-3.5 text-sm text-[#3ecf8e]">
               <CheckCircle2 className="h-4 w-4 shrink-0" />
               <span>{success}</span>
             </div>
@@ -214,7 +208,7 @@ export default function LoginPage() {
                 Email address
               </label>
               <div className="group relative">
-                <Mail className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-[hsl(var(--muted-foreground))] transition-colors group-focus-within:text-sky-400" />
+                <Mail className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-[#5b6577] transition-colors group-focus-within:text-[#6ee7c9]" />
                 <input
                   type="email"
                   required
@@ -222,7 +216,7 @@ export default function LoginPage() {
                   placeholder="you@example.com"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="h-11 w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface))] pr-4 pl-10 text-sm transition-all outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-sky-500 focus:ring-2 focus:ring-sky-500/15"
+                  className="h-11 w-full rounded-xl border border-[#212a37] bg-[#10151d] pr-4 pl-10 text-sm text-[#e7ecf3] transition-all outline-none placeholder:text-[#5b6577] focus:border-[#6ee7c9] focus:ring-2 focus:ring-[#6ee7c9]/15"
                 />
               </div>
             </div>
@@ -233,13 +227,13 @@ export default function LoginPage() {
                 <label className="text-sm font-medium">Password</label>
                 <Link
                   href="/auth/forgot-password"
-                  className="text-xs text-sky-400 transition-colors hover:text-sky-300"
+                  className="text-xs text-[#6ee7c9] transition-colors hover:text-[#8ef2d6]"
                 >
                   Forgot password?
                 </Link>
               </div>
               <div className="group relative">
-                <Lock className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-[hsl(var(--muted-foreground))] transition-colors group-focus-within:text-sky-400" />
+                <Lock className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-[#5b6577] transition-colors group-focus-within:text-[#6ee7c9]" />
                 <input
                   type={showPassword ? "text" : "password"}
                   required
@@ -249,12 +243,12 @@ export default function LoginPage() {
                   onChange={(e) =>
                     setForm({ ...form, password: e.target.value })
                   }
-                  className="h-11 w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface))] pr-10 pl-10 text-sm transition-all outline-none placeholder:text-[hsl(var(--muted-foreground))] focus:border-sky-500 focus:ring-2 focus:ring-sky-500/15"
+                  className="h-11 w-full rounded-xl border border-[#212a37] bg-[#10151d] pr-10 pl-10 text-sm text-[#e7ecf3] transition-all outline-none placeholder:text-[#5b6577] focus:border-[#6ee7c9] focus:ring-2 focus:ring-[#6ee7c9]/15"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute top-1/2 right-3.5 -translate-y-1/2 p-0.5 text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]"
+                  className="absolute top-1/2 right-3.5 -translate-y-1/2 p-0.5 text-[#5b6577] transition-colors hover:text-[#e7ecf3]"
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4" />
@@ -271,18 +265,16 @@ export default function LoginPage() {
                 className={cn(
                   "flex h-4.5 w-4.5 items-center justify-center rounded-lg border-2 transition-all",
                   form.remember
-                    ? "border-sky-500 bg-sky-500"
-                    : "border-[hsl(var(--border))] hover:border-sky-500/50"
+                    ? "border-[#6ee7c9] bg-[#6ee7c9]"
+                    : "border-[#212a37] hover:border-[#6ee7c9]/50"
                 )}
                 onClick={() => setForm({ ...form, remember: !form.remember })}
               >
                 {form.remember && (
-                  <CheckCircle2 className="h-3 w-3 text-white" />
+                  <CheckCircle2 className="h-3 w-3 text-[#06120d]" />
                 )}
               </div>
-              <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                Keep me signed in
-              </span>
+              <span className="text-sm text-[#8a96a8]">Keep me signed in</span>
             </label>
 
             {/* Submit */}
@@ -290,15 +282,15 @@ export default function LoginPage() {
               type="submit"
               disabled={isLoading}
               className={cn(
-                "flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all duration-200",
+                "flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-bold transition-all duration-200",
                 isLoading
-                  ? "cursor-not-allowed bg-sky-500/40 text-white/60"
-                  : "bg-linear-to-r from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-500/25 hover:-translate-y-0.5 hover:opacity-90"
+                  ? "cursor-not-allowed bg-[#6ee7c9]/30 text-[#06120d]/60"
+                  : "bg-linear-to-br from-[#6ee7c9] to-[#57c9a8] text-[#06120d] shadow-lg shadow-[#6ee7c9]/20 hover:-translate-y-0.5 hover:brightness-105"
               )}
             >
               {isLoading ? (
                 <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#06120d]/30 border-t-[#06120d]" />
                   Signing in...
                 </>
               ) : (
@@ -309,11 +301,11 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-[hsl(var(--muted-foreground))]">
+          <p className="mt-6 text-center text-sm text-[#8a96a8]">
             No account?{" "}
             <Link
               href="/auth/register"
-              className="font-semibold text-sky-400 transition-colors hover:text-sky-300"
+              className="font-semibold text-[#6ee7c9] transition-colors hover:text-[#8ef2d6]"
             >
               Create one free →
             </Link>

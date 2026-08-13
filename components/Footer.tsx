@@ -53,39 +53,37 @@ const socials = [
 
 export default function Footer() {
   return (
-    <footer className="relative mt-16 overflow-hidden border-t border-[hsl(var(--border))] bg-[hsl(var(--background))]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.12),transparent_30%),radial-gradient(circle_at_top_right,rgba(168,85,247,0.12),transparent_28%),linear-gradient(to_bottom,transparent,rgba(15,23,42,0.04))]" />
+    <footer className="relative mt-16 overflow-hidden border-t border-[#212a37] bg-[#0a0e14]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(110,231,201,0.1),transparent_30%),radial-gradient(circle_at_top_right,rgba(139,124,246,0.1),transparent_28%),linear-gradient(to_bottom,transparent,rgba(10,14,20,0.4))]" />
 
       <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-4 lg:py-12">
         <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr]">
           <div className="max-w-xl">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 px-3 py-2 "
-            >
+            <Link href="/" className="inline-flex items-center gap-2 px-3 py-2">
               <Image
                 src="/logo.png"
                 alt="AptiCore Logo"
                 width={32}
                 height={32}
-                className="h-8 w-8"
+                className="h-8 w-8 rounded-lg"
               />
-              <span className="font-display gradient-text text-2xl font-bold tracking-tight">
+              <span className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text font-[Space_Grotesk,sans-serif] text-2xl font-bold tracking-tight text-transparent">
                 AptiCore
               </span>
             </Link>
 
-            <p className="mt-5 max-w-lg text-sm leading-7 text-[hsl(var(--muted-foreground))] sm:text-base">
-              India&apos;s most advanced platform for placement preparation and aptitude mastery.
-              Build confidence, improve faster, and track every milestone in one place.
+            <p className="mt-5 max-w-lg text-sm leading-7 text-[#8a96a8] sm:text-base">
+              India&apos;s most advanced platform for placement preparation and
+              aptitude mastery. Build confidence, improve faster, and track
+              every milestone in one place.
             </p>
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/20 bg-sky-500/10 px-4 py-2 text-sm font-medium text-sky-400">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(110,231,201,0.3)] bg-[rgba(110,231,201,0.1)] px-4 py-2 text-sm font-medium text-[#6ee7c9]">
                 <Sparkles className="h-4 w-4" />
                 Built for serious learners
               </div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-400">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(62,207,142,0.3)] bg-[rgba(62,207,142,0.1)] px-4 py-2 text-sm font-medium text-[#3ecf8e]">
                 <Zap className="h-4 w-4" />
                 Practice. Improve. Repeat.
               </div>
@@ -97,7 +95,7 @@ export default function Footer() {
                   key={s.label}
                   href={s.href}
                   aria-label={s.label}
-                  className="group flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-[hsl(var(--muted-foreground))] transition-all hover:-translate-y-0.5 hover:border-sky-500/40 hover:bg-sky-500/10 hover:text-[hsl(var(--foreground))]"
+                  className="group flex h-11 w-11 items-center justify-center rounded-2xl border border-[#212a37] bg-[#10151d] text-[#8a96a8] transition-all hover:-translate-y-0.5 hover:border-[rgba(110,231,201,0.4)] hover:bg-[rgba(110,231,201,0.1)] hover:text-[#e7ecf3]"
                 >
                   <s.icon className="h-4 w-4 transition-transform group-hover:scale-110" />
                 </a>
@@ -108,7 +106,7 @@ export default function Footer() {
           <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-4">
             {Object.entries(footerLinks).map(([section, links]) => (
               <div key={section}>
-                <h4 className="text-sm font-semibold uppercase tracking-[0.2em] text-[hsl(var(--foreground))]">
+                <h4 className="font-[JetBrains_Mono,monospace] text-[11px] font-semibold tracking-[0.2em] text-[#e7ecf3] uppercase">
                   {section}
                 </h4>
                 <ul className="mt-5 space-y-3">
@@ -116,10 +114,10 @@ export default function Footer() {
                     <li key={link.label}>
                       <Link
                         href={link.href}
-                        className="group inline-flex items-center gap-1 text-sm text-gray transition-colors hover:text-[hsl(var(--foreground))]"
+                        className="group inline-flex items-center gap-1 text-sm text-[#8a96a8] transition-colors hover:text-[#e7ecf3]"
                       >
                         <span>{link.label}</span>
-                        <ArrowUpRight className="h-3.5 w-3.5 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:opacity-100" />
+                        <ArrowUpRight className="h-3.5 w-3.5 text-[#6ee7c9] opacity-0 transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:opacity-100" />
                       </Link>
                     </li>
                   ))}
@@ -129,17 +127,17 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-14 flex flex-col gap-4 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+        <div className="mt-14 flex flex-col gap-4 border-t border-[#212a37] pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-[#8a96a8]">
             © {new Date().getFullYear()} AptiCore. All rights reserved.
           </p>
 
-          <div className="flex flex-wrap items-center gap-4 text-sm text-[hsl(var(--muted-foreground))]">
+          <div className="flex flex-wrap items-center gap-4 text-sm text-[#8a96a8]">
             <span className="inline-flex items-center gap-2">
-              <Mail className="h-4 w-4 text-sky-400" />
+              <Mail className="h-4 w-4 text-[#6ee7c9]" />
               support@apticore.com
             </span>
-            <span className="hidden h-1 w-1 rounded-full bg-white/20 sm:inline-flex" />
+            <span className="hidden h-1 w-1 rounded-full bg-[#212a37] sm:inline-flex" />
             <span>Built for placement success</span>
           </div>
         </div>
