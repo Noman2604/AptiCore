@@ -5,8 +5,6 @@ import axios from "axios"
 import { useRouter } from "next/navigation"
 
 const CELEBRATION_EVENT = "apticore:celebrate"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import TestRunner from "@/components/tests/TestRunner"
 
 interface Question {
@@ -33,9 +31,11 @@ const SubcategoryTestPage = ({
   const [loading, setLoading] = useState(true)
   const [testStartedAt, setTestStartedAt] = useState<Date | null>(null)
   const [submitLoading, setSubmitLoading] = useState(false)
-  const [testStatus, setTestStatus] = useState<"in-progress" | "completed" | "abandoned">("in-progress")
-  const [currentAttemptId, setCurrentAttemptId] = useState<string>(() => 
-    `attempt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  const [testStatus, setTestStatus] = useState<
+    "in-progress" | "completed" | "abandoned"
+  >("in-progress")
+  const [currentAttemptId, setCurrentAttemptId] = useState<string>(
+    () => `attempt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   )
   const [hasUnsavedProgress, setHasUnsavedProgress] = useState(false)
   const [currentProgress, setCurrentProgress] = useState<any>(null)
@@ -71,7 +71,14 @@ const SubcategoryTestPage = ({
 
   // Auto-save test progress periodically
   useEffect(() => {
-    if (!testStartedAt || !category || !subcategory || testStatus !== "in-progress" || !hasUnsavedProgress || !currentProgress) {
+    if (
+      !testStartedAt ||
+      !category ||
+      !subcategory ||
+      testStatus !== "in-progress" ||
+      !hasUnsavedProgress ||
+      !currentProgress
+    ) {
       return
     }
 
@@ -96,14 +103,23 @@ const SubcategoryTestPage = ({
     }, 30000) // Auto-save every 30 seconds
 
     return () => clearInterval(autoSaveTimer)
-  }, [testStartedAt, category, subcategory, testStatus, currentAttemptId, hasUnsavedProgress, currentProgress])
+  }, [
+    testStartedAt,
+    category,
+    subcategory,
+    testStatus,
+    currentAttemptId,
+    hasUnsavedProgress,
+    currentProgress,
+  ])
 
   // Warn user before leaving mid-test
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (testStatus === "in-progress" && hasUnsavedProgress) {
         e.preventDefault()
-        e.returnValue = "You have an in-progress test. Are you sure you want to leave?"
+        e.returnValue =
+          "You have an in-progress test. Are you sure you want to leave?"
         return "You have an in-progress test. Are you sure you want to leave?"
       }
     }
@@ -115,7 +131,12 @@ const SubcategoryTestPage = ({
   // Mark test as abandoned when component unmounts
   useEffect(() => {
     return () => {
-      if (testStatus === "in-progress" && testStartedAt && category && subcategory) {
+      if (
+        testStatus === "in-progress" &&
+        testStartedAt &&
+        category &&
+        subcategory
+      ) {
         // Mark test as abandoned
         fetch("/api/results/mark-abandoned", {
           method: "POST",
@@ -126,7 +147,9 @@ const SubcategoryTestPage = ({
             testStatus: "abandoned",
             startedAt: testStartedAt,
           }),
-        }).catch((error) => console.error("Failed to mark test as abandoned:", error))
+        }).catch((error) =>
+          console.error("Failed to mark test as abandoned:", error)
+        )
       }
     }
   }, [testStatus, testStartedAt, category, subcategory])
@@ -200,7 +223,9 @@ const SubcategoryTestPage = ({
       const resultId = json?.data?._id
       const isPerfect = payload.accuracy === 100
       const nextLevel = (json?.meta?.nextLevel ?? 0) as number | undefined
-      const unlockedAchievements = Array.isArray(json?.meta?.unlockedAchievements)
+      const unlockedAchievements = Array.isArray(
+        json?.meta?.unlockedAchievements
+      )
         ? json.meta.unlockedAchievements
         : []
 
@@ -218,11 +243,7 @@ const SubcategoryTestPage = ({
       }
 
       setHasUnsavedProgress(false)
-      router.push(
-        resultId
-          ? `/results?resultId=${resultId}`
-          : `/results`
-      )
+      router.push(resultId ? `/results?resultId=${resultId}` : `/results`)
     } catch (error) {
       console.error(error)
       setTestStatus("in-progress")
@@ -230,10 +251,14 @@ const SubcategoryTestPage = ({
       setSubmitLoading(false)
     }
   }
+  const handleProgressChange = useCallback((progress: any) => {
+    setCurrentProgress(progress)
+    setHasUnsavedProgress(true)
+  }, [])
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0e14] font-[Inter,sans-serif] text-[#e7ecf3]">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background font-[Inter,sans-serif] text-[#e7ecf3]">
         <div className="inline-block animate-pulse font-[JetBrains_Mono,monospace] text-sm">
           Loading test...
         </div>
@@ -243,16 +268,11 @@ const SubcategoryTestPage = ({
 
   if (!category || questions.length === 0) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0e14] font-[Inter,sans-serif] text-[#e7ecf3]">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background font-[Inter,sans-serif] text-[#e7ecf3]">
         Test category or questions not found.
       </div>
     )
   }
-
-  const handleProgressChange = useCallback((progress: any) => {
-    setCurrentProgress(progress)
-    setHasUnsavedProgress(true)
-  }, [])
 
   return (
     <TestRunner

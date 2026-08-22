@@ -16,7 +16,7 @@ import {
   AlertCircle,
   ArrowRight,
 } from "lucide-react"
-
+import axios from "axios"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -79,10 +79,6 @@ interface FeedbackHistoryItem {
 
 type SectionKey = "tests" | "xp" | "achievements" | "feedback"
 
-/* ============================================================
-   CONSTANTS — logic unchanged, only presentation tokens added
-   ============================================================ */
-
 const sourceLabels: Record<string, string> = {
   achievement: "Achievement",
   test_completion: "Test Completion",
@@ -97,7 +93,7 @@ const FEEDBACK_STATUS_STYLES: Record<
 > = {
   pending: { color: "#F59E0B", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.3)", label: "Pending" },
   resolved: { color: "#10B981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.3)", label: "Resolved" },
-  hidden: { color: "#94A3B8", bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.3)", label: "Hidden" },
+  hidden: { color: "var(--muted-foreground)", bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.3)", label: "Hidden" },
   published: { color: "#10B981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.3)", label: "Published" },
 }
 
@@ -107,7 +103,7 @@ const TEST_STATUS_STYLES: Record<
 > = {
   completed: { color: "#10B981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.3)", progress: "#10B981" },
   in_progress: { color: "#F59E0B", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.3)", progress: "#F59E0B" },
-  abandoned: { color: "#94A3B8", bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.3)", progress: "#94A3B8" },
+  abandoned: { color: "var(--muted-foreground)", bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.3)", progress: "#94A3B8" },
 }
 
 const ITEMS_PER_PAGE = 10
@@ -138,7 +134,7 @@ function StatCard({
   return (
     <Card
       className=" overflow-hidden  border hover:shadow-lg"
-      style={{ borderColor: "#1F2937", backgroundColor: "#111827" }}
+      style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}
     >
       <CardContent className=" p-4 sm:p-5 flex items-center justify-center gap-1.5">
         <div className="flex items-center justify-center">
@@ -150,10 +146,10 @@ function StatCard({
           </div>
         </div>
         <div className="ml-3 flex flex-col items-start justify-center ">
-          <p className="text-sm font-bold tracking-tight text-[#F9FAFB] sm:text-3xl">
+          <p className="text-sm font-bold tracking-tight text-foreground sm:text-3xl">
             {value}
           </p>
-          <p className="mt-1 text-xs font-medium text-[#94A3B8] sm:text-sm">{label}</p>
+          <p className="mt-1 text-xs font-medium text-muted-foreground sm:text-sm">{label}</p>
         </div>
       </CardContent>
     </Card>
@@ -174,15 +170,15 @@ function EmptyState({
   ctaHref?: string
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-14 text-center" style={{ borderColor: "#1F2937" }}>
+    <div className="flex flex-col bg-[#f4f4f4] dark:bg-[#16191f] items-center justify-center rounded-2xl border border-dashed py-14 text-center" style={{ borderColor: "var(--border)" }}>
       <div
         className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border"
-        style={{ borderColor: "#1F2937", backgroundColor: "#111827" }}
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}
       >
-        <Icon className="h-7 w-7 text-[#94A3B8]" />
+        <Icon className="h-7 w-7 text-muted-foreground" />
       </div>
-      <h3 className="text-base font-semibold text-[#F9FAFB]">{title}</h3>
-      <p className="mt-1.5 max-w-sm text-sm leading-6 text-[#94A3B8]">{description}</p>
+      <h3 className="text-base font-semibold text-foreground">{title}</h3>
+      <p className="mt-1.5 max-w-sm text-sm leading-6 text-muted-foreground">{description}</p>
       {ctaLabel && ctaHref && (
         <Button asChild className="mt-5 gap-2 bg-[#10B981] text-[#09090B] hover:bg-[#10B981]/90">
           <Link href={ctaHref}>
@@ -202,15 +198,15 @@ function SkeletonCards({ count = 4 }: { count?: number }) {
         <div
           key={i}
           className="flex items-center justify-between rounded-2xl border p-4"
-          style={{ borderColor: "#1F2937", backgroundColor: "#111827" }}
+          style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}
         >
           <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-40 bg-[#1F2937]" />
-            <Skeleton className="h-3 w-24 bg-[#1F2937]" />
+            <Skeleton className="h-4 w-40 bg-muted" />
+            <Skeleton className="h-3 w-24 bg-muted" />
           </div>
           <div className="flex items-center gap-4">
-            <Skeleton className="h-8 w-14 bg-[#1F2937]" />
-            <Skeleton className="h-8 w-16 rounded-full bg-[#1F2937]" />
+            <Skeleton className="h-8 w-14 bg-muted" />
+            <Skeleton className="h-8 w-16 rounded-full bg-muted" />
           </div>
         </div>
       ))}
@@ -247,14 +243,14 @@ function Pagination({
   return (
     <div
       className="mt-6 flex flex-col items-center justify-between gap-4 border-t pt-5 sm:flex-row"
-      style={{ borderColor: "#1F2937" }}
+      style={{ borderColor: "var(--border)" }}
     >
-      <p className="text-xs text-[#94A3B8] sm:text-sm">
+      <p className="text-xs text-muted-foreground sm:text-sm">
         Showing{" "}
-        <span className="font-semibold text-[#F9FAFB]">
+        <span className="font-semibold text-foreground">
           {rangeStart}–{rangeEnd}
         </span>{" "}
-        of <span className="font-semibold text-[#F9FAFB]">{totalItems}</span>
+        of <span className="font-semibold text-foreground">{totalItems}</span>
       </p>
 
       <div className="flex items-center gap-1.5">
@@ -263,7 +259,7 @@ function Pagination({
           size="icon"
           disabled={currentPage === 1}
           onClick={() => onPageChange(currentPage - 1)}
-          className="h-8 w-8 border-[#1F2937] bg-transparent text-[#94A3B8] hover:border-[#374151] hover:bg-[#1F2937] hover:text-[#F9FAFB]"
+          className="h-8 w-8 border-border bg-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -277,7 +273,7 @@ function Pagination({
               "h-8 w-8 text-xs font-semibold",
               page === currentPage
                 ? "bg-[#10B981] text-[#09090B] hover:bg-[#10B981]/90"
-                : "border border-[#1F2937] bg-transparent text-[#94A3B8] hover:border-[#374151] hover:bg-[#1F2937] hover:text-[#F9FAFB]"
+                : "border border-border bg-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"
             )}
           >
             {page}
@@ -289,7 +285,7 @@ function Pagination({
           size="icon"
           disabled={currentPage === totalPages}
           onClick={() => onPageChange(currentPage + 1)}
-          className="h-8 w-8 border-[#1F2937] bg-transparent text-[#94A3B8] hover:border-[#374151] hover:bg-[#1F2937] hover:text-[#F9FAFB]"
+          className="h-8 w-8 border-border bg-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -297,7 +293,6 @@ function Pagination({
     </div>
   )
 }
-
 
 export default function HistoryPage() {
   const [section, setSection] = useState<SectionKey>("tests")
@@ -311,68 +306,44 @@ export default function HistoryPage() {
   const [xpPage, setXpPage] = useState(1)
   const [achievementPage, setAchievementPage] = useState(1)
   const [feedbackPage, setFeedbackPage] = useState(1)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
 
-  useEffect(() => {
-    let isMounted = true
-
-    async function loadHistory() {
+ useEffect(() => {
+    const loadHistory = async () => {
       try {
         setLoading(true)
-        setError(null)
 
-        const [resultsRes, achievementsRes, xpRes, feedbackRes] =
-          await Promise.all([
-            fetch("/api/results?limit=10", { credentials: "include" }),
-            fetch("/api/achievements/user", { credentials: "include" }),
-            fetch("/api/xp-history", { credentials: "include" }),
-            fetch("/api/feedback?mine=true&limit=100", {
-              credentials: "include",
-            }),
-          ])
+        const { data } = await axios.get(
+          `/api/history?page=${page}&limit=10`,
+          {
+            withCredentials: true,
+          }
+        )
 
-        const resultsJson = await resultsRes.json()
-        const achievementsJson = await achievementsRes.json()
-        const xpJson = await xpRes.json()
-        const feedbackJson = await feedbackRes.json()
-
-        if (!resultsRes.ok || !resultsJson.success) {
-          throw new Error(resultsJson.error || "Failed to load results")
-        }
-        if (!achievementsRes.ok || !achievementsJson.success) {
+        if (!data.success) {
           throw new Error(
-            achievementsJson.error || "Failed to load achievements history"
-          )
-        }
-        if (!xpRes.ok || !xpJson.success) {
-          throw new Error(xpJson.error || "Failed to load XP history")
-        }
-        if (!feedbackRes.ok || !feedbackJson.success) {
-          throw new Error(
-            feedbackJson.error || "Failed to load feedback history"
+            data.error || "Failed to load history"
           )
         }
 
-        if (isMounted) {
-          setResults(resultsJson.data || [])
-          setAchievements(achievementsJson.data || [])
-          setXpHistory(xpJson.data || [])
-          setFeedbackHistory(feedbackJson.data || [])
-        }
-      } catch (err: unknown) {
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : "Unable to load history")
-        }
+        setResults(data.data.results || [])
+
+        setTotalPages(
+          data.data.pagination?.totalPages || 1
+        )
+      } catch (error) {
+        console.error(
+          "Failed to load history:",
+          error
+        )
       } finally {
-        if (isMounted) setLoading(false)
+        setLoading(false)
       }
     }
 
     void loadHistory()
-    return () => {
-      isMounted = false
-    }
-  }, [])
-
+  }, [page])
   const paginatedTests = useMemo(() => {
     const start = (testPage - 1) * ITEMS_PER_PAGE
     return results.slice(start, start + ITEMS_PER_PAGE)
@@ -430,8 +401,8 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0e14] font-sans" style={{ color: "#F9FAFB" }}>
-      <div className="mx-auto max-w-6xl px-4 pt-20 pb-16 sm:px-6 md:pt-10 lg:px-8">
+    <div className="min-h-screen bg-background font-sans transition-colors duration-300" style={{ color: "var(--foreground)" }}>
+      <div className="mx-auto max-w-6xl px-4 pt-2 pb-16 sm:px-6 md:pt-10 lg:px-8">
         {/* ============ HERO ============ */}
         <div className="mb-8">
           <div className="flex items-center gap-3">
@@ -445,7 +416,7 @@ export default function HistoryPage() {
               <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
                 Activity History
               </h1>
-              <p className="mt-0.5 text-sm text-[#94A3B8]">
+              <p className="mt-0.5 text-sm text-muted-foreground">
                 Review your recent test performance, earned achievements, and
                 XP history.
               </p>
@@ -473,7 +444,7 @@ export default function HistoryPage() {
                   "flex shrink-0 items-center gap-2.5 rounded-xl border px-2 py-3 text-xs lg:text-sm font-semibold transition-all duration-200",
                   active
                     ? "border-transparent bg-linear-to-br from-[#10B981] to-[#0d9c6f] text-[#09090B] shadow-lg shadow-emerald-500/20"
-                    : "border-[#1F2937] bg-[#111827] text-[#94A3B8] hover:-translate-y-0.5 hover:border-[#374151] hover:text-[#F9FAFB]"
+                    : "border-border bg-card text-muted-foreground hover:-translate-y-0.5 hover:border-border hover:text-foreground"
                 )}
               >
                 <s.icon className="h-4 w-4" />
@@ -481,7 +452,7 @@ export default function HistoryPage() {
                 <span
                   className={cn(
                     "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-                    active ? "bg-black/15 text-[#09090B]" : "bg-[#1F2937] text-[#94A3B8]"
+                    active ? "bg-black/15 text-[#09090B]" : "bg-muted text-muted-foreground"
                   )}
                 >
                   {s.count}
@@ -503,7 +474,7 @@ export default function HistoryPage() {
             <p className="text-sm text-[#EF4444]">{error}</p>
           </div>
         ) : (
-          <Card className="border" style={{ borderColor: "#1F2937", backgroundColor: "#111827" }}>
+          <Card className="border" style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}>
             <CardContent className="p-4 sm:p-6">
               {/* ---------- TESTS ---------- */}
               {section === "tests" && (
@@ -525,14 +496,14 @@ export default function HistoryPage() {
                           <div
                             key={item._id}
                             className="group rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-5"
-                            style={{ borderColor: "#1F2937", backgroundColor: "#0d1220" }}
+                            style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}
                           >
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                               <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-semibold text-[#F9FAFB] sm:text-base">
+                                <p className="truncate text-sm font-semibold text-foreground sm:text-base">
                                   {item.testName}
                                 </p>
-                                <p className="mt-1 text-xs text-[#94A3B8]">
+                                <p className="mt-1 text-xs text-muted-foreground">
                                   {formatDate(item.submittedAt)} · {item.attemptedQuestions}/
                                   {item.totalQuestions} attempted
                                 </p>
@@ -543,7 +514,7 @@ export default function HistoryPage() {
                                   <div className="text-base font-bold sm:text-lg">
                                     {item.marksObtained}/{item.totalMarks}
                                   </div>
-                                  <div className="text-[10px] tracking-wide text-[#94A3B8] uppercase">
+                                  <div className="text-[10px] tracking-wide text-muted-foreground uppercase">
                                     Score
                                   </div>
                                 </div>
@@ -551,7 +522,7 @@ export default function HistoryPage() {
                                   <div className="text-base font-bold text-[#10B981] sm:text-lg">
                                     {item.accuracy}%
                                   </div>
-                                  <div className="text-[10px] tracking-wide text-[#94A3B8] uppercase">
+                                  <div className="text-[10px] tracking-wide text-muted-foreground uppercase">
                                     Accuracy
                                   </div>
                                 </div>
@@ -573,7 +544,7 @@ export default function HistoryPage() {
                             </div>
 
                             {/* Progress bar */}
-                            <div className="mt-3.5 h-1.5 w-full overflow-hidden rounded-full bg-[#1F2937]">
+                            <div className="mt-3.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
                               <div
                                 className="h-full rounded-full transition-[width] duration-700 ease-out"
                                 style={{
@@ -629,10 +600,10 @@ export default function HistoryPage() {
 
                             <div className="flex flex-1 items-center justify-between gap-3 pt-[-2px]">
                               <div>
-                                <p className="text-sm font-semibold text-[#F9FAFB]">
+                                <p className="text-sm font-semibold text-foreground">
                                   {sourceLabels[item.sourceType] || item.sourceType}
                                 </p>
-                                <p className="mt-0.5 text-xs text-[#94A3B8]">
+                                <p className="mt-0.5 text-xs text-muted-foreground">
                                   {formatDate(item.createdAt)}
                                 </p>
                               </div>
@@ -687,10 +658,10 @@ export default function HistoryPage() {
                               <Trophy className="h-5 w-5 text-[#F59E0B]" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-semibold text-[#F9FAFB]">
+                              <p className="truncate text-sm font-semibold text-foreground">
                                 {item.achievementId.name}
                               </p>
-                              <p className="mt-0.5 text-xs text-[#94A3B8]">
+                              <p className="mt-0.5 text-xs text-muted-foreground">
                                 {formatDate(item.unlockedAt)}
                               </p>
                               <span className="mt-2 inline-block text-sm font-bold text-[#F59E0B]">
@@ -731,7 +702,7 @@ export default function HistoryPage() {
                           <div
                             key={item._id}
                             className="flex flex-col rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-                            style={{ borderColor: "#1F2937", backgroundColor: "#0d1220" }}
+                            style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}
                           >
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-0.5">
@@ -755,15 +726,15 @@ export default function HistoryPage() {
                             </div>
 
                             {item.title && (
-                              <p className="mt-3 text-sm font-semibold text-[#F9FAFB]">
+                              <p className="mt-3 text-sm font-semibold text-foreground">
                                 {item.title}
                               </p>
                             )}
-                            <p className="mt-1 line-clamp-2 flex-1 text-xs leading-5 text-[#94A3B8]">
+                            <p className="mt-1 line-clamp-2 flex-1 text-xs leading-5 text-muted-foreground">
                               {item.content}
                             </p>
 
-                            <div className="mt-3 flex items-center justify-between border-t pt-3 text-[11px] text-[#94A3B8]" style={{ borderColor: "#1F2937" }}>
+                            <div className="mt-3 flex items-center justify-between border-t pt-3 text-[11px] text-muted-foreground" style={{ borderColor: "var(--border)" }}>
                               <span className="capitalize">{item.feedbackType} · {item.targetType}</span>
                               <span>{formatDate(item.createdAt)}</span>
                             </div>

@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useMemo, useState, type ChangeEvent } from "react"
 import {
@@ -22,6 +22,7 @@ import {
 import axios from "axios"
 import Image from "next/image"
 import { getInitials } from "@/lib/utils"
+import { CldUploadWidget } from "next-cloudinary"
 
 type EducationLevel =
   | "SSC"
@@ -242,13 +243,13 @@ function fieldInput(props: {
     <div className="space-y-1.5">
       <label
         htmlFor={props.id}
-        className="font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-[#5b6577] uppercase"
+        className="font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-muted-foreground uppercase"
       >
         {props.label}
       </label>
       <div className="relative">
         {Icon && (
-          <Icon className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#5b6577]" />
+          <Icon className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         )}
         <input
           id={props.id}
@@ -257,9 +258,8 @@ function fieldInput(props: {
           value={props.value}
           disabled={!props.editing}
           onChange={(e) => props.onChange(e.target.value)}
-          className={`w-full rounded-lg border border-[#212a37] bg-[#10151d] py-2.5 text-[13.5px] text-[#e7ecf3] outline-none transition placeholder:text-[#5b6577] focus:border-[#6ee7c9] disabled:opacity-60 ${
-            Icon ? "pl-9 pr-3.5" : "px-3.5"
-          }`}
+          className={`w-full rounded-sm border border-border bg-card py-2.5 text-[13.5px] dark:dark:text-[#e7ecf3] text-[#4a4f58]  outline-none transition placeholder:text-muted-foreground focus:border-[#6ee7c9] disabled:opacity-60 ${Icon ? "pl-9 pr-3.5" : "px-3.5"
+            }`}
         />
       </div>
     </div>
@@ -275,7 +275,7 @@ function MiniField({
 }) {
   return (
     <div className="space-y-1">
-      <label className="font-[JetBrains_Mono,monospace] text-[9.5px] tracking-wider text-[#5b6577] uppercase">
+      <label className="font-[JetBrains_Mono,monospace] text-[9.5px] tracking-wider text-muted-foreground uppercase">
         {label}
       </label>
       {children}
@@ -284,7 +284,7 @@ function MiniField({
 }
 
 const miniInputClass =
-  "w-full rounded-md border border-[#212a37] bg-[#141b25] px-2.5 py-2 text-[12.5px] text-[#e7ecf3] outline-none transition placeholder:text-[#5b6577] focus:border-[#6ee7c9]"
+  "w-full rounded-md border border-border bg-muted px-2.5 py-2 text-[12.5px] dark:text-[#e7ecf3] outline-none transition placeholder:text-muted-foreground focus:border-[#6ee7c9]"
 
 const CHART_TOOLTIP_STYLE = {
   background: "#141b25",
@@ -408,45 +408,7 @@ export default function ProfilePage() {
       setSaving(false)
     }
   }
-
-  const handleAvatarUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"]
-    if (!allowedTypes.includes(file.type)) {
-      alert("Please upload a valid image file (PNG, JPG, JPEG, or WEBP).")
-      return
-    }
-
-    try {
-      setUploadingImage(true)
-      const formData = new FormData()
-      formData.append("file", file)
-
-      const { data } = await axios.post("/api/profile/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      })
-
-      const avatarUrl = data?.data?.avatarUrl
-      if (!avatarUrl) throw new Error("No avatar URL returned")
-
-      const { data: profileData } = await axios.patch("/api/profile", {
-        avatarUrl,
-      })
-
-      setUser(profileData.data)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
-    } catch (error) {
-      console.error(error)
-      alert("Failed to upload profile image. Please try again.")
-    } finally {
-      setUploadingImage(false)
-      event.target.value = ""
-    }
-  }
-
+  const avatarUrl = user?.avatarUrl
   const level = user?.level || 1
   const totalXP = user?.totalXP || 0
   const xpIntoLevel = totalXP % XP_PER_LEVEL
@@ -464,7 +426,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0a0e14] font-[Inter,sans-serif] text-sm text-[#8a96a8]">
+      <div className="flex min-h-screen items-center justify-center bg-background font-[Inter,sans-serif] text-sm text-muted-foreground transition-colors duration-300">
         <span className="mr-2 h-1.5 w-1.5 animate-pulse rounded-full bg-[#6ee7c9]" />
         Loading profile...
       </div>
@@ -480,94 +442,82 @@ export default function ProfilePage() {
 
   return (
     <div
-      className="min-h-full bg-[#0a0e14] font-[Inter,sans-serif] text-[#e7ecf3]"
+      className="min-h-full bg-[#f4f4f4]0 dark:bg-[#16191f] font-[Inter,sans-serif] dark:text-[#e7ecf3] text-[#06120d]"
       style={{
         backgroundImage:
           "radial-gradient(circle at 15% 0%, rgba(139,124,246,0.06), transparent 40%), radial-gradient(circle at 85% 10%, rgba(110,231,201,0.05), transparent 40%)",
       }}
     >
-      <div className="mx-auto max-w-5xl space-y-5 px-4 pt-20 pb-12 sm:px-6 md:pt-8">
-        {showAvatarModal && user?.avatarUrl && (
-          <div
-            className="fixed inset-0 z-100 flex items-center justify-center bg-black/80 p-4"
-            onClick={() => setShowAvatarModal(false)}
-          >
-            <div className="relative max-h-full max-w-full" onClick={(e) => e.stopPropagation()}>
-              <button
-                type="button"
-                onClick={() => setShowAvatarModal(false)}
-                className="absolute top-3 right-3 z-10 rounded-full border border-white/20 bg-black/60 px-3 py-1 text-sm text-white"
-              >
-                ✕
-              </button>
-              <Image
-                src={user.avatarUrl}
-                alt="Profile preview"
-                className="max-h-[90vh] max-w-[90vw] rounded-2xl object-contain"
-                width={800}
-                height={800}
-              />
-            </div>
-          </div>
-        )}
-
-        {saved && (
-          <div className="rounded-lg border border-[rgba(62,207,142,0.35)] bg-[rgba(62,207,142,0.1)] px-4 py-2.5 font-[JetBrains_Mono,monospace] text-[12.5px] text-[#3ecf8e]">
-            ✓ Profile updated
-          </div>
-        )}
-
+      <div className="mx-auto max-w-5xl space-y-5 px-4 pt-2 pb-12 sm:px-6 md:pt-8">
         {/* ============ HERO ============ */}
-        <div className="rounded-2xl border border-[#212a37] bg-[#10151d] p-5 sm:p-7">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+        <div className="rounded-sm bg-[#9e9e9e19] p-5 sm:p-7">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col lg:gap-5 sm:flex-row sm:items-center">
               <div className="relative mx-auto shrink-0 sm:mx-0">
                 {user?.avatarUrl ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowAvatarModal(true)}
-                    className="overflow-hidden rounded-full"
-                  >
-                    <Image
-                      src={user.avatarUrl}
-                      alt="Profile"
-                      className="h-24 w-24 rounded-full object-cover sm:h-28 sm:w-28"
-                      width={112}
-                      height={112}
-                    />
-                  </button>
+                  <Image
+                    src={user.avatarUrl}
+                    alt="Profile"
+                    className="h-24 w-24 rounded-sm object-cover sm:h-40 sm:w-28"
+                    width={112}
+                    height={112}
+                  />
                 ) : (
                   <div className="flex h-24 w-24 items-center justify-center rounded-full bg-linear-to-br from-[#6ee7c9] to-[#8b7cf6] font-[Space_Grotesk,sans-serif] text-3xl font-bold text-[#08110d] sm:h-28 sm:w-28">
                     {getInitials(userdata?.name || "U")}
                   </div>
                 )}
 
-                <span className="absolute right-0 bottom-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#10151d] bg-linear-to-br font-[Space_Grotesk,sans-serif] text-[11px] font-bold text-[#0d0819]">
-                  <label className="absolute flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-[#212a37] bg-[#141b25] text-[#6ee7c9] shadow-[0_0_0_3px_#10151d] hover:bg-[#1a212b]">
+                <span className="absolute -right-3 -bottom-3 flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br font-[Space_Grotesk,sans-serif] text-[11px] font-bold text-[#0d0819]">
                   {editing ? (
-                    uploadingImage ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Camera className="h-3.5 w-3.5" />
-                    )
+                    <CldUploadWidget
+                      uploadPreset="apticore"
+                      onSuccess={async (result: any) => {
+                        const avatarUrl = result?.info?.secure_url;
+                        if (!avatarUrl) return;
+                        setUploadingImage(true);
+                        try {
+                          const { data: profileData } = await axios.patch("/api/profile", {
+                            avatarUrl,
+                          });
+                          setUser(profileData.data);
+                          setSaved(true);
+                          setTimeout(() => setSaved(false), 3000);
+                        } catch (error) {
+                          console.error(error);
+                          alert("Failed to update profile with new image.");
+                        } finally {
+                          setUploadingImage(false);
+                        }
+                      }}
+                    >
+                      {({ open }) => (
+                        <button
+                          type="button"
+                          onClick={() => open()}
+                          disabled={uploadingImage}
+                          className="absolute flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-border bg-muted dark:text-[#6ee7c9] shadow-[0_0_0_3px_#10151d] dark:hover:bg-[#1a212b] hover:bg-[#909090]"
+                        >
+                          {uploadingImage ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Camera className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      )}
+                    </CldUploadWidget>
                   ) : (
-                    <CameraOff className="h-3.5 w-3.5" />
+                    <div className="absolute flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-border bg-muted dark:text-[#6ae0c3] taxt:[#1f5346] shadow-[0_0_0_3px_#10151d] dark:hover:bg-[#1a212b] hover:bg-[#939393]">
+                      <CameraOff className="h-3.5 w-3.5" />
+                    </div>
                   )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleAvatarUpload}
-                    disabled={!editing || uploadingImage}
-                  />
-                </label>
                 </span>
 
-                
+
               </div>
 
-              <div className="flex-1 text-center sm:text-left">
-                <h1 className="font-[Space_Grotesk,sans-serif] text-2xl font-bold sm:text-3xl">
+              <div className="flex-1 sm:w-2xl sm:text-left">
+                <h1 className="font-[Space_Grotesk,sans-serif] text-2xl font-bold text-foreground sm:text-3xl">
                   {userdata?.name}
                 </h1>
 
@@ -575,45 +525,44 @@ export default function ProfilePage() {
                   <textarea
                     value={form.bio}
                     onChange={(e) => setForm({ ...form, bio: e.target.value })}
-                    rows={2}
+                    rows={5}
                     placeholder="Tell us about yourself..."
-                    className="mt-2 w-full resize-y rounded-lg border border-[#212a37] bg-[#141b25] px-3 py-2 text-[13.5px] text-[#e7ecf3] outline-none placeholder:text-[#5b6577] focus:border-[#6ee7c9]"
+                    className="mt-2 w-full rounded-sm border border-border bg-muted px-3 py-2 text-[13.5px] dark:text-[#e7ecf3] outline-none placeholder:text-muted-foreground focus:border-[#6ee7c9]"
                   />
                 ) : (
-                  <p className="mt-1.5 max-w-xl text-[13.5px] leading-6 text-[#8a96a8]">
+                  <p className="mt-1.5 w-full text-[13.5px]   text-muted-foreground">
                     {user?.bio || "No bio added yet."}
                   </p>
                 )}
 
-                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mt-4 flex flex-row  justify-between sm:flex-row sm:items-center sm:justify-between">
                   <span className="flex items-center justify-center gap-1.5 font-[Space_Grotesk,sans-serif] text-base font-bold sm:justify-start">
                     <Trophy className="h-4 w-4 text-[#f5a623]" />
                     {totalXP.toLocaleString()} XP
                   </span>
-                  <span className="font-[JetBrains_Mono,monospace] text-[11.5px] text-[#5b6577]">
+                  <span className="font-[JetBrains_Mono,monospace] text-[11.5px] text-muted-foreground">
                     Next Level: {nextLevelThreshold.toLocaleString()} XP
                   </span>
                 </div>
-
                 <div className="mt-2">
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-[#212a37]">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-[#211414]">
                     <div
-                      className="h-full rounded-full bg-linear-to-r from-[#8b7cf6] to-[#6ee7c9] transition-[width] duration-500"
+                      className="h-full rounded-full bg-linear-to-r from-[#8b7cf6] to-[#8df0d9] transition-[width] duration-500"
                       style={{ width: `${xpProgressPct}%` }}
                     />
                   </div>
-                  <p className="mt-1.5 font-[JetBrains_Mono,monospace] text-[11px] text-[#6ee7c9]">
+                  <p className="mt-1.5 font-[JetBrains_Mono,monospace] text-[11px] dark:text-[#6ee7c9]">
                     {Math.round(xpProgressPct)}%
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="flex shrink-0 justify-center gap-2.5 sm:justify-start">
+            <div className="flex shrink-0 justify-center gap-2.5 sm:justify-start sm:flex-col sm:w-40">
               {!editing ? (
                 <button
                   onClick={handleEdit}
-                  className="rounded-lg border border-[#212a37] bg-transparent px-5 py-2.5 text-[13px] font-semibold text-[#8a96a8] transition hover:border-[#3a4a5e] hover:text-[#e7ecf3]"
+                  className="rounded-sm border border-border px-5 py-2.5 text-[13px] font-semibold transition bg-[#3459ea] text-white hover:border-[#3a4a5e] hover:dark:text-[#e7ecf3]"
                 >
                   Edit Profile
                 </button>
@@ -621,14 +570,14 @@ export default function ProfilePage() {
                 <>
                   <button
                     onClick={() => setEditing(false)}
-                    className="rounded-lg border border-[#212a37] bg-transparent px-5 py-2.5 text-[13px] font-semibold text-[#8a96a8] transition hover:border-[#3a4a5e] hover:text-[#e7ecf3]"
+                    className="rounded-sm border border-border bg-transparent px-5 py-2.5 text-[13px] font-semibold text-muted-foreground transition hover:border-[#3a4a5e] hover:dark:text-[#e7ecf3]"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="rounded-lg bg-linear-to-br from-[#6ee7c9] to-[#57c9a8] px-5 py-2.5 text-[13px] font-bold text-[#06120d] transition hover:brightness-105 disabled:opacity-60"
+                    className="rounded-sm bg-linear-to-br from-[#6ee7c9] to-[#57c9a8] px-5 py-2.5 text-[13px] font-bold text-[#06120d] transition hover:brightness-105 disabled:opacity-60"
                   >
                     {saving ? "Saving..." : "Save"}
                   </button>
@@ -637,15 +586,15 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-3 border-t border-[#212a37] pt-5 sm:grid-cols-4">
+          <div className="mt-6 grid grid-cols-2 gap-3 border-t border-border pt-5 sm:grid-cols-4">
             {stats.map((s) => (
               <div
                 key={s.label}
-                className="flex items-center gap-3 rounded-xl border p-3.5"
+                className="flex items-center gap-3 rounded-sm border p-3.5"
                 style={{ borderColor: `${s.color}30`, backgroundColor: `${s.color}0d` }}
               >
                 <div
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm"
                   style={{ backgroundColor: `${s.color}1a`, color: s.color }}
                 >
                   <s.icon className="h-4.5 w-4.5" />
@@ -657,7 +606,7 @@ export default function ProfilePage() {
                   >
                     {s.label}
                   </p>
-                  <p className="font-[Space_Grotesk,sans-serif] text-base font-bold text-[#e7ecf3]">
+                  <p className="font-[Space_Grotesk,sans-serif] text-base font-bold dark:text-[#e7ecf3]">
                     {s.value}
                   </p>
                 </div>
@@ -670,7 +619,7 @@ export default function ProfilePage() {
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_1.4fr]">
           {/* Left column */}
           <div className="space-y-5">
-            <div className="rounded-2xl border border-[#212a37] bg-[#10151d] p-5">
+            <div className="rounded-sm dark:bg-[#459eff19]  bg-gray-200 p-5">
               <h2 className="font-[Space_Grotesk,sans-serif] text-[16px] font-bold">About</h2>
 
               {editing ? (
@@ -706,35 +655,35 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="mt-4 space-y-3 text-[13.5px]">
-                  <div className="flex items-center gap-2.5 text-[#c3cbd8]">
-                    <MapPin className="h-4 w-4 shrink-0 text-[#5b6577]" />
+                  <div className="flex items-center gap-2.5 dark:text-[#c3cbd8]">
+                    <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
                     {user?.location || "Not added"}
                   </div>
-                  <div className="flex items-center gap-2.5 text-[#c3cbd8]">
-                    <Phone className="h-4 w-4 shrink-0 text-[#5b6577]" />
+                  <div className="flex items-center gap-2.5 dark:text-[#c3cbd8]">
+                    <Phone className="h-4 w-4 shrink-0 text-muted-foreground" />
                     {user?.phone || "Not added"}
                   </div>
-                  <div className="flex items-center gap-2.5 text-[#c3cbd8]">
-                    <CalendarDays className="h-4 w-4 shrink-0 text-[#5b6577]" />
+                  <div className="flex items-center gap-2.5 dark:text-[#c3cbd8]">
+                    <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
                     {user?.dateOfBirth
                       ? new Date(user.dateOfBirth).toLocaleDateString("en-US", {
-                          month: "long",
-                          day: "numeric",
-                          year: "numeric",
-                        })
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      })
                       : "Not added"}
                   </div>
                 </div>
               )}
 
               {memberSince && (
-                <p className="mt-4 border-t border-[#212a37] pt-3.5 font-[JetBrains_Mono,monospace] text-[11px] text-[#5b6577]">
+                <p className="mt-4 border-t border-border pt-3.5 font-[JetBrains_Mono,monospace] text-[11px] text-muted-foreground">
                   Member since {memberSince}
                 </p>
               )}
             </div>
 
-            <div className="rounded-2xl border border-[#212a37] bg-[#10151d] p-5">
+            <div className="rounded-sm dark:bg-[#459eff19] bg-gray-200 p-5">
               <h2 className="font-[Space_Grotesk,sans-serif] text-[16px] font-bold">Links</h2>
 
               {editing ? (
@@ -765,13 +714,13 @@ export default function ProfilePage() {
                       href={user.resumeUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2.5 rounded-lg bg-[#141b25] px-4 py-2.5 text-[13.5px] font-semibold text-[#e7ecf3] transition hover:bg-[#1a212b]"
+                      className="flex items-center gap-2.5 rounded-sm dark:bg-[#31558A] bg-[#5c86d3] px-4 py-2.5 text-[13.5px] font-semibold dark:text-[#e7ecf3] transition hover:bg-[#31558A]"
                     >
-                      <FileText className="h-4 w-4 text-[#8a96a8]" />
+                      <FileText className="h-4 w-4 text-[#e7ecf3]" />
                       View Resume
                     </a>
                   ) : (
-                    <p className="rounded-lg border border-dashed border-[#212a37] px-4 py-2.5 text-[13px] text-[#5b6577]">
+                    <p className="rounded-sm border-dashed dark:border-[#31558A] px-4 py-2.5 text-[13px] text-muted-foreground">
                       No resume added
                     </p>
                   )}
@@ -780,13 +729,13 @@ export default function ProfilePage() {
                       href={user.linkedinUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2.5 rounded-lg border border-[rgba(110,231,201,0.3)] bg-[rgba(110,231,201,0.08)] px-4 py-2.5 text-[13.5px] font-semibold text-[#6ee7c9] transition hover:bg-[rgba(110,231,201,0.14)]"
+                      className="flex items-center gap-2.5 rounded-sm  dark:bg-[#2D967C] bg-[#3efacb] px-4 py-2.5 text-[13.5px] font-semibold dark:text-[#e7ecf3] transition hover:bg-[#58bfa3]"
                     >
                       <LinkIcon className="h-4 w-4" />
                       LinkedIn Profile
                     </a>
                   ) : (
-                    <p className="rounded-lg border border-dashed border-[#212a37] px-4 py-2.5 text-[13px] text-[#5b6577]">
+                    <p className="rounded-sm border border-dashed border-border px-4 py-2.5 text-[13px] text-muted-foreground">
                       No LinkedIn added
                     </p>
                   )}
@@ -796,7 +745,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Right column — Education */}
-          <div className="rounded-2xl border border-[#212a37] bg-[#10151d] p-5">
+          <div className="rounded-sm dark:bg-[#459eff19] bg-gray-200 p-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <GraduationCap className="h-5 w-5 text-[#8b7cf6]" />
@@ -807,7 +756,7 @@ export default function ProfilePage() {
               {editing && (
                 <button
                   onClick={addEducation}
-                  className="flex items-center gap-1.5 rounded-lg border border-[rgba(110,231,201,0.3)] bg-[rgba(110,231,201,0.08)] px-3 py-1.5 font-[JetBrains_Mono,monospace] text-[11px] font-semibold text-[#6ee7c9] transition hover:bg-[rgba(110,231,201,0.14)]"
+                  className="flex items-center gap-1.5 rounded-sm border border-[rgba(110,231,201,0.3)] bg-[rgba(110,231,201,0.08)] px-3 py-1.5 font-[JetBrains_Mono,monospace] text-[11px] font-semibold dark:text-[#6ee7c9] transition hover:bg-[rgba(110,231,201,0.14)]"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   Add
@@ -818,7 +767,7 @@ export default function ProfilePage() {
             {editing ? (
               <div className="mt-4 space-y-4">
                 {educationList.length === 0 && (
-                  <p className="text-[13px] text-[#5b6577]">
+                  <p className="text-[13px] text-muted-foreground">
                     No education entries yet. Click "Add" to create one.
                   </p>
                 )}
@@ -826,7 +775,7 @@ export default function ProfilePage() {
                 {educationList.map((entry) => (
                   <div
                     key={entry._key}
-                    className="rounded-xl border border-[#212a37] bg-[#141b25] p-4"
+                    className="rounded-sm dark:bg-[#256fbf19] bg-gray-200 p-4"
                   >
                     <div className="mb-3 flex items-center justify-between">
                       <span className="font-[JetBrains_Mono,monospace] text-[10.5px] font-semibold tracking-wider text-[#8b7cf6] uppercase">
@@ -834,7 +783,7 @@ export default function ProfilePage() {
                       </span>
                       <button
                         onClick={() => removeEducation(entry._key)}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg text-[#f2555a]/70 transition hover:bg-[rgba(242,85,90,0.1)] hover:text-[#f2555a]"
+                        className="flex h-7 w-7 items-center justify-center rounded-sm text-[#f2555a]/70 transition hover:bg-[rgba(242,85,90,0.1)] hover:text-[#f2555a]"
                         aria-label="Remove education entry"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -851,7 +800,7 @@ export default function ProfilePage() {
                           className={miniInputClass}
                         >
                           {EDUCATION_LEVELS.map((l) => (
-                            <option key={l} value={l} className="bg-[#141b25]">
+                            <option key={l} value={l} className="bg-muted">
                               {l}
                             </option>
                           ))}
@@ -866,7 +815,7 @@ export default function ProfilePage() {
                           className={miniInputClass}
                         >
                           {EDUCATION_STATUSES.map((s) => (
-                            <option key={s} value={s} className="bg-[#141b25]">
+                            <option key={s} value={s} className="bg-muted">
                               {s}
                             </option>
                           ))}
@@ -936,11 +885,11 @@ export default function ProfilePage() {
                           onChange={(e) => updateEducation(entry._key, { medium: e.target.value })}
                           className={miniInputClass}
                         >
-                          <option value="" className="bg-[#141b25]">
+                          <option value="" className="bg-muted">
                             Not specified
                           </option>
                           {MEDIUM_OPTIONS.map((m) => (
-                            <option key={m} value={m} className="bg-[#141b25]">
+                            <option key={m} value={m} className="bg-muted">
                               {m}
                             </option>
                           ))}
@@ -1002,14 +951,14 @@ export default function ProfilePage() {
                       </MiniField>
                     </div>
 
-                    <label className="mt-3 flex cursor-pointer items-center gap-2 text-[12px] text-[#8a96a8]">
+                    <label className="mt-3 flex cursor-pointer items-center gap-2 text-[12px] text-muted-foreground">
                       <input
                         type="checkbox"
                         checked={entry.currentlyStudying}
                         onChange={(e) =>
                           updateEducation(entry._key, { currentlyStudying: e.target.checked })
                         }
-                        className="h-3.5 w-3.5 rounded border-[#212a37] bg-[#141b25] accent-[#6ee7c9]"
+                        className="h-3.5 w-3.5 rounded border-border bg-muted accent-[#6ee7c9]"
                       />
                       Currently studying here
                     </label>
@@ -1036,7 +985,7 @@ export default function ProfilePage() {
                       )}
 
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-[15px] font-semibold text-[#e7ecf3]">
+                        <p className="text-[15px] font-semibold dark:text-[#e7ecf3]">
                           {edu.institutionName}
                         </p>
                         <span
@@ -1052,20 +1001,20 @@ export default function ProfilePage() {
                       </div>
 
                       {edu.universityOrBoard && (
-                        <p className="mt-0.5 text-[12px] text-[#5b6577]">{edu.universityOrBoard}</p>
+                        <p className="mt-0.5 text-[12px] text-muted-foreground">{edu.universityOrBoard}</p>
                       )}
 
                       {(edu.degree || edu.specialization || edu.level) && (
-                        <p className="mt-1 text-[13.5px] font-medium text-[#6ee7c9]">
+                        <p className="mt-1 text-[13.5px] font-medium dark:text-[#6ee7c9]">
                           {[edu.degree, edu.specialization].filter(Boolean).join(" · ") || edu.level}
                         </p>
                       )}
 
                       {edu.stream && (
-                        <p className="mt-0.5 text-[13px] text-[#8a96a8]">{edu.stream}</p>
+                        <p className="mt-0.5 text-[13px] text-muted-foreground">{edu.stream}</p>
                       )}
 
-                      <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 font-[JetBrains_Mono,monospace] text-[11px] text-[#5b6577]">
+                      <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 font-[JetBrains_Mono,monospace] text-[11px] text-muted-foreground">
                         {years && <span>{years}</span>}
                         {typeof edu.cgpa === "number" && <span>CGPA {edu.cgpa}</span>}
                         {typeof edu.percentage === "number" && <span>{edu.percentage}%</span>}
@@ -1076,7 +1025,7 @@ export default function ProfilePage() {
                 })}
               </div>
             ) : (
-              <p className="mt-4 text-[13px] text-[#5b6577]">
+              <p className="mt-4 text-[13px] text-muted-foreground">
                 No education details added yet.
               </p>
             )}

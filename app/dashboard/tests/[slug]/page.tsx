@@ -188,13 +188,13 @@ function Page({ params }: { params: Promise<{ slug: string }> }) {
   if (loading) {
     return (
       <div
-        className="flex min-h-screen items-center justify-center bg-[#0a0e14] font-[Inter,sans-serif] text-[#e7ecf3]"
+        className="flex min-h-screen items-center justify-center bg-background font-[Inter,sans-serif] text-[#e7ecf3] transition-colors duration-300"
         style={{
           backgroundImage:
             "radial-gradient(circle at 15% 0%, rgba(139,124,246,0.06), transparent 40%), radial-gradient(circle at 85% 10%, rgba(110,231,201,0.05), transparent 40%)",
         }}
       >
-        <div className="flex items-center gap-2.5 font-[JetBrains_Mono,monospace] text-sm text-[#8a96a8]">
+        <div className="flex items-center gap-2.5 font-[JetBrains_Mono,monospace] text-sm text-muted-foreground">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#6ee7c9]" />
           Loading...
         </div>
@@ -205,13 +205,13 @@ function Page({ params }: { params: Promise<{ slug: string }> }) {
   if (!category) {
     return (
       <div
-        className="flex min-h-screen items-center justify-center bg-[#0a0e14] font-[Inter,sans-serif] text-[#e7ecf3]"
+        className="flex min-h-screen items-center justify-center bg-background font-[Inter,sans-serif] text-[#e7ecf3] transition-colors duration-300"
         style={{
           backgroundImage:
             "radial-gradient(circle at 15% 0%, rgba(139,124,246,0.06), transparent 40%), radial-gradient(circle at 85% 10%, rgba(110,231,201,0.05), transparent 40%)",
         }}
       >
-        <p className="text-sm text-[#8a96a8]">Category not found</p>
+        <p className="text-sm text-muted-foreground">Category not found</p>
       </div>
     )
   }
@@ -225,7 +225,7 @@ function Page({ params }: { params: Promise<{ slug: string }> }) {
 
   return (
     <div
-      className="min-h-screen bg-[#0a0e14] font-[Inter,sans-serif] text-[#e7ecf3]"
+      className="min-h-screen bg-background dark:bg-[#16191f] font-[Inter,sans-serif] text-[#e7ecf3] transition-colors duration-300"
       style={{
         backgroundImage:
           "radial-gradient(circle at 15% 0%, rgba(139,124,246,0.06), transparent 40%), radial-gradient(circle at 85% 10%, rgba(110,231,201,0.05), transparent 40%)",
@@ -238,16 +238,16 @@ function Page({ params }: { params: Promise<{ slug: string }> }) {
             <h1 className="mt-1 font-[Space_Grotesk,sans-serif] text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">
               {category.name}
             </h1>
-            <p className="mt-2 max-w-2xl text-[14.5px] leading-6 text-[#8a96a8]">
+            <p className="mt-2 max-w-2xl text-[14.5px] leading-6 text-muted-foreground">
               {category.description}
             </p>
           </div>
 
           <div className="grid gap-3.5 sm:grid-cols-3">
-            <div className="rounded-2xl border border-[#212a37] bg-[#10151d] p-5">
+            <div className="rounded-2xl border border-border bg-card p-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-[#5b6577] uppercase">
+                  <p className="font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-muted-foreground uppercase">
                     Total Questions
                   </p>
                   <p className="mt-2 font-[Space_Grotesk,sans-serif] text-[26px] font-bold">
@@ -260,9 +260,9 @@ function Page({ params }: { params: Promise<{ slug: string }> }) {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-[#212a37] bg-[#10151d] p-5">
+            <div className="rounded-2xl border border-border bg-card p-5">
               <div className="flex items-center justify-between">
-                <p className="font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-[#5b6577] uppercase">
+                <p className="font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-muted-foreground uppercase">
                   Completed
                 </p>
                 <span className="text-[#3ecf8e]">✓</span>
@@ -276,16 +276,16 @@ function Page({ params }: { params: Promise<{ slug: string }> }) {
                   style={{ width: `${completionPercentage}%` }}
                 />
               </div>
-              <p className="mt-2 font-[JetBrains_Mono,monospace] text-[10.5px] text-[#5b6577]">
+              <p className="mt-2 font-[JetBrains_Mono,monospace] text-[10.5px] text-muted-foreground">
                 {completionPercentage.toFixed(1)}% complete
                 {mixedCompleted ? " · mixed session done" : ""}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-[#212a37] bg-[#10151d] p-5">
+            <div className="rounded-2xl border border-border bg-card p-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-[#5b6577] uppercase">
+                  <p className="font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-muted-foreground uppercase">
                     Subtopics
                   </p>
                   <p className="mt-2 font-[Space_Grotesk,sans-serif] text-[26px] font-bold">
@@ -315,7 +315,7 @@ function Page({ params }: { params: Promise<{ slug: string }> }) {
               {adminTests.map((test) => (
                 <div
                   key={test._id}
-                  className="flex flex-col rounded-2xl border border-[rgba(245,166,35,0.3)] bg-[#10151d] p-5 transition hover:border-[rgba(245,166,35,0.55)]"
+                  className="flex flex-col rounded-2xl border border-[rgba(245,166,35,0.3)] bg-card p-5 transition hover:border-[rgba(245,166,35,0.55)]"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-[Space_Grotesk,sans-serif] text-[16px] font-bold">
@@ -325,17 +325,17 @@ function Page({ params }: { params: Promise<{ slug: string }> }) {
                       Admin
                     </span>
                   </div>
-                  <p className="mt-2 text-[13px] leading-5.5 text-[#8a96a8]">
+                  <p className="mt-2 text-[13px] leading-5.5 text-muted-foreground">
                     {test.description || "Admin-created test"}
                   </p>
-                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-[JetBrains_Mono,monospace] text-[11px] text-[#5b6577]">
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-[JetBrains_Mono,monospace] text-[11px] text-muted-foreground">
                     <span>Σ {test.totalQuestions} questions</span>
                     <span>⏱ {test.durationMinutes} min</span>
                     <span className="capitalize">⚡ {test.difficultyLevel}</span>
                   </div>
-                  <p className="mt-2 font-[JetBrains_Mono,monospace] text-[10.5px] text-[#5b6577]">
+                  <p className="mt-2 font-[JetBrains_Mono,monospace] text-[10.5px] text-muted-foreground">
                     Created by{" "}
-                    <span className="text-[#8a96a8]">
+                    <span className="text-muted-foreground">
                       {test.createdBy?.name || "Admin"}
                     </span>
                   </p>
@@ -360,14 +360,14 @@ function Page({ params }: { params: Promise<{ slug: string }> }) {
 
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="relative flex-1">
-              <span className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[#5b6577]">
+              <span className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-muted-foreground">
                 ⌕
               </span>
               <input
                 placeholder="Search topics..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-lg border border-[#212a37] bg-[#10151d] py-2.5 pr-3.5 pl-9 text-[13.5px] text-[#e7ecf3] outline-none transition placeholder:text-[#5b6577] focus:border-[#6ee7c9]"
+                className="w-full rounded-lg border border-border bg-card py-2.5 pr-3.5 pl-9 text-[13.5px] text-[#e7ecf3] outline-none transition placeholder:text-muted-foreground focus:border-[#6ee7c9]"
               />
             </div>
 
@@ -375,16 +375,16 @@ function Page({ params }: { params: Promise<{ slug: string }> }) {
               <button
                 type="button"
                 onClick={() => setDifficultyMenuOpen((open) => !open)}
-                className="flex w-full items-center justify-between rounded-lg border border-[#212a37] bg-[#10151d] px-3.5 py-2.5 text-[13.5px] text-[#e7ecf3] transition hover:border-[#3a4a5e]"
+                className="flex w-full items-center justify-between rounded-lg border border-border bg-card px-3.5 py-2.5 text-[13.5px] text-[#e7ecf3] transition hover:border-[#3a4a5e]"
               >
                 {
                   DIFFICULTY_OPTIONS.find((o) => o.value === difficultyFilter)
                     ?.label
                 }
-                <span className="text-[#5b6577]">▾</span>
+                <span className="text-muted-foreground">▾</span>
               </button>
               {difficultyMenuOpen && (
-                <div className="absolute z-20 mt-1.5 w-full overflow-hidden rounded-lg border border-[#212a37] bg-[#141b25] shadow-[0_10px_30px_rgba(0,0,0,0.4)]">
+                <div className="absolute z-20 mt-1.5 w-full overflow-hidden rounded-lg border border-border bg-muted shadow-[0_10px_30px_rgba(0,0,0,0.4)]">
                   {DIFFICULTY_OPTIONS.map((option) => (
                     <button
                       key={option.value}
@@ -416,22 +416,22 @@ function Page({ params }: { params: Promise<{ slug: string }> }) {
               return (
                 <div
                   key={sub._id}
-                  className="flex flex-col rounded-2xl border border-[#212a37] bg-[#10151d] p-5 transition hover:border-[#37465a]"
+                  className="flex flex-col rounded-2xl border border-border bg-card p-5 transition hover:border-[#37465a]"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-[Space_Grotesk,sans-serif] text-[16px] font-bold">
                       {sub.name}
                     </h3>
-                    <span className="shrink-0 rounded-full border border-[#212a37] bg-[#141b25] px-2 py-0.5 font-[JetBrains_Mono,monospace] text-[9.5px] text-[#5b6577]">
+                    <span className="shrink-0 rounded-full border border-border bg-muted px-2 py-0.5 font-[JetBrains_Mono,monospace] text-[9.5px] text-muted-foreground">
                       {sub.slug}
                     </span>
                   </div>
 
-                  <p className="mt-2 text-[13px] leading-5.5 text-[#8a96a8]">
+                  <p className="mt-2 text-[13px] leading-5.5 text-muted-foreground">
                     {sub.description || "Master this topic through practice"}
                   </p>
 
-                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-[JetBrains_Mono,monospace] text-[11px] text-[#5b6577]">
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-[JetBrains_Mono,monospace] text-[11px] text-muted-foreground">
                     <span>▤ {sub.questionCount} questions</span>
                     <span>⚡ Practice</span>
                     <span>⏱ Timed</span>
@@ -448,7 +448,7 @@ function Page({ params }: { params: Promise<{ slug: string }> }) {
                       disabled={isCompleted}
                       className={`flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-[13px] font-bold transition ${
                         isCompleted
-                          ? "cursor-not-allowed border border-[#212a37] bg-[#141b25] text-[#5b6577]"
+                          ? "cursor-not-allowed border border-border bg-muted text-muted-foreground"
                           : "bg-linear-to-br from-[#6ee7c9] to-[#57c9a8] text-[#06120d] hover:brightness-105"
                       }`}
                     >
@@ -465,8 +465,8 @@ function Page({ params }: { params: Promise<{ slug: string }> }) {
               )
             })
           ) : (
-            <div className="col-span-full rounded-2xl border border-dashed border-[#212a37] bg-[#10151d] p-12 text-center">
-              <p className="text-[13.5px] text-[#5b6577]">
+            <div className="col-span-full rounded-2xl border border-dashed border-border bg-card p-12 text-center">
+              <p className="text-[13.5px] text-muted-foreground">
                 No topics found matching your search
               </p>
             </div>

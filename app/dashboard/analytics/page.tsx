@@ -70,6 +70,7 @@ const palette = [
   "#f2896b",
 ]
 
+
 const CHART_TOOLTIP_STYLE = {
   background: "#141b25",
   border: "1px solid #212a37",
@@ -113,7 +114,7 @@ function getDateKey(date: Date) {
   return date.toISOString().split("T")[0]
 }
 
-function getDayLabel(date: Date) {
+function getChartLabel(date: Date) {
   return date.toLocaleDateString("en", { weekday: "short" })
 }
 
@@ -124,6 +125,7 @@ interface UserData {
   role?: string
 }
 
+
 export default function AnalyticsPage() {
   const [period, setPeriod] = useState("7d")
   const [results, setResults] = useState<AnalyticsResult[]>([])
@@ -133,30 +135,63 @@ export default function AnalyticsPage() {
   const [userdata, setUserData] = useState<UserData | null>(null)
   const router = useRouter()
 
-  useEffect(() => {
-    const getuserdata = async () => {
-      try {
-        const { data } = await axios.get("/api/auth/me")
-        setUserData(data.data)
-      } catch (error) {
-        console.error(error)
-      }
-    }
-    getuserdata()
-  }, [])
+  const visibleWindowDays =
+    period === "30d"
+      ? 30
+      : period === "90d"
+        ? 90
+        : 7
+
+  const completedResults = useMemo(
+    () => results.filter((item) => item.status === "completed"),
+    [results]
+  )
+
+  const windowResults = useMemo(() => {
+    if (!completedResults.length) return []
+
+    const cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() - (visibleWindowDays - 1))
+
+    return completedResults.filter((item) => {
+      const submittedAt = item.submittedAt || item.startedAt || item.createdAt
+      if (!submittedAt) return false
+      return new Date(submittedAt) >= cutoff
+    })
+  }, [results, visibleWindowDays])
+
 
   useEffect(() => {
-    const getLeaderboard = async () => {
+    const loadAnalytics = async () => {
       try {
-        const { data } = await axios.get("/api/leaderboard")
-        if (data.success && Array.isArray(data.data)) {
-          setLeaderboard(data.data)
+        setLoading(true)
+
+        const { data } = await axios.get("/api/dashboard/analytics", {
+          withCredentials: true,
+        })
+
+        if (!data.success) {
+          throw new Error(data.error || "Failed to load analytics")
         }
+
+        setUserData(data.data.user)
+        setProfile(data.data.profile)
+        setLeaderboard(data.data.leaderboard || [])
+
+        const completedResults = (data.data.results || []).filter(
+          (result: AnalyticsResult) =>
+            result?.status === "completed"
+        )
+
+        setResults(completedResults)
       } catch (error) {
-        console.error(error)
+        console.error("Failed to load analytics data", error)
+      } finally {
+        setLoading(false)
       }
     }
-    getLeaderboard()
+
+    void loadAnalytics()
   }, [])
 
   const myRankEntry = useMemo(() => {
@@ -184,6 +219,75 @@ export default function AnalyticsPage() {
       tests: Math.round(total.tests / leaderboard.length),
     }
   }, [leaderboard])
+
+  const scoreData = useMemo(() => {
+    const points =
+      period === "7d"
+        ? 7
+        : period === "30d"
+          ? 30
+          : 90
+
+    const buckets = Array.from({ length: points }, (_, index) => {
+      const day = new Date()
+
+      day.setDate(
+        day.getDate() - (points - index - 1)
+      )
+
+      return day
+    })
+
+    return buckets.map((day) => {
+      const key = getDateKey(day)
+
+      const dayResults = windowResults.filter((item) => {
+        const submittedAt =
+          item.submittedAt ||
+          item.startedAt ||
+          item.createdAt
+
+        return submittedAt
+          ? getDateKey(new Date(submittedAt)) === key
+          : false
+      })
+
+      const average = dayResults.length
+        ? Math.round(
+          dayResults.reduce(
+            (sum, item) =>
+              sum + (item.accuracy || 0),
+            0
+          ) / dayResults.length
+        )
+        : 0
+
+      const studyTime = dayResults.reduce(
+        (sum, item) =>
+          sum + (item.timeSpentSeconds || 0),
+        0
+      )
+
+      return {
+        date: getChartLabel(day, period),
+        score: average,
+        time: Math.round(studyTime / 60),
+      }
+    })
+  }, [period, results])
+
+  function getChartLabel(date: Date, period: string) {
+    if (period === "7d") {
+      return date.toLocaleDateString("en", {
+        weekday: "short",
+      })
+    }
+
+    return date.toLocaleDateString("en", {
+      day: "numeric",
+      month: "short",
+    })
+  }
 
   const accuracyChartData = [
     {
@@ -225,51 +329,7 @@ export default function AnalyticsPage() {
     }
   }
 
-  useEffect(() => {
-    const loadAnalytics = async () => {
-      try {
-        const [{ data: resultsData }, { data: profileData }] =
-          await Promise.all([
-            axios.get("/api/results?limit=100"),
-            axios.get("/api/profile").catch(() => ({ data: { data: null } })),
-          ])
-
-        const completedResults = (resultsData?.data || []).filter(
-          (result: AnalyticsResult) => result?.status === "completed"
-        )
-
-        setResults(completedResults)
-        setProfile(profileData?.data || null)
-      } catch (error) {
-        console.error("Failed to load analytics data", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    void loadAnalytics()
-  }, [])
-
-  const completedResults = useMemo(
-    () => results.filter((item) => item.status === "completed"),
-    [results]
-  )
-
-  const visibleWindowDays = period === "30d" ? 30 : period === "90d" ? 90 : 7
-  const windowResults = useMemo(() => {
-    if (!completedResults.length) return []
-
-    const cutoff = new Date()
-    cutoff.setDate(cutoff.getDate() - (visibleWindowDays - 1))
-
-    return completedResults.filter((item) => {
-      const submittedAt = item.submittedAt || item.startedAt || item.createdAt
-      if (!submittedAt) return false
-      return new Date(submittedAt) >= cutoff
-    })
-  }, [completedResults, visibleWindowDays])
-
-  const scoreData = useMemo(() => {
+  const scoreDatas = useMemo(() => {
     const points = period === "7d" ? 7 : 6
     const buckets = Array.from({ length: points }, (_, index) => {
       const day = new Date()
@@ -285,9 +345,9 @@ export default function AnalyticsPage() {
       })
       const average = dayResults.length
         ? Math.round(
-            dayResults.reduce((sum, item) => sum + (item.accuracy || 0), 0) /
-              dayResults.length
-          )
+          dayResults.reduce((sum, item) => sum + (item.accuracy || 0), 0) /
+          dayResults.length
+        )
         : 0
       const studyTime = dayResults.reduce(
         (sum, item) => sum + (item.timeSpentSeconds || 0),
@@ -295,7 +355,7 @@ export default function AnalyticsPage() {
       )
 
       return {
-        date: getDayLabel(day),
+        date: getChartLabel(day, period),
         score: average,
         time: Math.round(studyTime / 60),
       }
@@ -311,12 +371,12 @@ export default function AnalyticsPage() {
     windowResults.forEach((item, index) => {
       const categoryName =
         typeof item.testId?.categoryId === "object" &&
-        item.testId.categoryId !== null
+          item.testId.categoryId !== null
           ? item.testId.categoryId.name
           : undefined
       const subcategoryName =
         typeof item.testId?.subcategory === "object" &&
-        item.testId.subcategory !== null
+          item.testId.subcategory !== null
           ? item.testId.subcategory.name
           : undefined
       const topicLabel =
@@ -367,7 +427,7 @@ export default function AnalyticsPage() {
     if (!windowResults.length) return 0
     return Math.round(
       windowResults.reduce((sum, item) => sum + (item.accuracy || 0), 0) /
-        windowResults.length
+      windowResults.length
     )
   }, [windowResults])
 
@@ -441,7 +501,7 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0a0e14] font-[Inter,sans-serif] text-sm text-[#8a96a8]">
+      <div className="flex min-h-screen items-center justify-center bg-background font-[Inter,sans-serif] text-sm text-muted-foreground transition-colors duration-300">
         <span className="mr-2 h-1.5 w-1.5 animate-pulse rounded-full bg-[#6ee7c9]" />
         Loading your analytics...
       </div>
@@ -450,53 +510,63 @@ export default function AnalyticsPage() {
 
   return (
     <div
-      className="min-h-screen bg-[#0a0e14] font-[Inter,sans-serif] text-[#e7ecf3]"
+      className="min-h-screen bg-[#f4f4f4] dark:bg-[#16191f] font-[Inter,sans-serif] dark:text-[#d7dce3] text-[#2e2e2e]  transition-colors duration-300"
       style={{
         backgroundImage:
           "radial-gradient(circle at 15% 0%, rgba(139,124,246,0.06), transparent 40%), radial-gradient(circle at 85% 10%, rgba(110,231,201,0.05), transparent 40%)",
       }}
     >
-      <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 pt-20 pb-12 sm:px-6 md:pt-8 lg:px-10">
+      <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 pt-2 pb-4 sm:px-6 md:pt-8 lg:px-10">
         {/* Header */}
-        <div className="flex flex-col gap-4 rounded-2xl border border-[#212a37] bg-[#10151d] p-5 sm:flex-row sm:items-end sm:justify-between sm:p-7">
+        <div className="flex flex-col gap-4 rounded-sm border border-border bg-card p-5 sm:flex-row sm:items-end sm:justify-between sm:p-7">
           <div>
             <div className="mb-2 flex items-center gap-2">
-              <div className="rounded-lg border border-[rgba(110,231,201,0.3)] bg-[rgba(110,231,201,0.1)] p-2 text-[#6ee7c9]">
+              <div className="rounded-sm border border-[rgba(110,231,201,0.3)] bg-[rgba(110,231,201,0.1)] p-2 text-[#6ee7c9]">
                 <TrendingUp className="h-4 w-4" />
               </div>
-              <span className="rounded-full border border-[#212a37] bg-[#141b25] px-2.5 py-1 font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-[#8a96a8] uppercase">
+              <span className="rounded-sm border border-border bg-muted px-2.5 py-1 font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-muted-foreground uppercase">
                 Performance insights
               </span>
             </div>
             <h1 className="font-[Space_Grotesk,sans-serif] text-2xl font-bold tracking-tight sm:text-3xl">
               Analytics Dashboard
             </h1>
-            <p className="mt-2 max-w-2xl text-[13.5px] leading-6 text-[#8a96a8]">
+            <p className="mt-2 max-w-2xl text-[13.5px] leading-6 text-muted-foreground">
               Review your recent progress, identify weak areas, and keep your
               prep momentum high.
             </p>
           </div>
 
-          <div className="flex gap-1.5 rounded-xl border-[#212a37] bg-[#141b25] p-1.5">
-            <button
-              onClick={() => setPeriod("7d")}
-              className="rounded-lg bg-linear-to-br from-[#6ee7c9] to-[#57c9a8] px-3.5 py-1.5 font-[JetBrains_Mono,monospace] text-[12px] font-semibold text-[#06120d]"
-            >
-              7 days
-            </button>
+          <div className="flex gap-1.5 rounded-sm items-center justify-between border border-border bg-card p-1.5">
+            {[
+              { value: "7d", label: "7 days" },
+              { value: "30d", label: "30 days" },
+              { value: "90d", label: "90 days" },
+            ].map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setPeriod(option.value)}
+                className={`rounded-sm px-3.5 py-1.5 font-[JetBrains_Mono,monospace] text-[12px] font-semibold transition ${period === option.value
+                  ? "bg-linear-to-br from-[#6ee7c9] to-[#57c9a8] text-[#06120d]"
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  }`}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
         </div>
 
         {/* Stat cards */}
-        <div className="grid gap-3.5 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3.5 grid-cols-2 xl:grid-cols-4">
           {statCards.map((stat) => (
             <div
               key={stat.label}
-              className="rounded-2xl border border-[#212a37] bg-[#10151d] p-5"
+              className="rounded-sm border border-border bg-card p-5"
             >
               <div className="mb-4 flex items-center justify-between">
                 <div
-                  className="rounded-lg border p-2"
+                  className="rounded-sm border p-2"
                   style={{
                     borderColor: `${stat.color}45`,
                     backgroundColor: `${stat.color}14`,
@@ -505,31 +575,31 @@ export default function AnalyticsPage() {
                 >
                   <stat.icon className="h-5 w-5" />
                 </div>
-                <span className="rounded-full border border-[#212a37] px-2 py-0.5 font-[JetBrains_Mono,monospace] text-[9.5px] text-[#5b6577]">
+                <span className="rounded-sm border border-border px-2 py-0.5 font-[JetBrains_Mono,monospace] text-[9.5px] text-muted-foreground">
                   {stat.change}
                 </span>
               </div>
               <div className="font-[Space_Grotesk,sans-serif] text-2xl font-bold">
                 {stat.value}
               </div>
-              <p className="mt-1 text-[12.5px] text-[#8a96a8]">{stat.label}</p>
+              <p className="mt-1 text-[12.5px] text-muted-foreground">{stat.label}</p>
             </div>
           ))}
         </div>
 
         {/* Trend + topic accuracy */}
         <div className="grid gap-3.5 xl:grid-cols-[1.4fr_0.9fr]">
-          <div className="rounded-2xl border border-[#212a37] bg-[#10151d] p-5 sm:p-7">
+          <div className="rounded-sm border border-border bg-card p-5 sm:p-7">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="font-[Space_Grotesk,sans-serif] text-[17px] font-bold">
                   Performance trend
                 </h2>
-                <p className="mt-0.5 text-[13px] text-[#8a96a8]">
+                <p className="mt-0.5 text-[13px] text-muted-foreground">
                   Your recent accuracy across the selected range
                 </p>
               </div>
-              <span className="flex items-center gap-1.5 rounded-full border border-[rgba(62,207,142,0.35)] bg-[rgba(62,207,142,0.1)] px-2.5 py-1 font-[JetBrains_Mono,monospace] text-[10.5px] font-semibold text-[#3ecf8e]">
+              <span className="flex items-center gap-1.5 rounded-sm border border-[rgba(62,207,142,0.35)] bg-[rgba(62,207,142,0.1)] px-2.5 py-1 font-[JetBrains_Mono,monospace] text-[10.5px] font-semibold text-[#3ecf8e]">
                 <Activity className="h-3 w-3" /> Live
               </span>
             </div>
@@ -584,11 +654,11 @@ export default function AnalyticsPage() {
               </ResponsiveContainer>
             </div>
           </div>
-          <div className="rounded-2xl border border-[#212a37] bg-[#10151d] p-5 sm:p-7">
+          <div className="rounded-sm border border-border bg-card p-5 sm:p-7">
             <h2 className="font-[Space_Grotesk,sans-serif] text-[17px] font-bold">
               Topic accuracy
             </h2>
-            <p className="mt-0.5 text-[13px] text-[#8a96a8]">
+            <p className="mt-0.5 text-[13px] text-muted-foreground">
               How you performed across your recent topics
             </p>
 
@@ -597,9 +667,9 @@ export default function AnalyticsPage() {
                 topicData.map((topic) => (
                   <div key={topic.name}>
                     <div className="mb-1.5 flex items-center justify-between text-[13px]">
-                      <span className="text-[#8a96a8]">{topic.name}</span>
+                      <span className="text-muted-foreground">{topic.name}</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-[JetBrains_Mono,monospace] text-[10.5px] text-[#5b6577]">
+                        <span className="font-[JetBrains_Mono,monospace] text-[10.5px] text-muted-foreground">
                           {topic.tests} tests
                         </span>
                         <span
@@ -618,7 +688,7 @@ export default function AnalyticsPage() {
                   </div>
                 ))
               ) : (
-                <p className="text-[13px] text-[#5b6577]">
+                <p className="text-[13px] text-muted-foreground">
                   Complete a few tests to see topic-level insights here.
                 </p>
               )}
@@ -627,11 +697,11 @@ export default function AnalyticsPage() {
         </div>
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_1.4fr]">
           {/* Rank card with accuracy radial */}
-          <div className="rounded-2xl border border-[#212a37] bg-[#10151d] p-5 sm:p-7">
+          <div className="rounded-sm border border-border bg-card p-5 sm:p-7">
             <h2 className="font-[Space_Grotesk,sans-serif] text-[17px] font-bold">
               Your Ranking
             </h2>
-            <p className="mt-0.5 text-[13px] text-[#8a96a8]">
+            <p className="mt-0.5 text-[13px] text-muted-foreground">
               Where you stand on the leaderboard
             </p>
 
@@ -664,7 +734,7 @@ export default function AnalyticsPage() {
                       <span className="font-[Space_Grotesk,sans-serif] text-xl font-bold">
                         {Math.round(myRankEntry.averageAccuracy)}%
                       </span>
-                      <span className="font-[JetBrains_Mono,monospace] text-[9px] text-[#5b6577]">
+                      <span className="font-[JetBrains_Mono,monospace] text-[9px] text-muted-foreground">
                         ACCURACY
                       </span>
                     </div>
@@ -673,48 +743,48 @@ export default function AnalyticsPage() {
                   <div>
                     <div className="font-[Space_Grotesk,sans-serif] text-3xl font-bold text-[#6ee7c9]">
                       #{myRankEntry.rank}
-                      <span className="ml-0.5 text-base text-[#5b6577]">
+                      <span className="ml-0.5 text-base text-muted-foreground">
                         {rankSuffix(myRankEntry.rank)}
                       </span>
                     </div>
-                    <p className="mt-1 font-[JetBrains_Mono,monospace] text-[11px] text-[#5b6577]">
+                    <p className="mt-1 font-[JetBrains_Mono,monospace] text-[11px] text-muted-foreground">
                       out of {leaderboard.length} learners
                     </p>
                   </div>
                 </div>
 
                 <div className="mt-5 grid grid-cols-2 gap-2.5">
-                  <div className="rounded-[10px] border border-[#212a37] bg-[#141b25] px-3 py-2.5">
+                  <div className="rounded-sm border border-border bg-muted px-3 py-2.5">
                     <div className="font-[Space_Grotesk,sans-serif] text-base font-bold">
                       {myRankEntry.totalTestsTaken}
                     </div>
-                    <div className="mt-0.5 text-[9.5px] tracking-wider text-[#5b6577] uppercase">
+                    <div className="mt-0.5 text-[9.5px] tracking-wider text-muted-foreground uppercase">
                       Tests taken
                     </div>
                   </div>
-                  <div className="rounded-[10px] border border-[#212a37] bg-[#141b25] px-3 py-2.5">
+                  <div className="rounded-sm border border-border bg-muted px-3 py-2.5">
                     <div className="font-[Space_Grotesk,sans-serif] text-base font-bold">
                       {myRankEntry.totalXP.toLocaleString()}
                     </div>
-                    <div className="mt-0.5 text-[9.5px] tracking-wider text-[#5b6577] uppercase">
+                    <div className="mt-0.5 text-[9.5px] tracking-wider text-muted-foreground uppercase">
                       Total XP
                     </div>
                   </div>
                 </div>
               </>
             ) : (
-              <div className="mt-6 rounded-[10px] border border-dashed border-[#212a37] bg-[#141b25] p-6 text-center text-[13px] text-[#5b6577]">
+              <div className="mt-6 rounded-sm border border-dashed border-border bg-muted p-6 text-center text-[13px] text-muted-foreground">
                 Complete a test to appear on the leaderboard.
               </div>
             )}
           </div>
 
           {/* You vs average chart */}
-          <div className="rounded-2xl border border-[#212a37] bg-[#10151d] p-5 sm:p-7">
+          <div className="rounded-sm border border-border bg-card p-5 sm:p-7">
             <h2 className="font-[Space_Grotesk,sans-serif] text-[17px] font-bold">
               You vs. Platform Average
             </h2>
-            <p className="mt-0.5 text-[13px] text-[#8a96a8]">
+            <p className="mt-0.5 text-[13px] text-muted-foreground">
               How your numbers compare to everyone else
             </p>
 
@@ -742,7 +812,7 @@ export default function AnalyticsPage() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="mt-2 flex justify-center gap-5 font-[JetBrains_Mono,monospace] text-[10.5px] text-[#5b6577]">
+            <div className="mt-2 flex justify-center gap-5 font-[JetBrains_Mono,monospace] text-[10.5px] text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <i className="inline-block h-2 w-2 rounded-sm bg-[#6ee7c9]" />{" "}
                 You
@@ -757,43 +827,43 @@ export default function AnalyticsPage() {
 
         {/* Streak + focus areas */}
         <div className="grid gap-3.5 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-2xl border border-[#212a37] bg-[#10151d] p-5 sm:p-7">
+          <div className="rounded-sm border border-border bg-card p-5 sm:p-7">
             <h2 className="font-[Space_Grotesk,sans-serif] text-[17px] font-bold">
               Consistency streak
             </h2>
-            <p className="mt-0.5 text-[13px] text-[#8a96a8]">
+            <p className="mt-0.5 text-[13px] text-muted-foreground">
               Keep up the rhythm with your recent practice pattern
             </p>
 
-            <div className="mt-5 rounded-[14px] border border-[#212a37] bg-[#141b25] p-4">
+            <div className="mt-5 rounded-sm border border-border bg-muted p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-[#5b6577] uppercase">
+                  <p className="font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-muted-foreground uppercase">
                     Current streak
                   </p>
                   <p className="mt-1 font-[Space_Grotesk,sans-serif] text-[26px] font-bold">
                     {currentStreak} days
                   </p>
                 </div>
-                <div className="rounded-[14px] border border-[rgba(242,137,107,0.3)] bg-[rgba(242,137,107,0.12)] p-3 text-[#f2896b]">
+                <div className="rounded-sm border border-[rgba(242,137,107,0.3)] bg-[rgba(242,137,107,0.12)] p-3 text-[#f2896b]">
                   <Sparkles className="h-5 w-5" />
                 </div>
               </div>
-              <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-[#212a37]">
+              <div className="mt-4 h-1.5 w-full overflow-hidden rounded-sm bg-[#212a37]">
                 <div
-                  className="h-full rounded-full bg-linear-to-r from-[#8b7cf6] to-[#6ee7c9] transition-[width] duration-500"
+                  className="h-full rounded-sm bg-linear-to-r from-[#8b7cf6] to-[#6ee7c9] transition-[width] duration-500"
                   style={{ width: `${weeklyGoalProgress}%` }}
                 />
               </div>
-              <p className="mt-2 font-[JetBrains_Mono,monospace] text-[11px] text-[#5b6577]">
+              <p className="mt-2 font-[JetBrains_Mono,monospace] text-[11px] text-muted-foreground">
                 {weeklyGoalProgress}% of the way to your weekly goal · best{" "}
                 {longestStreak}d
               </p>
             </div>
 
             <div className="mt-3.5 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[10px] border border-[#212a37] bg-[#141b25] p-4">
-                <p className="font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-[#5b6577] uppercase">
+              <div className="rounded-sm border border-border bg-muted p-4">
+                <p className="font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-muted-foreground uppercase">
                   Best day
                 </p>
                 <p className="mt-1 font-[Space_Grotesk,sans-serif] text-lg font-bold">
@@ -803,8 +873,8 @@ export default function AnalyticsPage() {
                   {bestDay?.score ?? 0}% score
                 </p>
               </div>
-              <div className="rounded-[10px] border border-[#212a37] bg-[#141b25] p-4">
-                <p className="font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-[#5b6577] uppercase">
+              <div className="rounded-sm border border-border bg-muted p-4">
+                <p className="font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-muted-foreground uppercase">
                   Focus goal
                 </p>
                 <p className="mt-1 font-[Space_Grotesk,sans-serif] text-lg font-bold">
@@ -815,21 +885,21 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-[#212a37] bg-[#10151d] p-5 sm:p-7">
+          <div className="rounded-sm border border-border bg-card p-5 sm:p-7">
             <h2 className="font-[Space_Grotesk,sans-serif] text-[17px] font-bold">
               Focus areas
             </h2>
-            <p className="mt-0.5 text-[13px] text-[#8a96a8]">
+            <p className="mt-0.5 text-[13px] text-muted-foreground">
               Topics that need a little more attention
             </p>
 
             <div className="mt-5 space-y-3">
               {focusAreas.length > 0 &&
-              focusAreas[0].topic !== "No completed tests yet" ? (
+                focusAreas[0].topic !== "No completed tests yet" ? (
                 focusAreas.map((item) => (
                   <div
                     key={item.topic}
-                    className="rounded-[14px] border border-[rgba(242,85,90,0.25)] bg-[rgba(242,85,90,0.06)] p-4"
+                    className="rounded-sm border border-[rgba(242,85,90,0.25)] bg-[rgba(242,85,90,0.06)] p-4"
                   >
                     <div className="mb-2 flex items-center justify-between gap-2">
                       <p className="text-[13.5px] font-semibold">
@@ -840,18 +910,18 @@ export default function AnalyticsPage() {
                       </span>
                     </div>
                     <MiniBar value={item.accuracy} max={100} color="#f2555a" />
-                    <p className="mt-2 text-[12.5px] text-[#8a96a8]">
+                    <p className="mt-2 text-[12.5px] text-muted-foreground">
                       {item.tip}
                     </p>
                   </div>
                 ))
               ) : (
-                <div className="flex min-h-45 items-center justify-center rounded-[14px] border border-dashed border-[#212a37] bg-[#141b25] p-6 text-center">
+                <div className="flex min-h-45 items-center justify-center rounded-[14px] border border-dashed border-border bg-muted p-6 text-center">
                   <div>
                     <p className="text-[14px] font-semibold">
                       No focus areas found
                     </p>
-                    <p className="mt-1 text-[12.5px] text-[#5b6577]">
+                    <p className="mt-1 text-[12.5px] text-muted-foreground">
                       Complete a few more tests to receive personalized
                       improvement suggestions.
                     </p>
@@ -863,19 +933,19 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Next best step */}
-        <div className="flex flex-col gap-4 rounded-2xl border border-[#212a37] bg-[#10151d] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <div className="flex flex-col gap-4 rounded-sm border border-border bg-card p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div className="flex items-start gap-3">
             <div className="rounded-[14px] border border-[rgba(139,124,246,0.3)] bg-[rgba(139,124,246,0.1)] p-2.5 text-[#8b7cf6]">
               <BrainCircuit className="h-5 w-5" />
             </div>
             <div>
               <p className="text-[13.5px] font-semibold">Next best step</p>
-              <p className="text-[12.5px] text-[#8a96a8]">{nextStep}</p>
+              <p className="text-[12.5px] text-muted-foreground">{nextStep}</p>
             </div>
           </div>
           <button
             onClick={() => router.push("/dashboard/tests")}
-            className="flex items-center justify-center gap-2 rounded-lg bg-linear-to-br from-[#6ee7c9] to-[#57c9a8] px-5 py-2.5 text-[13px] font-bold text-[#06120d] transition hover:brightness-105"
+            className="flex items-center justify-center gap-2 rounded-sm bg-linear-to-br from-[#6ee7c9] to-[#57c9a8] px-5 py-2.5 text-[13px] font-bold text-[#06120d] transition hover:brightness-105"
           >
             Continue practice
             <ArrowUpRight className="h-4 w-4" />

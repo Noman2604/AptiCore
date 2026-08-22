@@ -20,7 +20,6 @@ export default function LoadingScreen({
       }}
     >
       <div className="flex items-center gap-2.5 font-[JetBrains_Mono,monospace] text-sm text-[#8a96a8]">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#6ee7c9] border-t-transparent mx-auto mb-4"></div>
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#6ee7c9]" />
         {message}
       </div>

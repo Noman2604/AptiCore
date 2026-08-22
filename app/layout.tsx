@@ -53,8 +53,8 @@ export default function RootLayout({
         />
       </head>
 
-      <body className="min-h-screen bg-[#0a0e14] text-[#e7ecf3] antialiased">
-        <ThemeProvider attribute="class" defaultTheme="dark" forcedTheme="dark">
+      <body className="min-h-screen bg-[--ac-bg] text-[--ac-text] antialiased">
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <NetworkStatus>
             <CelebrationProvider>
               <div id="root">{children}</div>

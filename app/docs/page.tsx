@@ -47,7 +47,12 @@ const sidebarSections = [
   },
 ]
 
-const docContent = {
+type ContentBlock =
+  | { type: "paragraph"; text: string }
+  | { type: "heading"; text: string }
+  | { type: "list"; items: string[] }
+
+const docContent: Record<string, { title: string; content: ContentBlock[] }> = {
   Introduction: {
     title: "Introduction to AptiCore",
     content: [
@@ -142,11 +147,6 @@ export default function DocsPage() {
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
-
-  type ContentBlock =
-    | { type: "paragraph"; text: string }
-    | { type: "heading"; text: string }
-    | { type: "list"; items: string[] }
 
   return (
     <div className="dark min-h-screen bg-[hsl(var(--background))]">

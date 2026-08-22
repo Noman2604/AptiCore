@@ -45,32 +45,32 @@ const Page = () => {
 
   return (
     <div
-      className="min-h-screen bg-[#0a0e14] font-[Inter,sans-serif] text-[#e7ecf3]"
+      className="min-h-screen bg-[#f4f4f4] dark:bg-[#16191f] font-[Inter,sans-serif] dark:text-[#e7ecf3] text-[#2e2e2e] transition-colors duration-300"
       style={{
         backgroundImage:
           "radial-gradient(circle at 15% 0%, rgba(139,124,246,0.06), transparent 40%), radial-gradient(circle at 85% 10%, rgba(110,231,201,0.05), transparent 40%)",
       }}
     >
-      <div className="mx-auto max-w-7xl px-4 pt-20 pb-10 sm:px-6 sm:pt-5 lg:px-5">
+      <div className="mx-auto max-w-7xl px-4 pt-2 pb-10 sm:px-6 sm:pt-5 lg:px-5">
         <div className="max-w-2xl">
           <h1 className="mt-1 font-[Space_Grotesk,sans-serif] text-2xl font-bold tracking-tight sm:text-3xl">
             Choose a category to begin
           </h1>
-          <p className="mt-2.5 text-[14.5px] leading-6 text-[#8a96a8] sm:text-[15px]">
+          <p className="mt-2.5 text-[14.5px] leading-6 text-muted-foreground sm:text-[15px]">
             Browse category-based tests built from your question bank, then
             drill down into subcategories and live test questions.
           </p>
         </div>
 
         {loading && (
-          <div className="mt-10 flex items-center gap-2.5 font-[JetBrains_Mono,monospace] text-sm text-[#8a96a8]">
+          <div className="mt-10 flex items-center gap-2.5 font-[JetBrains_Mono,monospace] text-sm text-muted-foreground">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#6ee7c9]" />
             Loading categories...
           </div>
         )}
 
         {!loading && categories.length === 0 && (
-          <div className="mt-10 rounded-2xl border border-dashed border-[#212a37] bg-[#10151d] p-8 text-center text-sm text-[#5b6577]">
+          <div className="mt-10 rounded-2xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
             No categories found yet.
           </div>
         )}
@@ -81,7 +81,7 @@ const Page = () => {
             return (
               <div
                 key={category._id}
-                className="flex flex-col overflow-hidden rounded-2xl border border-[#212a37] bg-[#10151d] transition hover:border-[#37465a]"
+                className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card transition hover:border-[#37465a]"
               >
                 <div
                   className="h-1 w-full"
@@ -113,16 +113,16 @@ const Page = () => {
                   </div>
 
                   <div className="mt-4">
-                    <p className="font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-[#5b6577] uppercase">
+                    <p className="font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-muted-foreground uppercase">
                       Description
                     </p>
-                    <p className="mt-1 text-[13.5px] leading-6 text-[#c3cbd8]">
+                    <p className="mt-1 text-[13.5px] leading-6 dark:text-[#c3cbd8]  text-[#2e2e2e]">
                       {category.description || "No description"}
                     </p>
                   </div>
 
                   <div className="mt-4">
-                    <p className="mb-2 font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-[#5b6577] uppercase">
+                    <p className="mb-2 font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-muted-foreground uppercase">
                       Sub Categories
                     </p>
                     <div className="flex flex-wrap gap-1.5">
@@ -130,13 +130,13 @@ const Page = () => {
                         category.subcategories.map((sub) => (
                           <span
                             key={sub._id}
-                            className="rounded-full border border-[#212a37] bg-[#141b25] px-2.5 py-1 font-[JetBrains_Mono,monospace] text-[10.5px] text-[#8a96a8]"
+                            className="rounded-full border border-border bg-muted px-2.5 py-1 font-[JetBrains_Mono,monospace] text-[10.5px] text-muted-foreground"
                           >
                             {sub.name}
                           </span>
                         ))
                       ) : (
-                        <span className="text-[12.5px] text-[#5b6577]">
+                        <span className="text-[12.5px] text-muted-foreground">
                           No subcategory
                         </span>
                       )}

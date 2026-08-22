@@ -47,42 +47,75 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ─────────────────────────────────────────────────────────────
+   LIGHT MODE  (default / :root)
+   Brand palette:  teal #6ee7c9  |  purple #8b7cf6  |  amber #f5a623
+───────────────────────────────────────────────────────────── */
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
+    /* Shadcn / Radix tokens */
+    --background: oklch(0.99 0 0);
+    --foreground: oklch(0.13 0.01 250);
     --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
+    --card-foreground: oklch(0.13 0.01 250);
     --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.13 0.01 250);
+    --primary: oklch(0.55 0.14 175);        /* teal-ish */
+    --primary-foreground: oklch(1 0 0);
+    --secondary: oklch(0.95 0.005 250);
+    --secondary-foreground: oklch(0.25 0.02 250);
+    --muted: oklch(0.96 0.005 250);
+    --muted-foreground: oklch(0.52 0.015 250);
+    --accent: oklch(0.95 0.005 250);
+    --accent-foreground: oklch(0.25 0.02 250);
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
+    --border: oklch(0.90 0.008 250);
+    --input: oklch(0.90 0.008 250);
+    --ring: oklch(0.55 0.14 175);
+    --chart-1: oklch(0.55 0.14 175);
+    --chart-2: oklch(0.60 0.15 290);
+    --chart-3: oklch(0.72 0.15 60);
+    --chart-4: oklch(0.65 0.18 25);
+    --chart-5: oklch(0.52 0.015 250);
     --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+
+    /* Sidebar tokens */
+    --sidebar: oklch(0.97 0.005 250);
+    --sidebar-foreground: oklch(0.13 0.01 250);
+    --sidebar-primary: oklch(0.55 0.14 175);
+    --sidebar-primary-foreground: oklch(1 0 0);
+    --sidebar-accent: oklch(0.93 0.01 250);
+    --sidebar-accent-foreground: oklch(0.25 0.02 250);
+    --sidebar-border: oklch(0.88 0.008 250);
+    --sidebar-ring: oklch(0.55 0.14 175);
+
+    /* ── AptiCore brand tokens (used via var()) ── */
+    --ac-bg:          #f8fafc;       /* page background          */
+    --ac-bg-elevated: #ffffff;       /* cards, dropdowns         */
+    --ac-surface:     #f1f5f9;       /* input fills, hover areas */
+    --ac-surface-2:   #e8edf4;       /* stronger surface         */
+    --ac-border:      #dde3ee;       /* dividers / strokes       */
+    --ac-border-2:    #c8d0de;       /* stronger border          */
+
+    --ac-text:        #0f172a;       /* primary text             */
+    --ac-text-2:      #475569;       /* secondary / muted text   */
+    --ac-text-3:      #94a3b8;       /* placeholder / disabled   */
+
+    --ac-teal:        #6ee7c9;       /* brand teal accent        */
+    --ac-teal-muted:  rgba(110,231,201,0.12);
+    --ac-teal-border: rgba(110,231,201,0.30);
+    --ac-purple:      #8b7cf6;       /* brand purple             */
+    --ac-amber:       #f5a623;       /* XP / streak amber        */
+    --ac-red:         #f2555a;       /* danger / logout          */
+
+    --ac-hover:       #edf1f8;       /* generic hover bg         */
+    --ac-active:      #e4eaf5;       /* pressed / active bg      */
 }
 
+/* ─────────────────────────────────────────────────────────────
+   DARK MODE
+───────────────────────────────────────────────────────────── */
 .dark {
+    /* Shadcn / Radix tokens */
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.205 0 0);
@@ -106,6 +139,8 @@
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
+
+    /* Sidebar tokens */
     --sidebar: oklch(0.205 0 0);
     --sidebar-foreground: oklch(0.985 0 0);
     --sidebar-primary: oklch(0.488 0.243 264.376);
@@ -114,6 +149,28 @@
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
+
+    /* ── AptiCore brand tokens ── */
+    --ac-bg:          #0a0e14;
+    --ac-bg-elevated: #10151d;
+    --ac-surface:     #141b25;
+    --ac-surface-2:   #1c2535;
+    --ac-border:      #212a37;
+    --ac-border-2:    #293443;
+
+    --ac-text:        #e7ecf3;
+    --ac-text-2:      #8a96a8;
+    --ac-text-3:      #5b6577;
+
+    --ac-teal:        #6ee7c9;
+    --ac-teal-muted:  rgba(110,231,201,0.10);
+    --ac-teal-border: rgba(110,231,201,0.30);
+    --ac-purple:      #8b7cf6;
+    --ac-amber:       #f5a623;
+    --ac-red:         #f2555a;
+
+    --ac-hover:       #141b25;
+    --ac-active:      #1c2535;
 }
 
 @layer base {
@@ -129,16 +186,17 @@
 }
 
 * {
-  border-color: hsl(var(--border));
   box-sizing: border-box;
 }
 
 body {
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
+  background-color: var(--ac-bg);
+  color: var(--ac-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Smooth background/color transition when toggling theme */
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -166,17 +224,18 @@ code, pre {
   background-size: 40px 40px;
 }
 
-/* Glassmorphism */
+/* Glassmorphism — light mode */
 .glass {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
+/* Glassmorphism — dark mode */
 .dark .glass {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(10, 14, 20, 0.6);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 /* Gradient text */
@@ -196,10 +255,10 @@ code, pre {
 
 /* Shimmer loading */
 .shimmer {
-  background: linear-gradient(90deg, 
-    hsl(var(--surface)) 0%, 
-    hsl(var(--surface-hover)) 50%, 
-    hsl(var(--surface)) 100%
+  background: linear-gradient(90deg,
+    var(--ac-surface) 0%,
+    var(--ac-surface-2) 50%,
+    var(--ac-surface) 100%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s linear infinite;
@@ -252,4 +311,23 @@ code, pre {
   .text-balance { text-wrap: balance; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* AptiCore semantic utility classes */
+  .ac-bg           { background-color: var(--ac-bg); }
+  .ac-bg-elevated  { background-color: var(--ac-bg-elevated); }
+  .ac-surface      { background-color: var(--ac-surface); }
+  .ac-surface-2    { background-color: var(--ac-surface-2); }
+  .ac-border       { border-color: var(--ac-border); }
+  .ac-text         { color: var(--ac-text); }
+  .ac-text-2       { color: var(--ac-text-2); }
+  .ac-text-3       { color: var(--ac-text-3); }
+  .ac-teal         { color: var(--ac-teal); }
+  .ac-purple       { color: var(--ac-purple); }
+  .ac-amber        { color: var(--ac-amber); }
+  .ac-red          { color: var(--ac-red); }
+}
+
+::view-transition-old(root), ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
 }
