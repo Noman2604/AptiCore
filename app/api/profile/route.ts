@@ -127,7 +127,7 @@ export async function PATCH(request: NextRequest) {
         $set: profilePayload(body),
       },
       {
-        new: true,
+        returnDocument: 'after',
         upsert: true,
         runValidators: true,
       }

@@ -564,7 +564,7 @@ export default function AnalyticsPage() {
               key={stat.label}
               className="rounded-sm border border-border bg-card p-5"
             >
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4 flex items-center gap-1 justify-between">
                 <div
                   className="rounded-sm border p-2"
                   style={{
@@ -575,7 +575,7 @@ export default function AnalyticsPage() {
                 >
                   <stat.icon className="h-5 w-5" />
                 </div>
-                <span className="rounded-sm border border-border px-2 py-0.5 font-[JetBrains_Mono,monospace] text-[9.5px] text-muted-foreground">
+                <span className="rounded-sm border border-border px-1 sm:px-2 py-0.5 font-[JetBrains_Mono,monospace] text-[7px] sm:text-[9.5px] text-muted-foreground">
                   {stat.change}
                 </span>
               </div>

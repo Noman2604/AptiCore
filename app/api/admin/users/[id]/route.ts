@@ -37,7 +37,7 @@ export async function PUT(
     if (isActive !== undefined) updates.isActive = isActive
 
     const user = await User.findByIdAndUpdate(id, updates, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     })
       .select("-password")
@@ -66,7 +66,7 @@ export async function PUT(
             phone: profile.phone,
           },
         },
-        { new: true, upsert: true, runValidators: true }
+        { returnDocument: 'after', upsert: true, runValidators: true }
       ).lean()
     }
 
@@ -106,7 +106,7 @@ export async function DELETE(
     const user = await User.findByIdAndUpdate(
       id,
       { isActive: false },
-      { new: true }
+      { returnDocument: 'after' }
     ).select("-password")
 
     if (!user) {

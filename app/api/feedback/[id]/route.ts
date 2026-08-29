@@ -103,7 +103,7 @@ export async function PATCH(
       }
     }
 
-    const updated = await Feedback.findByIdAndUpdate(id, updates, { new: true })
+    const updated = await Feedback.findByIdAndUpdate(id, updates, { returnDocument: 'after' })
       .populate("userId", "name email role")
       .populate("resolvedBy", "name email role")
 

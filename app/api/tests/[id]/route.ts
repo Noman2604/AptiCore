@@ -69,7 +69,7 @@ export async function PUT(
 
     const { id } = await params
     const test = await Test.findByIdAndUpdate(id, updates, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     }).populate("categoryId", "name slug")
 

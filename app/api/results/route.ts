@@ -112,44 +112,12 @@ export async function POST(request: NextRequest) {
       startedAt,
       accuracy: providedAccuracy,
       sessionType,
+      attemptId,
     } = body
 
     const normalizedAnswers = Array.isArray(answers) ? answers : []
 
-    if (totalQuestions > 0) {
-      if (attemptedQuestions !== totalQuestions || skippedQuestions !== 0) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Please answer every question before submitting the test",
-          },
-          { status: 400 }
-        )
-      }
-
-      if (normalizedAnswers.length !== totalQuestions) {
-        return NextResponse.json(
-          { success: false, error: "Incomplete answers payload received" },
-          { status: 400 }
-        )
-      }
-
-      const hasEmptyAnswer = normalizedAnswers.some((answer: any) => {
-        const userAnswer =
-          typeof answer?.userAnswer === "string" ? answer.userAnswer.trim() : ""
-        return userAnswer.length === 0
-      })
-
-      if (hasEmptyAnswer) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Please answer every question before submitting the test",
-          },
-          { status: 400 }
-        )
-      }
-    }
+    // We allow skipped questions or unanswered questions because running out of time or skipping is normal.
 
     // Accept `subcategory` as a fallback key from clients that send it
     let providedSubcategoryId = subcategoryId ?? (body as any).subcategory
@@ -236,23 +204,35 @@ export async function POST(request: NextRequest) {
           ? Math.round((correctAnswers / totalQuestions) * 100)
           : 0
 
-    const result = await Result.create({
+    const resultData = {
       userId: decoded.userId,
       testId: effectiveTestId,
       totalQuestions,
-      testName: testName ,
-      attemptedQuestions: attemptedQuestions,
-      correctAnswers: correctAnswers,
+      testName: testName || test?.title || "Practice Session",
+      attemptedQuestions: attemptedQuestions || 0,
+      correctAnswers: correctAnswers || 0,
       skippedQuestions: skippedQuestions || 0,
       accuracy,
-      marksObtained: marksObtained,
-      totalMarks,
-      timeSpentSeconds: timeSpentSeconds,
+      marksObtained: marksObtained || 0,
+      totalMarks: totalMarks || 0,
+      timeSpentSeconds: timeSpentSeconds || 0,
       status: "completed",
       answers: normalizedAnswers,
       startedAt: startedAt || new Date(),
       submittedAt: new Date(),
-    })
+      attemptId,
+    };
+
+    let result: any;
+    if (attemptId) {
+      result = await Result.findOneAndUpdate(
+        { userId: decoded.userId, attemptId },
+        { $set: resultData },
+        { upsert: true, returnDocument: "after" }
+      );
+    } else {
+      result = await Result.create(resultData);
+    }
 
     // Update user XP, level, and streak for this completion event
     const xpEarned = Math.round((correctAnswers || 0) * 10)
@@ -318,7 +298,7 @@ export async function POST(request: NextRequest) {
           lastActivityDate: now,
         },
       },
-      { new: true, upsert: true }
+      { returnDocument: 'after', upsert: true }
     )
 
     if (profile) {
@@ -388,7 +368,7 @@ export async function POST(request: NextRequest) {
           await UserProfile.findOneAndUpdate(
             { userId: decoded.userId },
             { $inc: { totalXP: achievement.pointsReward } },
-            { new: true, upsert: true }
+            { returnDocument: 'after', upsert: true }
           )
 
           await XPHistory.create({
@@ -440,7 +420,7 @@ export async function POST(request: NextRequest) {
             averageAccuracy: Math.round(leaderboardStats.averageAccuracy || 0),
           },
         },
-        { new: true, upsert: true }
+        { returnDocument: 'after', upsert: true }
       )
 
       const leaderboardDocs = await Leaderboard.find()

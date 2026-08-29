@@ -130,7 +130,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const updated = await QuestionReport.findByIdAndUpdate(id, updates, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     })
       .populate("userId", "name email role")

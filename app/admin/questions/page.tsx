@@ -957,7 +957,7 @@ export default function AdminQuestionsPage() {
       </Card>
 
       <Sheet open={showAddSheet} onOpenChange={setShowAddSheet}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
+        <SheetContent className="w-full overflow-y-auto sm:max-w-2xl p-2">
           <SheetHeader>
             <SheetTitle>
               {selectedQuestion ? "Edit Question" : "Add New Question"}

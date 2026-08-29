@@ -259,7 +259,7 @@ export default function DashboardPage() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wider text-muted-foreground uppercase">
+                  <p className="font-[JetBrains_Mono,monospace] text-[8px] sm:text-[10.5px] tracking-wider text-muted-foreground uppercase">
                     {stat.label}
                   </p>
                   <p
@@ -270,7 +270,7 @@ export default function DashboardPage() {
                   </p>
                 </div>
                 <div
-                  className=" rounded-sm shadow shadow-slate-300  dark:shadow-none border border-border bg-card p-5 transition-colors duration-300"
+                  className=" rounded-sm shadow shadow-slate-300  dark:shadow-none border border-border bg-card p-4 sm:p-5 transition-colors duration-300"
                   style={{
                     borderColor: `${stat.color}40`,
                     backgroundColor: `${stat.color}14`,
@@ -312,44 +312,44 @@ export default function DashboardPage() {
         {/* Recent results + achievements */}
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <div className=" rounded-sm shadow shadow-slate-300  dark:shadow-none border border-border bg-card p-5 transition-colors duration-300">
-              <div className="mb-5 flex items-center justify-between">
+            <div className=" rounded-sm shadow shadow-slate-300 dark:shadow-none border border-border bg-card p-5 transition-colors duration-300">
+              <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-[#6ee7c9]" />
-                  <h2 className="font-[Space_Grotesk,sans-serif] text-lg font-bold">
+                  <Clock className="h-4 w-4 sm:h-6 sm:w-6 text-[#6ee7c9]" />
+                  <h2 className="font-[Space_Grotesk,sans-serif] text-sm sm:text-lg font-bold">
                     Recent Results
                   </h2>
                 </div>
                 <Link
                   href="/dashboard/analytics"
-                  className="flex items-center gap-1.5 text-[12.5px] font-semibold text-[#6ee7c9] transition hover:text-[#8ef2d6]"
+                  className="flex items-center gap-1.5 text-[10.5px] sm:text-[12.5px] font-semibold text-[#6ee7c9] transition hover:text-[#8ef2d6]"
                 >
                   View All
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
 
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {recentResults.length > 0 ? (
                   recentResults.map((result, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between  rounded-sm shadow shadow-slate-300  dark:shadow-none border border-border bg-background p-3.5 transition hover:bg-accent"
+                      className="flex items-center justify-between rounded-sm shadow shadow-slate-300 dark:shadow-none border border-border bg-background p-2 transition hover:bg-accent"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-[13px] font-medium">
+                        <p className="truncate text-[10px]  sm:text-[13px] font-medium">
                           {result.testName}
                         </p>
-                        <p className="mt-0.5 font-[JetBrains_Mono,monospace] text-[11px] text-muted-foreground">
+                        <p className="mt-0.5 font-[JetBrains_Mono,monospace] text-[11px] sm:text-sm text-muted-foreground">
                           {result.marksObtained || 0}/{result.totalMarks || 100}{" "}
                           marks
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-[Space_Grotesk,sans-serif] text-lg font-bold text-[#6ee7c9]">
+                        <p className="font-[Space_Grotesk,sans-serif] text-xs sm:text-sm font-bold text-[#6ee7c9]">
                           {result.accuracy || 0}%
                         </p>
-                        <p className="font-[JetBrains_Mono,monospace] text-[10.5px] text-muted-foreground">
+                        <p className="font-[JetBrains_Mono,monospace] text-[8.5px] sm:text-sm text-muted-foreground">
                           {new Date(result.createdAt).toLocaleDateString()}
                         </p>
                       </div>
@@ -375,7 +375,7 @@ export default function DashboardPage() {
             <div className=" rounded-sm shadow shadow-slate-300  dark:shadow-none border border-border bg-card p-5 transition-colors duration-300">
               <div className="flex justify-between items-center mb-3">
                 <div className="flex items-center gap-1">
-                  <Award className="h-5 w-5 text-[#f5a623]" />
+                  <Award className="sm:h-6 sm:w-6 h-4 w-4 text-[#f5a623]" />
                   <h2 className="font-[Space_Grotesk,sans-serif] sm:text-lg text-sm font-bold">
                     Recent Achievements
                   </h2>
@@ -383,7 +383,7 @@ export default function DashboardPage() {
                 </div>
                 <Link
                   href="/dashboard/achievements"
-                  className="flex items-center gap-1.5 text-[12.5px] font-semibold text-[#6ee7c9] transition hover:text-[#8ef2d6]"
+                  className="flex items-center gap-1.5 text-[10.5px] sm:text-[12.5px] font-semibold text-[#6ee7c9] transition hover:text-[#8ef2d6]"
                 >
                   View All
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -397,18 +397,18 @@ export default function DashboardPage() {
                       key={idx}
                       className="flex items-center gap-3  rounded-sm shadow shadow-slate-300  dark:shadow-none border border-[rgba(245,166,35,0.25)] bg-[rgba(245,166,35,0.06)] p-3 transition hover:bg-[rgba(245,166,35,0.1)]"
                     >
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center  rounded-sm shadow shadow-slate-300  dark:shadow-none bg-[rgba(245,166,35,0.15)]">
+                      <div className="flex h-5 w-5 sm:h-7 sm:w-7 shrink-0 items-center justify-center  rounded-sm shadow shadow-slate-300  dark:shadow-none bg-[rgba(245,166,35,0.15)]">
                         <Award className="h-4 w-4 text-[#f5a623]" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[13px] font-bold">
                           {userAchievement.achievementId.name}
                         </p>
-                        <p className="truncate font-[JetBrains_Mono,monospace] text-[10px] text-muted-foreground">
+                        <p className="truncate font-[JetBrains_Mono,monospace] text-[8px] sm:text-[10.5px] text-muted-foreground">
                           {userAchievement.achievementId.description}
                         </p>
                       </div>
-                      <p className="shrink-0 font-[JetBrains_Mono,monospace] text-[10.5px] text-[#f5a623]">
+                      <p className="shrink-0 font-[JetBrains_Mono,monospace] text-[8px] sm:text-[10.5px] text-[#f5a623]">
                         {new Date(userAchievement.unlockedAt).toLocaleDateString()}
                       </p>
                     </div>

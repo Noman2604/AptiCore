@@ -64,14 +64,7 @@ function ThemedToggler() {
       theme={currentTheme}
       onThemeChange={toggleTheme}
       variant="circle"
-      className="
-        flex h-8 w-8 items-center justify-center
-        rounded-md
-        text-[--ac-text-2]
-        transition-colors
-        hover:bg-[--ac-hover]
-        hover:text-[--ac-teal]
-      "
+      className="flex h-8 w-8 items-center justify-center rounded-md text-[--ac-text-2] transition-colors hover:bg-[--ac-hover] hover:text-[--ac-teal]"
     />
   )
 }
@@ -86,7 +79,6 @@ export default function DashboardLayout({
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
-
 
   const breadcrumbItems = pathname
     .split("/")
@@ -149,16 +141,16 @@ export default function DashboardLayout({
       enableSystem
       disableTransitionOnChange
     >
-      <SidebarProvider className="flex min-h-screen bg-[--ac-bg]">
+      <SidebarProvider className="flex min-h-screen ">
         <AppSidebar user={currentUser || undefined} />
 
         <main className="flex min-h-svh w-full flex-col">
           {/* Mobile Header */}
-          <div className="flex items-center justify-between gap-3 border-b border-[--ac-border] bg-[--ac-bg] px-0 py-2">
+          <div className="sticky top-0 z-50 flex items-center bg-slate-100 dark:bg-[#0a0e14] justify-between gap-3 border-b border-black/10 dark:border-white/20 px-0 py-2">
             <div className="flex items-center gap-2">
               <SidebarTrigger className="border-none text-[--ac-text] hover:bg-[--ac-hover] hover:text-[--ac-teal]" />
               <Breadcrumb className="min-w-0">
-                <BreadcrumbList className="flex-nowrap">
+                <BreadcrumbList className="flex-nowrap text-xs sm:text-sm">
                   <BreadcrumbItem>
                     <BreadcrumbLink
                       href="/dashboard"
@@ -171,7 +163,10 @@ export default function DashboardLayout({
                   {breadcrumbItems
                     .filter((item) => item.label !== "Dashboard")
                     .map((item) => (
-                      <div key={item.href} className="flex min-w-0 items-center">
+                      <div
+                        key={item.href}
+                        className="flex min-w-0 items-center"
+                      >
                         <BreadcrumbSeparator className="mx-2 text-[--ac-border-2]" />
 
                         <BreadcrumbItem className="min-w-0">
@@ -207,7 +202,9 @@ export default function DashboardLayout({
                       {/* Name */}
                       <div className="hidden max-w-32 text-left sm:block">
                         <p className="truncate text-[13px] font-semibold text-[--ac-text]">
-                          {loadingUser ? "Loading..." : currentUser?.name || "User"}
+                          {loadingUser
+                            ? "Loading..."
+                            : currentUser?.name || "User"}
                         </p>
 
                         <p className="truncate text-[11px] text-[--ac-text-3]">
@@ -236,7 +233,7 @@ export default function DashboardLayout({
                   <DropdownMenuContent
                     align="end"
                     sideOffset={8}
-                    className="w-64 border-[--ac-border]x p-1.5 text-[--ac-text]"
+                    className="border-[--ac-border]x w-64 p-1.5 text-[--ac-text]"
                   >
                     <DropdownMenuLabel className="px-3 py-2.5">
                       <div className="flex items-center gap-3">
@@ -251,7 +248,8 @@ export default function DashboardLayout({
                             />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center font-bold text-[--ac-teal]">
-                              {currentUser?.name?.charAt(0)?.toUpperCase() || "U"}
+                              {currentUser?.name?.charAt(0)?.toUpperCase() ||
+                                "U"}
                             </div>
                           )}
                         </div>
@@ -290,9 +288,7 @@ export default function DashboardLayout({
             </div>
           </div>
 
-          <div className="flex-1">
-            {children}
-          </div>
+          <div className="flex-1">{children}</div>
         </main>
       </SidebarProvider>
     </ThemeProvider>

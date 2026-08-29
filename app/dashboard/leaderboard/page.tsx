@@ -40,14 +40,14 @@ const PODIUM_STYLES = [
   {
     place: 2,
     ring: "border-slate-200 dark:border-white/15",
-    card: "border-slate-500 bg-slate-200 dark:border-white/10 dark:bg-white/20",
+    card: "border-slate-500 bg-slate-200 dark:border-white/10 dark:bg-white/30",
     badge: "bg-slate-100 text-slate-800 border-slate-200 dark:bg-white/[0.06] dark:text-slate-300 dark:border-white/10",
     xp: "text-slate-800 dark:text-slate-400",
     avatarBg: "bg-slate-100 text-slate-500 dark:bg-white/[0.06] dark:text-slate-300",
     avatarSize: "h-12 w-12 text-sm",
     lift: "",
     crown: false,
-    shadow:"shadow-lg shadow-slate-300  dark:shadow-slate-500"
+    shadow:"shadow-lg shadow-slate-300  dark:shadow-slate-400"
   },
   {
     place: 3,
@@ -195,7 +195,7 @@ export default function LeaderboardPage() {
                     <p
                       className={cn(
                         "font-[JetBrains_Mono,monospace] text-[12px] font-semibold",
-                        entry ? style.xp : "text-slate-300 dark:text-slate-600"
+                        entry ? style.xp : "text-slate-300 dark:text-slate-200"
                       )}
                     >
                       {entry ? `${formatNumber(entry.totalXP)} XP` : "Unranked"}

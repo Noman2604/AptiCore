@@ -34,7 +34,7 @@ export async function PUT(
     const bookmark = await Bookmark.findOneAndUpdate(
       { _id: id, userId: decoded.userId },
       { notes },
-      { new: true }
+      { returnDocument: 'after' }
     ).populate({
       path: "questionId",
       select: "questionText options correctAnswer explanation difficultyLevel",

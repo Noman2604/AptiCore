@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     const updated = await AccessPolicy.findOneAndUpdate(
       { role },
       { $set: { permissions } },
-      { new: true, upsert: true }
+      { returnDocument: 'after', upsert: true }
     )
 
     return NextResponse.json({

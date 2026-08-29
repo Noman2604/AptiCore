@@ -142,6 +142,7 @@ const SubcategoryTestPage = ({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            attemptId: currentAttemptId,
             categoryId: category._id,
             subcategoryId: subcategory._id,
             testStatus: "abandoned",
@@ -190,6 +191,7 @@ const SubcategoryTestPage = ({
 
     try {
       const body = {
+        attemptId: currentAttemptId,
         testId: null,
         categoryId: category._id,
         subcategoryId: subcategory._id,
@@ -258,7 +260,7 @@ const SubcategoryTestPage = ({
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background font-[Inter,sans-serif] text-[#e7ecf3]">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background font-[Inter,sans-serif] text-slate-900 dark:text-[#e7ecf3]">
         <div className="inline-block animate-pulse font-[JetBrains_Mono,monospace] text-sm">
           Loading test...
         </div>
@@ -268,7 +270,7 @@ const SubcategoryTestPage = ({
 
   if (!category || questions.length === 0) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background font-[Inter,sans-serif] text-[#e7ecf3]">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background font-[Inter,sans-serif] text-slate-900 dark:text-[#e7ecf3]">
         Test category or questions not found.
       </div>
     )

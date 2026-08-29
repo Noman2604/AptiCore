@@ -75,7 +75,7 @@ export async function PATCH(request: NextRequest) {
     if (role !== undefined) updates.role = role
     if (isActive !== undefined) updates.isActive = isActive
 
-    const user = await User.findByIdAndUpdate(userId, updates, { new: true })
+    const user = await User.findByIdAndUpdate(userId, updates, { returnDocument: 'after' })
       .select("-password")
       .lean()
 

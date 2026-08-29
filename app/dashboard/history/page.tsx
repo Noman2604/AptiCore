@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
   Trophy,
@@ -75,6 +76,24 @@ interface FeedbackHistoryItem {
   rating?: number
   createdAt?: string
   resolvedAt?: string
+}
+
+interface HistoryResponse {
+  results: ResultHistoryItem[]
+  xpHistory: XpHistoryItem[]
+  achievements: AchievementHistoryItem[]
+  feedback: FeedbackHistoryItem[]
+  pagination?: {
+    page: number
+    limit: number
+    totalResults: number
+    totalXpEntries: number
+    totalAchievements: number
+    totalFeedback: number
+    totalPages: number
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+  }
 }
 
 type SectionKey = "tests" | "xp" | "achievements" | "feedback"
@@ -295,6 +314,8 @@ function Pagination({
 }
 
 export default function HistoryPage() {
+  const router = useRouter()
+  const backHref = "/dashboard"
   const [section, setSection] = useState<SectionKey>("tests")
   const [results, setResults] = useState<ResultHistoryItem[]>([])
   const [achievements, setAchievements] = useState<AchievementHistoryItem[]>([])
@@ -309,34 +330,32 @@ export default function HistoryPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
- useEffect(() => {
+  useEffect(() => {
     const loadHistory = async () => {
       try {
         setLoading(true)
 
         const { data } = await axios.get(
-          `/api/history?page=${page}&limit=10`,
+          `/api/dashboard/history?page=${page}&limit=10`,
           {
             withCredentials: true,
           }
         )
 
         if (!data.success) {
-          throw new Error(
-            data.error || "Failed to load history"
-          )
+          throw new Error(data.error || "Failed to load history")
         }
 
-        setResults(data.data.results || [])
+        const history: HistoryResponse = data.data || {}
 
-        setTotalPages(
-          data.data.pagination?.totalPages || 1
-        )
+        setResults(history.results || [])
+        setXpHistory(history.xpHistory || [])
+        setAchievements(history.achievements || [])
+        setFeedbackHistory(history.feedback || [])
+        setTotalPages(history.pagination?.totalPages || 1)
       } catch (error) {
-        console.error(
-          "Failed to load history:",
-          error
-        )
+        console.error("Failed to load history:", error)
+        setError(error instanceof Error ? error.message : "Failed to load history")
       } finally {
         setLoading(false)
       }
@@ -401,47 +420,82 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background font-sans transition-colors duration-300" style={{ color: "var(--foreground)" }}>
+    <div
+      className="min-h-screen bg-background font-sans transition-colors duration-300"
+      style={{ color: "var(--foreground)" }}
+    >
       <div className="mx-auto max-w-6xl px-4 pt-2 pb-16 sm:px-6 md:pt-10 lg:px-8">
         {/* ============ HERO ============ */}
         <div className="mb-8">
-          <div className="flex items-center gap-3">
-            <div
-              className="flex h-11 w-11 items-center justify-center rounded-xl p-2 border"
-              style={{ borderColor: "rgba(16,185,129,0.35)", backgroundColor: "rgba(16,185,129,0.1)" }}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div
+                className="flex h-11 w-11 items-center justify-center rounded-xl border p-2"
+                style={{
+                  borderColor: "rgba(16,185,129,0.35)",
+                  backgroundColor: "rgba(16,185,129,0.1)",
+                }}
+              >
+                <Activity className="h-5.5 w-5.5 text-[#10B981]" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                  Activity History
+                </h1>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  Review your recent test performance, earned achievements, XP history, and feedback.
+                </p>
+              </div>
+            </div>
+
+            <Button
+              variant="outline"
+              onClick={() => router.push(backHref)}
+              className="border-border bg-transparent text-foreground hover:bg-muted"
             >
-              <Activity className="h-5.5 w-5.5 text-[#10B981]" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                Activity History
-              </h1>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                Review your recent test performance, earned achievements, and
-                XP history.
-              </p>
-            </div>
+              Back
+            </Button>
           </div>
 
           {/* Stat cards */}
           <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            <StatCard icon={FileText} label="Total Tests complete" value={results.length} accent="#10B981" />
-            <StatCard icon={Zap} label="Total XP Earned" value={totalXPEarned.toLocaleString()} accent="#8B5CF6" />
-            <StatCard icon={Award} label="All Achievements" value={achievements.length} accent="#F59E0B" />
-            <StatCard icon={MessageSquareText} label="Feedback Submitted" value={feedbackHistory.length} accent="#10B981" />
+            <StatCard
+              icon={FileText}
+              label="Total Tests complete"
+              value={results.length}
+              accent="#10B981"
+            />
+            <StatCard
+              icon={Zap}
+              label="Total XP Earned"
+              value={totalXPEarned.toLocaleString()}
+              accent="#8B5CF6"
+            />
+            <StatCard
+              icon={Award}
+              label="All Achievements"
+              value={achievements.length}
+              accent="#F59E0B"
+            />
+            <StatCard
+              icon={MessageSquareText}
+              label="Feedback Submitted"
+              value={feedbackHistory.length}
+              accent="#10B981"
+            />
           </div>
         </div>
 
         {/* ============ SECTION NAV ============ */}
-        <div className="scrollbar-none mb-6 grid grid-cols-2 lg:grid-cols-4 gap-2.5 overflow-x-auto pb-1 pt-1">
+        <div className="mb-6 grid scrollbar-none grid-cols-2 gap-2.5 overflow-x-auto pt-1 pb-1 lg:grid-cols-4">
           {sections.map((s) => {
             const active = section === s.key
             return (
-              <button 
+              <button
                 key={s.key}
                 onClick={() => setSection(s.key)}
                 className={cn(
-                  "flex shrink-0 items-center gap-2.5 rounded-xl border px-2 py-3 text-xs lg:text-sm font-semibold transition-all duration-200",
+                  "flex shrink-0 items-center gap-2.5 rounded-xl border px-2 py-3 text-xs font-semibold transition-all duration-200 lg:text-sm",
                   active
                     ? "border-transparent bg-linear-to-br from-[#10B981] to-[#0d9c6f] text-[#09090B] shadow-lg shadow-emerald-500/20"
                     : "border-border bg-card text-muted-foreground hover:-translate-y-0.5 hover:border-border hover:text-foreground"
@@ -452,7 +506,9 @@ export default function HistoryPage() {
                 <span
                   className={cn(
                     "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-                    active ? "bg-black/15 text-[#09090B]" : "bg-muted text-muted-foreground"
+                    active
+                      ? "bg-black/15 text-[#09090B]"
+                      : "bg-muted text-muted-foreground"
                   )}
                 >
                   {s.count}
@@ -468,18 +524,29 @@ export default function HistoryPage() {
         ) : error ? (
           <div
             className="flex items-center gap-3 rounded-2xl border p-6"
-            style={{ borderColor: "rgba(239,68,68,0.3)", backgroundColor: "rgba(239,68,68,0.06)" }}
+            style={{
+              borderColor: "rgba(239,68,68,0.3)",
+              backgroundColor: "rgba(239,68,68,0.06)",
+            }}
           >
             <AlertCircle className="h-5 w-5 shrink-0 text-[#EF4444]" />
             <p className="text-sm text-[#EF4444]">{error}</p>
           </div>
         ) : (
-          <Card className="border" style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}>
+          <Card
+            className="border"
+            style={{
+              borderColor: "var(--border)",
+              backgroundColor: "var(--card)",
+            }}
+          >
             <CardContent className="p-4 sm:p-6">
               {/* ---------- TESTS ---------- */}
               {section === "tests" && (
                 <>
-                  <h2 className="mb-4 text-base font-bold sm:text-lg">Test History</h2>
+                  <h2 className="mb-4 text-base font-bold sm:text-lg">
+                    Test History
+                  </h2>
                   {paginatedTests.length === 0 ? (
                     <EmptyState
                       icon={FileText}
@@ -491,27 +558,33 @@ export default function HistoryPage() {
                   ) : (
                     <div className="space-y-3">
                       {paginatedTests.map((item) => {
-                        const style = TEST_STATUS_STYLES[item.status] || TEST_STATUS_STYLES.abandoned
+                        const style =
+                          TEST_STATUS_STYLES[item.status] ||
+                          TEST_STATUS_STYLES.abandoned
                         return (
                           <div
                             key={item._id}
-                            className="group rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-5"
-                            style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}
+                            className="group rounded-xl border p-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-5"
+                            style={{
+                              borderColor: "var(--border)",
+                              backgroundColor: "var(--card)",
+                            }}
                           >
-                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
                               <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-semibold text-foreground sm:text-base">
+                                <p className="truncate text-xs font-semibold text-foreground sm:text-xl">
                                   {item.testName}
                                 </p>
                                 <p className="mt-1 text-xs text-muted-foreground">
-                                  {formatDate(item.submittedAt)} · {item.attemptedQuestions}/
+                                  {formatDate(item.submittedAt)} ·{" "}
+                                  {item.attemptedQuestions}/
                                   {item.totalQuestions} attempted
                                 </p>
                               </div>
 
                               <div className="flex flex-wrap items-center gap-5 sm:justify-end">
                                 <div className="text-right">
-                                  <div className="text-base font-bold sm:text-lg">
+                                  <div className="text-xs font-bold sm:text-lg">
                                     {item.marksObtained}/{item.totalMarks}
                                   </div>
                                   <div className="text-[10px] tracking-wide text-muted-foreground uppercase">
@@ -519,7 +592,7 @@ export default function HistoryPage() {
                                   </div>
                                 </div>
                                 <div className="text-right">
-                                  <div className="text-base font-bold text-[#10B981] sm:text-lg">
+                                  <div className="text-xs font-bold text-[#10B981] sm:text-lg">
                                     {item.accuracy}%
                                   </div>
                                   <div className="text-[10px] tracking-wide text-muted-foreground uppercase">
@@ -527,24 +600,20 @@ export default function HistoryPage() {
                                   </div>
                                 </div>
                                 <Badge
-                                  className="border font-semibold capitalize"
-                                  style={{ color: style.color, borderColor: style.border, backgroundColor: style.bg }}
+                                  className="border text-xs font-semibold capitalize sm:text-lg"
+                                  style={{
+                                    color: style.color,
+                                    borderColor: style.border,
+                                    backgroundColor: style.bg,
+                                  }}
                                 >
                                   {item.status.replace("_", " ")}
                                 </Badge>
                               </div>
                             </div>
 
-                            <div className="mt-4 flex justify-end">
-                              <Button asChild className="bg-[#10B981] text-[#09090B] hover:bg-[#10B981]/90">
-                                <Link href={buildResultHref(item)}>
-                                  View result
-                                </Link>
-                              </Button>
-                            </div>
-
                             {/* Progress bar */}
-                            <div className="mt-3.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
                               <div
                                 className="h-full rounded-full transition-[width] duration-700 ease-out"
                                 style={{
@@ -552,6 +621,17 @@ export default function HistoryPage() {
                                   backgroundColor: style.progress,
                                 }}
                               />
+                            </div>
+
+                            <div className="mt-2 flex flex-col justify-end">
+                              <Button
+                                asChild
+                                className="bg-[#10B981] text-[#09090B] hover:bg-[#10B981]/90"
+                              >
+                                <Link href={buildResultHref(item)}>
+                                  View result
+                                </Link>
+                              </Button>
                             </div>
                           </div>
                         )
@@ -570,7 +650,9 @@ export default function HistoryPage() {
               {/* ---------- XP TIMELINE ---------- */}
               {section === "xp" && (
                 <>
-                  <h2 className="mb-4 text-base font-bold sm:text-lg">XP History</h2>
+                  <h2 className="mb-4 text-base font-bold sm:text-lg">
+                    XP History
+                  </h2>
                   {paginatedXP.length === 0 ? (
                     <EmptyState
                       icon={Zap}
@@ -583,35 +665,47 @@ export default function HistoryPage() {
                         const positive = item.xpPoints > 0
                         const isLast = idx === paginatedXP.length - 1
                         return (
-                          <div key={item._id} className="relative flex gap-4 pb-6 last:pb-0">
+                          <div
+                            key={item._id}
+                            className="relative flex gap-4 pb-6 last:pb-0"
+                          >
                             {/* Timeline rail */}
                             <div className="relative flex flex-col items-center">
                               <span
                                 className="z-10 flex h-3 w-3 shrink-0 rounded-full ring-4"
                                 style={{
-                                  backgroundColor: positive ? "#10B981" : "#EF4444",
+                                  backgroundColor: positive
+                                    ? "#10B981"
+                                    : "#EF4444",
                                   boxShadow: `0 0 0 4px ${positive ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)"}`,
                                 }}
                               />
                               {!isLast && (
-                                <span className="mt-1 w-px flex-1" style={{ backgroundColor: "#1F2937" }} />
+                                <span
+                                  className="mt-1 w-px flex-1"
+                                  style={{ backgroundColor: "#1F2937" }}
+                                />
                               )}
                             </div>
 
                             <div className="flex flex-1 items-center justify-between gap-3 pt-[-2px]">
                               <div>
-                                <p className="text-sm font-semibold text-foreground">
-                                  {sourceLabels[item.sourceType] || item.sourceType}
+                                <p className="text-xs sm:text-lg font-semibold text-foreground ">
+                                  {sourceLabels[item.sourceType] ||
+                                    item.sourceType}
                                 </p>
-                                <p className="mt-0.5 text-xs text-muted-foreground">
+                                <p className="mt-0.5 text-xs sm:text-lg text-muted-foreground">
                                   {formatDate(item.createdAt)}
                                 </p>
                               </div>
                               <span
-                                className="shrink-0 text-base font-bold"
-                                style={{ color: positive ? "#10B981" : "#EF4444" }}
+                                className="shrink-0 text-xs sm:text-xl font-bold"
+                                style={{
+                                  color: positive ? "#10B981" : "#EF4444",
+                                }}
                               >
-                                {positive ? `+${item.xpPoints}` : item.xpPoints} XP
+                                {positive ? `+${item.xpPoints}` : item.xpPoints}{" "}
+                                XP
                               </span>
                             </div>
                           </div>
@@ -631,7 +725,9 @@ export default function HistoryPage() {
               {/* ---------- ACHIEVEMENTS ---------- */}
               {section === "achievements" && (
                 <>
-                  <h2 className="mb-4 text-base font-bold sm:text-lg">Achievement History</h2>
+                  <h2 className="mb-4 text-base font-bold sm:text-lg">
+                    Achievement History
+                  </h2>
                   {paginatedAchievements.length === 0 ? (
                     <EmptyState
                       icon={Trophy}
@@ -643,28 +739,36 @@ export default function HistoryPage() {
                       {paginatedAchievements.map((item) => (
                         <div
                           key={item._id}
-                          className="group relative overflow-hidden rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-                          style={{ borderColor: "rgba(245,158,11,0.25)", backgroundColor: "rgba(245,158,11,0.05)" }}
+                          className="group relative overflow-hidden rounded-sm border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                          style={{
+                            borderColor: "rgba(245,158,11,0.25)",
+                            backgroundColor: "rgba(245,158,11,0.05)",
+                          }}
                         >
                           <div
                             className="pointer-events-none absolute -top-6 -right-6 h-24 w-24 rounded-full opacity-0 blur-2xl transition-opacity duration-200 group-hover:opacity-100"
                             style={{ backgroundColor: "rgba(245,158,11,0.25)" }}
                           />
-                          <div className="relative flex items-start gap-3">
+                          <div className="relative flex items-center gap-3 justify-center">
                             <div
-                              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border"
-                              style={{ borderColor: "rgba(245,158,11,0.35)", backgroundColor: "rgba(245,158,11,0.12)" }}
+                              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm border"
+                              style={{
+                                borderColor: "rgba(245,158,11,0.35)",
+                                backgroundColor: "rgba(245,158,11,0.12)",
+                              }}
                             >
                               <Trophy className="h-5 w-5 text-[#F59E0B]" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-semibold text-foreground">
+                              <p className="truncate text-xs font-semibold text-foreground">
                                 {item.achievementId.name}
                               </p>
-                              <p className="mt-0.5 text-xs text-muted-foreground">
+                              <p className="mt-0.5 text-[10px] text-muted-foreground">
                                 {formatDate(item.unlockedAt)}
                               </p>
-                              <span className="mt-2 inline-block text-sm font-bold text-[#F59E0B]">
+                            </div>
+                            <div>
+                              <span className="mt-2 inline-block text-xs font-bold text-[#F59E0B]">
                                 +{item.achievementId.pointsReward} XP
                               </span>
                             </div>
@@ -685,7 +789,9 @@ export default function HistoryPage() {
               {/* ---------- FEEDBACK ---------- */}
               {section === "feedback" && (
                 <>
-                  <h2 className="mb-4 text-base font-bold sm:text-lg">Feedback History</h2>
+                  <h2 className="mb-4 text-base font-bold sm:text-lg">
+                    Feedback History
+                  </h2>
                   {paginatedFeedback.length === 0 ? (
                     <EmptyState
                       icon={MessageSquareText}
@@ -702,7 +808,10 @@ export default function HistoryPage() {
                           <div
                             key={item._id}
                             className="flex flex-col rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-                            style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}
+                            style={{
+                              borderColor: "var(--border)",
+                              backgroundColor: "var(--card)",
+                            }}
                           >
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-0.5">
@@ -712,14 +821,21 @@ export default function HistoryPage() {
                                     className="h-3.5 w-3.5"
                                     style={{
                                       color: "#F59E0B",
-                                      fill: item.rating && i < item.rating ? "#F59E0B" : "transparent",
+                                      fill:
+                                        item.rating && i < item.rating
+                                          ? "#F59E0B"
+                                          : "transparent",
                                     }}
                                   />
                                 ))}
                               </div>
                               <Badge
                                 className="border text-[10px] font-semibold tracking-wide uppercase"
-                                style={{ color: style.color, borderColor: style.border, backgroundColor: style.bg }}
+                                style={{
+                                  color: style.color,
+                                  borderColor: style.border,
+                                  backgroundColor: style.bg,
+                                }}
                               >
                                 {style.label}
                               </Badge>
@@ -734,8 +850,13 @@ export default function HistoryPage() {
                               {item.content}
                             </p>
 
-                            <div className="mt-3 flex items-center justify-between border-t pt-3 text-[11px] text-muted-foreground" style={{ borderColor: "var(--border)" }}>
-                              <span className="capitalize">{item.feedbackType} · {item.targetType}</span>
+                            <div
+                              className="mt-3 flex items-center justify-between border-t pt-3 text-[11px] text-muted-foreground"
+                              style={{ borderColor: "var(--border)" }}
+                            >
+                              <span className="capitalize">
+                                {item.feedbackType} · {item.targetType}
+                              </span>
                               <span>{formatDate(item.createdAt)}</span>
                             </div>
                           </div>

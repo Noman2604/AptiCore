@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { useParams, useSearchParams } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Flag } from "lucide-react"
 import { toast } from "sonner"
@@ -92,6 +92,7 @@ function scoreGrade(pct: number) {
 
 export default function SubcategoryResultsPage() {
   const params = useParams<{ slug: string; subSlug: string }>()
+  const router = useRouter()
   const searchParams = useSearchParams()
   const resultId = searchParams.get("resultId")
 
@@ -190,6 +191,21 @@ export default function SubcategoryResultsPage() {
 
   const backHref = `/dashboard/tests/${params?.slug || ""}`
 
+  const handleBack = () => {
+    if (typeof window !== "undefined") {
+      const hasSameOriginReferrer =
+        document.referrer.length > 0 &&
+        new URL(document.referrer).origin === window.location.origin
+
+      if (window.history.length > 1 && hasSameOriginReferrer) {
+        router.back()
+        return
+      }
+    }
+
+    router.push(backHref)
+  }
+
   const scorePct =
     result && result.totalMarks > 0
       ? Math.round((result.marksObtained / result.totalMarks) * 100)
@@ -275,12 +291,13 @@ export default function SubcategoryResultsPage() {
           <p className="mt-2 text-[13px] text-[#8a96a8]">
             {error || "No result was found yet."}
           </p>
-          <Link
-            href={backHref}
+          <button
+            type="button"
+            onClick={handleBack}
             className="mt-5 inline-block rounded-lg bg-linear-to-br from-[#6ee7c9] to-[#57c9a8] px-4 py-2.5 text-[13px] font-bold text-[#06120d] transition hover:brightness-105"
           >
-            Back to Subtopics →
-          </Link>
+            Back to Tests
+          </button>
         </div>
       </div>
     )
@@ -339,12 +356,13 @@ export default function SubcategoryResultsPage() {
               {result.testId?.title || "Practice Session"}
             </h1>
           </div>
-          <Link
-            href={backHref}
+          <button
+            type="button"
+            onClick={handleBack}
             className="rounded-lg border border-[#212a37] bg-transparent px-4 py-2.5 text-center text-[13px] font-semibold text-[#8a96a8] transition hover:border-[#3a4a5e] hover:text-[#e7ecf3]"
           >
-            ← Back to Subtopics
-          </Link>
+            Back
+          </button>
         </div>
 
         {/* Hero score card */}

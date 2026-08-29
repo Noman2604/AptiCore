@@ -102,6 +102,7 @@ const QuestionSchema = new Schema<IQuestionDocument>(
     explanation: {
       type: String,
       trim: true,
+      required: [true, "Explanation is required"],
       maxlength: [2000, "Explanation cannot exceed 2000 characters"],
     },
     solutionVideoUrl: {
@@ -110,18 +111,18 @@ const QuestionSchema = new Schema<IQuestionDocument>(
     },
     marks: {
       type: Number,
-      default: 1,
-      min: [0.25, "Marks must be at least 0.25"],
+      default: 4,
+      min: [1, "Marks must be at least 1"],
     },
     negativeMarks: {
       type: Number,
-      default: 0.25,
-      min: [0, "Negative marks cannot be negative"],
+      default: 1,
+      min: [1, "Negative marks cannot be negative"],
     },
     timeLimitSeconds: {
       type: Number,
-      default: 60,
-      min: [10, "Time limit must be at least 10 seconds"],
+      default: 30,
+      min: [15, "Time limit must be at least 15 seconds"],
     },
     isActive: {
       type: Boolean,

@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
           defaultPassingScore: Number(defaultPassingScore ?? 50),
         },
       },
-      { new: true, upsert: true }
+      { returnDocument: 'after', upsert: true }
     )
 
     return NextResponse.json({

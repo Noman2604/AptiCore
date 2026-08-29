@@ -221,7 +221,7 @@ export default function AdminCategoriesPage() {
                     Add Category
                   </Button>
                 </SheetTrigger>
-                <SheetContent>
+                <SheetContent className="p-2">
                   <SheetHeader>
                     <SheetTitle>Add category</SheetTitle>
                     <SheetDescription>

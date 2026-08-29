@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { MoreHorizontal, PencilLine, Plus, Trash2 } from "lucide-react"
+import { Layers, MoreHorizontal, PencilLine, Plus, Trash2 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -42,6 +42,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import Link from "next/link"
 
 type Subcategory = {
   _id: string
@@ -297,7 +298,7 @@ export default function AdminCategoryDetailsPage() {
                   Add Subcategory
                 </Button>
               </SheetTrigger>
-              <SheetContent>
+              <SheetContent className="p-2">
                 <SheetHeader>
                   <SheetTitle>Add subcategory</SheetTitle>
                   <SheetDescription>
@@ -414,7 +415,15 @@ export default function AdminCategoryDetailsPage() {
                 ) : (
                   subcategories.map((s) => (
                     <TableRow key={s._id}>
-                      <TableCell className="font-medium">{s.name}</TableCell>
+                      <TableCell className="font-medium">
+                        <Link
+                          href={`/admin/categories/${slug}/${s.slug}`}
+                          className="group inline-flex items-center gap-2 hover:underline"
+                        >
+                          <Layers className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{s.name}</span>
+                        </Link>
+                      </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <Badge variant="outline">{s.slug}</Badge>
                       </TableCell>

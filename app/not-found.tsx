@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { Compass, Home, LogIn } from "lucide-react"
 import Image from "next/image"

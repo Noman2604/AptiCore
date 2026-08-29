@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import connectDB from "@/lib/db"
 import Result from "@/lib/models/Result"
 import { verifyAccessToken } from "@/lib/jwt"
+import "@/lib/models/Question" 
 
 // GET /api/results/[id] - Get single result with answers
 export async function GET(

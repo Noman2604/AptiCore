@@ -11,6 +11,7 @@ export interface IResultAnswer {
 
 export interface IResultDocument extends Document {
   userId: Types.ObjectId
+  attemptId?: string
   testId?: Types.ObjectId
   totalQuestions: number
   testName: string
@@ -69,6 +70,10 @@ const ResultSchema = new Schema<IResultDocument>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
+    },
+    attemptId: {
+      type: String,
+      sparse: true,
     },
     testId: {
       type: Schema.Types.ObjectId,

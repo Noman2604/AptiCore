@@ -106,9 +106,12 @@ export default function TestRunner({
   >({})
   const [tabSwitches, setTabSwitches] = useState(0)
   const [toast, setToast] = useState<string | null>(null)
+  const [showWarningModal, setShowWarningModal] = useState(false)
+  const [warningMessage, setWarningMessage] = useState("")
   const [isPaletteOpen, setIsPaletteOpen] = useState(false)
   const questionEnteredAt = useRef(Date.now())
   const toastTimer = useRef<number | null>(null)
+  const lastWarnedStrike = useRef<number>(0)
   const lastProgressUpdateRef = useRef<number>(0)
 
   const showToast = useCallback((message: string) => {
@@ -327,20 +330,31 @@ export default function TestRunner({
   useEffect(() => {
     const onVisibilityChange = () => {
       if (document.hidden && !submitted) {
-        setTabSwitches((count) => {
-          const next = count + 1
-          if (next >= 1) {
-            showToast("⚠ Tab switch detected — flagged for review")
-          }
-          return next
-        })
+        setTabSwitches((count) => count + 1)
       }
     }
 
     document.addEventListener("visibilitychange", onVisibilityChange)
-    return () =>
-      document.removeEventListener("visibilitychange", onVisibilityChange)
-  }, [showToast, submitted])
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange)
+  }, [submitted])
+
+  useEffect(() => {
+    if (submitted || tabSwitches === 0) return
+
+    if (lastWarnedStrike.current === tabSwitches) return
+    lastWarnedStrike.current = tabSwitches
+
+    if (tabSwitches === 1) {
+      setWarningMessage("Tab switching is not allowed. Further violations will result in automatic submission.")
+      setShowWarningModal(true)
+    } else if (tabSwitches === 2) {
+      setWarningMessage("FINAL WARNING: If you switch tabs one more time, your test will be automatically submitted.")
+      setShowWarningModal(true)
+    } else if (tabSwitches >= 3) {
+      finalizeSubmit()
+      showToast("Test automatically submitted due to repeated tab switching.")
+    }
+  }, [tabSwitches, submitted, finalizeSubmit, showToast])
 
   const handleOptionChange = (
     questionId: string,
@@ -451,11 +465,12 @@ export default function TestRunner({
     questions.length,
     submitted,
     showSubmitModal,
+    showWarningModal,
   ])
 
   if (!currentQuestion) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0a0e14] font-[Inter,sans-serif] text-[#e7ecf3]">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-[#0a0e14] font-[Inter,sans-serif] text-slate-900 dark:text-[#e7ecf3]">
         No questions available for this test.
       </div>
     )
@@ -483,27 +498,27 @@ export default function TestRunner({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#0a0e14] font-[Inter,sans-serif] text-[#e7ecf3]"
+      className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-slate-50 dark:bg-[#0a0e14] font-[Inter,sans-serif] text-slate-900 dark:text-[#e7ecf3]"
       style={{
         backgroundImage:
           "radial-gradient(circle at 15% 0%, rgba(139,124,246,0.06), transparent 40%), radial-gradient(circle at 85% 10%, rgba(110,231,201,0.05), transparent 40%)",
       }}
     >
       {/* Integrity strip */}
-      <div className="flex h-8.5 shrink-0 scrollbar-none items-center gap-0 overflow-x-auto overflow-y-hidden border-b border-[#212a37] bg-[#070a0f] px-3 font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wide whitespace-nowrap text-[#5b6577] sm:px-4 sm:text-[11px]">
-        <div className="flex h-full shrink-0 items-center gap-1.5 border-r border-[#1a212b] pr-3.5">
+      <div className="flex h-8.5 shrink-0 scrollbar-none items-center gap-0 overflow-x-auto overflow-y-hidden border-b border-slate-200 dark:border-[#212a37] bg-slate-100 dark:bg-[#070a0f] px-3 font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wide whitespace-nowrap text-slate-500 dark:text-[#5b6577] sm:px-4 sm:text-[11px]">
+        <div className="flex h-full shrink-0 items-center gap-1.5 border-r border-slate-200 dark:border-[#1a212b] pr-3.5">
           <span
             className={`h-1.5 w-1.5 animate-pulse rounded-full ${tabSwitches >= 1 ? "bg-[#f5a623] shadow-[0_0_8px_#f5a623]" : "bg-[#3ecf8e] shadow-[0_0_8px_#3ecf8e]"}`}
           />
           PROCTOR: ACTIVE
         </div>
-        <div className="flex h-full shrink-0 items-center border-r border-[#1a212b] px-3.5">
+        <div className="flex h-full shrink-0 items-center border-r border-slate-200 dark:border-[#1a212b] px-3.5">
           TAB SWITCHES: {tabSwitches}
         </div>
-        <div className="hidden h-full shrink-0 items-center border-r border-[#1a212b] px-3.5 sm:flex">
+        <div className="hidden h-full shrink-0 items-center border-r border-slate-200 dark:border-[#1a212b] px-3.5 sm:flex">
           FULLSCREEN: LOCKED
         </div>
-        <div className="hidden h-full shrink-0 items-center border-r border-[#1a212b] px-3.5 md:flex">
+        <div className="hidden h-full shrink-0 items-center border-r border-slate-200 dark:border-[#1a212b] px-3.5 md:flex">
           SECTION: {sectionText}
         </div>
         <div className="flex h-full shrink-0 items-center px-3.5">
@@ -512,7 +527,7 @@ export default function TestRunner({
       </div>
 
       {/* Header */}
-      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[#212a37] bg-linear-to-b from-[#0c1119] to-[#0a0e14] px-4 py-3 sm:px-6 sm:py-3.5">
+      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 dark:border-[#212a37] bg-linear-to-b from-white to-slate-50 dark:from-[#0c1119] dark:to-[#0a0e14] px-4 py-3 sm:px-6 sm:py-3.5">
         <div className="flex min-w-0 items-center gap-2.5">
           <div className="min-w-0">
             <Image
@@ -528,7 +543,7 @@ export default function TestRunner({
             <div className="truncate font-[Space_Grotesk,sans-serif] text-[14px] font-bold tracking-wide sm:text-[15px]">
               AptiCore
             </div>
-            <div className="hidden font-[JetBrains_Mono,monospace] text-[11px] text-[#5b6577] sm:block">
+            <div className="hidden font-[JetBrains_Mono,monospace] text-[11px] text-slate-500 dark:text-[#5b6577] sm:block">
               campus placement engine
             </div>
           </div>
@@ -537,23 +552,23 @@ export default function TestRunner({
           <div className="truncate font-[Space_Grotesk,sans-serif] text-[13px] font-semibold sm:text-sm">
             {test.title}
           </div>
-          <div className="hidden font-[JetBrains_Mono,monospace] text-[11px] text-[#5b6577] sm:block">
+          <div className="hidden font-[JetBrains_Mono,monospace] text-[11px] text-slate-500 dark:text-[#5b6577] sm:block">
             {questions.length} Qs · {test.totalMarks} marks ·{" "}
             {test.durationMinutes} min · Attempt 1 of 1
           </div>
-          <div className="font-[JetBrains_Mono,monospace] text-[10.5px] text-[#5b6577] sm:hidden">
+          <div className="font-[JetBrains_Mono,monospace] text-[10.5px] text-slate-500 dark:text-[#5b6577] sm:hidden">
             {questions.length} Qs · {test.durationMinutes} min
           </div>
         </div>
       </header>
 
       {/* Progress bar */}
-      <div className="relative h-1 w-full shrink-0 bg-[#151b24]">
+      <div className="relative h-1 w-full shrink-0 bg-slate-200 dark:bg-[#151b24]">
         <div
           className="h-full bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] transition-[width] duration-500 ease-out"
           style={{ width: `${progressPct}%` }}
         />
-        <span className="absolute top-1.5 right-3 hidden font-[JetBrains_Mono,monospace] text-[10px] text-[#5b6577] sm:block">
+        <span className="absolute top-1.5 right-3 hidden font-[JetBrains_Mono,monospace] text-[10px] text-slate-500 dark:text-[#5b6577] sm:block">
           {progressPct}% complete
         </span>
       </div>
@@ -561,7 +576,7 @@ export default function TestRunner({
       {/* Main layout */}
       <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[64px_1fr_300px]">
         {/* Left rail (desktop only) */}
-        <div className="hidden flex-col items-center gap-1.5 border-r border-[#212a37] bg-[#10151d] py-4 lg:flex">
+        <div className="hidden flex-col items-center gap-1.5 border-r border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] py-4 lg:flex">
           <button
             type="button"
             className="flex h-9.5 w-9.5 items-center justify-center rounded-[9px] border border-[rgba(110,231,201,0.35)] bg-[rgba(110,231,201,0.12)] text-base text-[#6ee7c9]"
@@ -570,7 +585,7 @@ export default function TestRunner({
             {sectionText.charAt(0)}
           </button>
           <div className="flex-1" />
-          <div className="mt-2 font-[JetBrains_Mono,monospace] text-[9px] tracking-[0.15em] text-[#5b6577] [writing-mode:vertical-rl]">
+          <div className="mt-2 font-[JetBrains_Mono,monospace] text-[9px] tracking-[0.15em] text-slate-500 dark:text-[#5b6577] [writing-mode:vertical-rl]">
             SECTION 1 / 1
           </div>
         </div>
@@ -578,10 +593,10 @@ export default function TestRunner({
         {/* Center panel */}
         <div className="overflow-y-auto px-4 py-5 pb-28 sm:px-6 sm:py-7 lg:px-10 lg:pb-24">
           <div className="mb-4 flex flex-wrap items-center gap-2">
-            <div className="flex flex-wrap items-center gap-2 font-[JetBrains_Mono,monospace] text-[11px] text-[#5b6577] sm:gap-2.5 sm:text-xs">
+            <div className="flex flex-wrap items-center gap-2 font-[JetBrains_Mono,monospace] text-[11px] text-slate-500 dark:text-[#5b6577] sm:gap-2.5 sm:text-xs">
               <span>
                 QUESTION{" "}
-                <b className="text-[#e7ecf3]">
+                <b className="text-slate-900 dark:text-[#e7ecf3]">
                   {String(currentIndex + 1).padStart(2, "0")}
                 </b>{" "}
                 / {questions.length}
@@ -622,14 +637,14 @@ export default function TestRunner({
                     className={`flex cursor-pointer items-center gap-3.5 rounded-[10px] border px-4 py-3.75 transition-all duration-150 ${
                       checked
                         ? "border-[#6ee7c9] bg-[rgba(110,231,201,0.07)]"
-                        : "border-[#212a37] bg-[#10151d] hover:border-[#37465a] hover:bg-[#141b25]"
+                        : "border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] hover:border-slate-300 hover:bg-slate-50"
                     } ${submitted ? "pointer-events-none opacity-70" : ""}`}
                   >
                     <span
                       className={`flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-[7px] border font-[JetBrains_Mono,monospace] text-[11px] ${
                         checked
                           ? "border-[#6ee7c9] bg-[rgba(110,231,201,0.12)] text-[#6ee7c9]"
-                          : "border-[#212a37] text-[#5b6577]"
+                          : "border-slate-200 dark:border-[#212a37] text-slate-500 dark:text-[#5b6577]"
                       }`}
                     >
                       {OPTION_KEYS[index] || "?"}
@@ -665,10 +680,10 @@ export default function TestRunner({
                 disabled={submitted}
                 placeholder="Type your answer here..."
                 rows={4}
-                className="w-full resize-y rounded-[10px] border border-[#212a37] bg-[#10151d] px-4 py-3 text-sm text-[#e7ecf3] transition outline-none focus:border-[#6ee7c9] disabled:opacity-60"
+                className="w-full resize-y rounded-[10px] border border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] px-4 py-3 text-sm text-slate-900 dark:text-[#e7ecf3] transition outline-none focus:border-[#6ee7c9] disabled:opacity-60"
               />
             ) : (
-              <div className="rounded-[10px] border border-dashed border-[#212a37] bg-[#10151d] p-4 text-sm text-[#8a96a8]">
+              <div className="rounded-[10px] border border-dashed border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] p-4 text-sm text-slate-600 dark:text-[#8a96a8]">
                 This question type requires a written response.
               </div>
             )}
@@ -682,7 +697,7 @@ export default function TestRunner({
               className={`flex items-center gap-1.5 rounded-lg border px-3.5 py-2.5 text-[12.5px] font-semibold transition disabled:opacity-35 sm:px-4 sm:text-[13px] ${
                 bookmarkedQuestions.has(currentQuestion._id)
                   ? "border-[rgba(245,166,35,0.4)] bg-[rgba(245,166,35,0.08)] text-[#f5a623]"
-                  : "border-[#212a37] bg-[#10151d] text-[#8a96a8] hover:border-[#3a4a5e] hover:text-[#e7ecf3]"
+                  : "border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] text-slate-600 dark:text-[#8a96a8] hover:border-slate-300 hover:text-slate-900"
               }`}
             >
               {bookmarkedQuestions.has(currentQuestion._id)
@@ -696,7 +711,7 @@ export default function TestRunner({
               className={`flex items-center gap-1.5 rounded-lg border px-3.5 py-2.5 text-[12.5px] font-semibold transition disabled:opacity-35 sm:px-4 sm:text-[13px] ${
                 markedForReview.has(currentQuestion._id)
                   ? "border-[rgba(139,124,246,0.4)] bg-[rgba(139,124,246,0.08)] text-[#8b7cf6]"
-                  : "border-[#212a37] bg-[#10151d] text-[#8a96a8] hover:border-[#3a4a5e] hover:text-[#e7ecf3]"
+                  : "border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] text-slate-600 dark:text-[#8a96a8] hover:border-slate-300 hover:text-slate-900"
               }`}
             >
               {markedForReview.has(currentQuestion._id)
@@ -708,7 +723,7 @@ export default function TestRunner({
               type="button"
               onClick={goPrev}
               disabled={currentIndex === 0 || submitted}
-              className="rounded-lg border border-[#212a37] bg-transparent px-3.5 py-2.5 text-[12.5px] font-semibold text-[#8a96a8] transition hover:border-[#3a4a5e] hover:text-[#e7ecf3] disabled:cursor-not-allowed disabled:opacity-35 sm:px-4 sm:text-[13px]"
+              className="rounded-lg border border-slate-200 dark:border-[#212a37] bg-transparent px-3.5 py-2.5 text-[12.5px] font-semibold text-slate-600 dark:text-[#8a96a8] transition hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-35 sm:px-4 sm:text-[13px]"
             >
               ← Prev
             </button>
@@ -723,11 +738,11 @@ export default function TestRunner({
           </div>
 
           {submitted && currentQuestion.explanation && (
-            <div className="mt-8 max-w-155 rounded-[10px] border border-[#212a37] bg-[#10151d] p-5">
+            <div className="mt-8 max-w-155 rounded-[10px] border border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] p-5">
               <h3 className="mb-2 font-[Space_Grotesk,sans-serif] text-base font-semibold">
                 Explanation
               </h3>
-              <p className="text-sm leading-7 text-[#8a96a8]">
+              <p className="text-sm leading-7 text-slate-600 dark:text-[#8a96a8]">
                 {currentQuestion.explanation}
               </p>
             </div>
@@ -736,7 +751,7 @@ export default function TestRunner({
 
         {/* Sidebar (desktop: static column, mobile: slide-up drawer) */}
         <aside
-          className={`fixed inset-x-0 bottom-0 z-40 flex max-h-[80vh] flex-col overflow-hidden rounded-t-2xl border-t border-[#212a37] bg-[#10151d] shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-transform duration-300 lg:static lg:inset-auto lg:z-auto lg:max-h-none lg:translate-y-0 lg:rounded-none lg:border-t-0 lg:border-l lg:shadow-none ${
+          className={`fixed inset-x-0 bottom-0 z-40 flex max-h-[80vh] flex-col overflow-hidden rounded-t-2xl border-t border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-transform duration-300 lg:static lg:inset-auto lg:z-auto lg:max-h-none lg:translate-y-0 lg:rounded-none lg:border-t-0 lg:border-l lg:shadow-none ${
             isPaletteOpen
               ? "translate-y-0"
               : "translate-y-full lg:translate-y-0"
@@ -749,10 +764,10 @@ export default function TestRunner({
             className="flex h-6 shrink-0 items-center justify-center lg:hidden"
             aria-label="Close palette"
           >
-            <span className="h-1 w-10 rounded-full bg-[#2a3444]" />
+            <span className="h-1 w-10 rounded-full bg-slate-300 dark:bg-[#2a3444]" />
           </button>
 
-          <div className="flex items-center gap-4 border-b border-[#212a37] p-4 sm:p-5">
+          <div className="flex items-center gap-4 border-b border-slate-200 dark:border-[#212a37] p-4 sm:p-5">
             <div className="relative h-14 w-14 shrink-0 sm:h-16 sm:w-16">
               <svg
                 width="100%"
@@ -781,7 +796,7 @@ export default function TestRunner({
                   className="transition-[stroke-dashoffset,stroke] duration-1000"
                 />
               </svg>
-              <div className="absolute inset-0 flex items-center justify-center font-[JetBrains_Mono,monospace] text-[9px] text-[#5b6577]">
+              <div className="absolute inset-0 flex items-center justify-center font-[JetBrains_Mono,monospace] text-[9px] text-slate-500 dark:text-[#5b6577]">
                 MIN
               </div>
             </div>
@@ -789,18 +804,18 @@ export default function TestRunner({
               <div className="font-[JetBrains_Mono,monospace] text-xl font-bold tracking-tight sm:text-2xl">
                 {formatTimer(remainingSeconds)}
               </div>
-              <div className="mt-0.5 text-[11px] text-[#5b6577]">
+              <div className="mt-0.5 text-[11px] text-slate-500 dark:text-[#5b6577]">
                 time remaining
               </div>
             </div>
           </div>
 
-          <div className="flex gap-2.5 border-b border-[#212a37] px-4 py-4 sm:px-5">
+          <div className="flex gap-2.5 border-b border-slate-200 dark:border-[#212a37] px-4 py-4 sm:px-5">
             <div className="flex-1">
               <div className="font-[Space_Grotesk,sans-serif] text-[18px] font-bold text-[#3ecf8e] sm:text-[19px]">
                 {answeredCount}
               </div>
-              <div className="mt-0.5 text-[10px] tracking-wider text-[#5b6577] uppercase">
+              <div className="mt-0.5 text-[10px] tracking-wider text-slate-500 dark:text-[#5b6577] uppercase">
                 Answered
               </div>
             </div>
@@ -808,15 +823,15 @@ export default function TestRunner({
               <div className="font-[Space_Grotesk,sans-serif] text-[18px] font-bold text-[#8b7cf6] sm:text-[19px]">
                 {reviewCount}
               </div>
-              <div className="mt-0.5 text-[10px] tracking-wider text-[#5b6577] uppercase">
+              <div className="mt-0.5 text-[10px] tracking-wider text-slate-500 dark:text-[#5b6577] uppercase">
                 Review
               </div>
             </div>
             <div className="flex-1">
-              <div className="font-[Space_Grotesk,sans-serif] text-[18px] font-bold text-[#8a96a8] sm:text-[19px]">
+              <div className="font-[Space_Grotesk,sans-serif] text-[18px] font-bold text-slate-600 dark:text-[#8a96a8] sm:text-[19px]">
                 {skippedCount}
               </div>
-              <div className="mt-0.5 text-[10px] tracking-wider text-[#5b6577] uppercase">
+              <div className="mt-0.5 text-[10px] tracking-wider text-slate-500 dark:text-[#5b6577] uppercase">
                 Skipped
               </div>
             </div>
@@ -824,7 +839,7 @@ export default function TestRunner({
 
           <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">
             <div className="mb-3 flex items-center justify-between">
-              <span className="font-[JetBrains_Mono,monospace] text-[11px] tracking-wider text-[#5b6577] uppercase">
+              <span className="font-[JetBrains_Mono,monospace] text-[11px] tracking-wider text-slate-500 dark:text-[#5b6577] uppercase">
                 Question Palette
               </span>
             </div>
@@ -844,12 +859,12 @@ export default function TestRunner({
                     onClick={() => goToQuestion(index)}
                     className={`relative flex aspect-square items-center justify-center rounded-[7px] border font-[JetBrains_Mono,monospace] text-[11px] transition ${
                       isCurrent
-                        ? "border-[#e7ecf3] text-[#e7ecf3] shadow-[inset_0_0_0_1px_#e7ecf3]"
+                        ? "border-[#e7ecf3] text-slate-900 dark:text-[#e7ecf3] shadow-[inset_0_0_0_1px_#e7ecf3]"
                         : answered
                           ? "border-[rgba(62,207,142,0.4)] bg-[rgba(62,207,142,0.1)] text-[#3ecf8e]"
                           : isReview
                             ? "border-[rgba(139,124,246,0.4)] bg-[rgba(139,124,246,0.1)] text-[#8b7cf6]"
-                            : "border-[#212a37] bg-[#141b25] text-[#8a96a8]"
+                            : "border-slate-200 dark:border-[#212a37] bg-slate-50 dark:bg-[#141b25] text-slate-600 dark:text-[#8a96a8]"
                     } ${isReview && !isCurrent ? "after:absolute after:-top-0.75 after:-right-0.75 after:h-2 after:w-2 after:rounded-full after:border-[1.5px] after:border-[#10151d] after:bg-[#8b7cf6]" : ""} ${isBookmarked ? "before:absolute before:-bottom-1 before:left-1/2 before:-translate-x-1/2 before:text-[8px] before:text-[#f5a623] before:content-['★']" : ""}`}
                   >
                     {index + 1}
@@ -857,7 +872,7 @@ export default function TestRunner({
                 )
               })}
             </div>
-            <div className="mt-3.5 flex flex-wrap gap-2.5 font-[JetBrains_Mono,monospace] text-[10px] text-[#5b6577]">
+            <div className="mt-3.5 flex flex-wrap gap-2.5 font-[JetBrains_Mono,monospace] text-[10px] text-slate-500 dark:text-[#5b6577]">
               <span className="flex items-center gap-1.5">
                 <i className="inline-block h-2 w-2 rounded-sm bg-[rgba(62,207,142,0.4)]" />
                 Answered
@@ -867,13 +882,13 @@ export default function TestRunner({
                 For Review
               </span>
               <span className="flex items-center gap-1.5">
-                <i className="inline-block h-2 w-2 rounded-sm border border-[#212a37] bg-[#141b25]" />
+                <i className="inline-block h-2 w-2 rounded-sm border border-slate-200 dark:border-[#212a37] bg-slate-50 dark:bg-[#141b25]" />
                 Skipped
               </span>
             </div>
           </div>
 
-          <div className="border-t border-[#212a37] p-4 sm:p-4.5">
+          <div className="border-t border-slate-200 dark:border-[#212a37] p-4 sm:p-4.5">
             <button
               type="button"
               onClick={requestSubmit}
@@ -882,7 +897,7 @@ export default function TestRunner({
             >
               {submitted ? "Submitted ✓" : "Submit Test →"}
             </button>
-            <p className="mt-2 text-center font-[JetBrains_Mono,monospace] text-[10.5px] text-[#5b6577]">
+            <p className="mt-2 text-center font-[JetBrains_Mono,monospace] text-[10.5px] text-slate-500 dark:text-[#5b6577]">
               {submitted
                 ? `${answeredCount} of ${questions.length} questions answered`
                 : "You can still edit answers until you submit"}
@@ -900,11 +915,11 @@ export default function TestRunner({
       </div>
 
       {/* Mobile bottom bar */}
-      <div className="flex shrink-0 items-center gap-2.5 border-t border-[#212a37] bg-[#0c1119] px-4 py-2.5 lg:hidden">
+      <div className="flex shrink-0 items-center gap-2.5 border-t border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#0c1119] px-4 py-2.5 lg:hidden">
         <button
           type="button"
           onClick={() => setIsPaletteOpen(true)}
-          className="flex items-center gap-2 rounded-lg border border-[#212a37] bg-[#10151d] px-3 py-2 font-[JetBrains_Mono,monospace] text-[12px] text-[#e7ecf3]"
+          className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] px-3 py-2 font-[JetBrains_Mono,monospace] text-[12px] text-slate-900 dark:text-[#e7ecf3]"
         >
           <span
             className="h-1.5 w-1.5 rounded-full"
@@ -915,7 +930,7 @@ export default function TestRunner({
         <button
           type="button"
           onClick={() => setIsPaletteOpen(true)}
-          className="flex-1 rounded-lg border border-[#212a37] bg-[#10151d] px-3 py-2 text-center font-[JetBrains_Mono,monospace] text-[12px] text-[#8a96a8]"
+          className="flex-1 rounded-lg border border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] px-3 py-2 text-center font-[JetBrains_Mono,monospace] text-[12px] text-slate-600 dark:text-[#8a96a8]"
         >
           {answeredCount}/{questions.length} answered · Palette
         </button>
@@ -937,38 +952,38 @@ export default function TestRunner({
         >
           <div
             onClick={(event) => event.stopPropagation()}
-            className="w-full max-w-100 rounded-t-2xl border border-[#212a37] bg-[#10151d] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.5)] sm:rounded-2xl sm:p-6"
+            className="w-full max-w-100 rounded-t-2xl border border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.5)] sm:rounded-2xl sm:p-6"
           >
-            <h3 className="font-[Space_Grotesk,sans-serif] text-lg font-bold text-[#e7ecf3]">
+            <h3 className="font-[Space_Grotesk,sans-serif] text-lg font-bold text-slate-900 dark:text-[#e7ecf3]">
               Submit test?
             </h3>
-            <p className="mt-1.5 text-[13px] leading-6 text-[#8a96a8]">
+            <p className="mt-1.5 text-[13px] leading-6 text-slate-600 dark:text-[#8a96a8]">
               Once submitted, you won't be able to change your answers. Please
               review your summary below.
             </p>
 
             <div className="mt-4 grid grid-cols-3 gap-2.5">
-              <div className="rounded-[10px] border border-[#212a37] bg-[#141b25] px-3 py-2.5 text-center">
+              <div className="rounded-[10px] border border-slate-200 dark:border-[#212a37] bg-slate-50 dark:bg-[#141b25] px-3 py-2.5 text-center">
                 <div className="font-[Space_Grotesk,sans-serif] text-lg font-bold text-[#3ecf8e]">
                   {answeredCount}
                 </div>
-                <div className="mt-0.5 text-[10px] tracking-wider text-[#5b6577] uppercase">
+                <div className="mt-0.5 text-[10px] tracking-wider text-slate-500 dark:text-[#5b6577] uppercase">
                   Answered
                 </div>
               </div>
-              <div className="rounded-[10px] border border-[#212a37] bg-[#141b25] px-3 py-2.5 text-center">
+              <div className="rounded-[10px] border border-slate-200 dark:border-[#212a37] bg-slate-50 dark:bg-[#141b25] px-3 py-2.5 text-center">
                 <div className="font-[Space_Grotesk,sans-serif] text-lg font-bold text-[#8b7cf6]">
                   {reviewCount}
                 </div>
-                <div className="mt-0.5 text-[10px] tracking-wider text-[#5b6577] uppercase">
+                <div className="mt-0.5 text-[10px] tracking-wider text-slate-500 dark:text-[#5b6577] uppercase">
                   Review
                 </div>
               </div>
-              <div className="rounded-[10px] border border-[#212a37] bg-[#141b25] px-3 py-2.5 text-center">
+              <div className="rounded-[10px] border border-slate-200 dark:border-[#212a37] bg-slate-50 dark:bg-[#141b25] px-3 py-2.5 text-center">
                 <div className="font-[Space_Grotesk,sans-serif] text-lg font-bold text-[#f2555a]">
                   {skippedCount}
                 </div>
-                <div className="mt-0.5 text-[10px] tracking-wider text-[#5b6577] uppercase">
+                <div className="mt-0.5 text-[10px] tracking-wider text-slate-500 dark:text-[#5b6577] uppercase">
                   Skipped
                 </div>
               </div>
@@ -985,7 +1000,7 @@ export default function TestRunner({
               <button
                 type="button"
                 onClick={() => setShowSubmitModal(false)}
-                className="flex-1 rounded-lg border border-[#212a37] bg-transparent py-2.75 text-[13.5px] font-semibold text-[#8a96a8] transition hover:border-[#3a4a5e] hover:text-[#e7ecf3]"
+                className="flex-1 rounded-lg border border-slate-200 dark:border-[#212a37] bg-transparent py-2.75 text-[13.5px] font-semibold text-slate-600 dark:text-[#8a96a8] transition hover:border-slate-300 hover:text-slate-900"
               >
                 Keep Reviewing
               </button>
@@ -1001,9 +1016,32 @@ export default function TestRunner({
         </div>
       )}
 
+      {/* Warning Modal */}
+      {showWarningModal && (
+        <div className="fixed inset-0 z-80 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
+          <div className="w-full max-w-md rounded-2xl border border-red-500/50 bg-white dark:bg-[#10151d] p-6 text-center shadow-[0_20px_60px_rgba(239,68,68,0.2)]">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 text-red-500">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <h3 className="font-[Space_Grotesk,sans-serif] text-xl font-bold text-red-500">
+              Warning: Tab Switch Detected
+            </h3>
+            <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-[#8a96a8]">
+              {warningMessage}
+            </p>
+            <button
+              onClick={() => setShowWarningModal(false)}
+              className="mt-6 w-full rounded-lg bg-red-500 py-3 font-bold text-white transition hover:bg-red-600"
+            >
+              I Understand, Continue Test
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Toast */}
       <div
-        className={`pointer-events-none fixed bottom-20 left-1/2 z-60 -translate-x-1/2 rounded-[9px] border border-[#212a37] bg-[#131a24] px-4.5 py-2.75 font-[JetBrains_Mono,monospace] text-[12.5px] text-[#e7ecf3] shadow-[0_10px_30px_rgba(0,0,0,0.4)] transition-all duration-250 lg:bottom-5 ${
+        className={`pointer-events-none fixed bottom-20 left-1/2 z-60 -translate-x-1/2 rounded-[9px] border border-slate-200 dark:border-[#212a37] bg-slate-800 dark:bg-[#131a24] px-4.5 py-2.75 font-[JetBrains_Mono,monospace] text-[12.5px] text-slate-900 dark:text-[#e7ecf3] shadow-[0_10px_30px_rgba(0,0,0,0.4)] transition-all duration-250 lg:bottom-5 ${
           toast ? "translate-y-0 opacity-100" : "translate-y-5 opacity-0"
         }`}
       >
