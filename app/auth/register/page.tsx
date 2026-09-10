@@ -139,7 +139,9 @@ export default function RegisterPage() {
       })
 
       setDone(true)
-      router.push("/dashboard")
+      setTimeout(() => {
+        router.push(`/auth/verify-email?email=${encodeURIComponent(form.email)}`)
+      }, 1500)
     } catch (error: any) {
       const message =
         error?.response?.data?.error || "Registration failed. Please try again."
@@ -157,11 +159,11 @@ export default function RegisterPage() {
     return (
       <div className="dark flex min-h-screen items-center justify-center bg-[hsl(var(--background))] p-8">
         <div className="max-w-sm text-center">
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-emerald-500/30 bg-emerald-500/15">
-            <CheckCircle2 className="h-10 w-10 text-emerald-400" />
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-sky-500/30 bg-sky-500/15">
+            <Mail className="h-10 w-10 text-sky-400" />
           </div>
           <h2 className="font-display mb-3 text-3xl font-bold">
-            You're in! 🎉
+            Almost there! 🚀
           </h2>
           <p className="mb-2 text-[hsl(var(--muted-foreground))]">
             Welcome to AptiCore,{" "}
@@ -171,14 +173,15 @@ export default function RegisterPage() {
             !
           </p>
           <p className="mb-8 text-sm text-[hsl(var(--muted-foreground))]">
-            Check your email to verify your account. You can still explore while
-            waiting.
+            We sent a 6-digit verification code to{" "}
+            <strong className="text-[hsl(var(--foreground))]">{form.email}</strong>.
+            Please verify your email to activate your account.
           </p>
           <Link
-            href="/dashboard"
+            href={`/auth/verify-email?email=${encodeURIComponent(form.email)}`}
             className="inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-sky-500 to-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-500/25 transition-all hover:opacity-90"
           >
-            Go to Dashboard <ArrowRight className="h-4 w-4" />
+            Enter Verification Code <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       </div>

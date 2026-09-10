@@ -6,6 +6,7 @@ import UserProfile from "@/lib/models/UserProfile"
 import Result from "@/lib/models/Result"
 import Leaderboard from "@/lib/models/Leaderboard"
 import UserAchievement from "@/lib/models/UserAchievement"
+import Test from "@/lib/models/Test"
 
 
 export async function GET(request: NextRequest) {
@@ -32,6 +33,8 @@ export async function GET(request: NextRequest) {
             user,
             profile,
             recentResults,
+            allResults,
+            allTests,
             leaderboard,
             userachievements,
         ] = await Promise.all([
@@ -45,6 +48,14 @@ export async function GET(request: NextRequest) {
             Result.find({ userId })
                 .sort({ createdAt: -1 })
                 .limit(5)
+                .lean(),
+
+            Result.find({ userId })
+                .select("accuracy totalMarks marksObtained status createdAt")
+                .lean(),
+
+            Test.find({ isPublished: true })
+                .select("_id title categoryId")
                 .lean(),
 
             Leaderboard.find({})
@@ -99,6 +110,10 @@ export async function GET(request: NextRequest) {
                     currentStreak: profile?.currentStreak || 0,
                 },
                 recentResults: recentResults || [],
+                allResults: allResults || [],
+                totalTestsCompleted: allResults?.length || 0,
+                allTests: allTests || [],
+                totalAvailableTests: allTests?.length || 0,
                 userachievements: userachievements || [],
                 leaderboard: leaderboardWithRank,
             },

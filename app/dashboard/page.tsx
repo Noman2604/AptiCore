@@ -71,6 +71,8 @@ export default function DashboardPage() {
   const [userAchievements, setUserAchievements] = useState<Achievement[]>([])
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [recentResults, setRecentResults] = useState<IResultDocument[]>([])
+  const [allResults, setAllResults] = useState<IResultDocument[]>([])
+  const [allTests, setAllTests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -104,6 +106,8 @@ export default function DashboardPage() {
       setProfile(data.data.profile)
       setUserAchievements(data.data.userachievements || [])
       setRecentResults(data.data.recentResults || [])
+      setAllResults(data.data.allResults || [])
+      setAllTests(data.data.allTests || [])
       setEntries(data.data.leaderboard || [])
     } catch (error) {
       console.error("Error loading dashboard data:", error)
@@ -118,10 +122,13 @@ export default function DashboardPage() {
   const myEntry = userData
     ? entries.find((entry) => String(entry.userId?._id) === String(userData.id))
     : null
-  const testsCompleted = recentResults?.length || 0
+  const testsCompleted = allResults?.length || recentResults?.length || 0
   const accuracy =
-    recentResults.reduce((sum, result) => sum + (result.accuracy || 0), 0) /
-    Math.max(recentResults.length, 1)
+    allResults.length > 0
+      ? allResults.reduce((sum, result) => sum + (result.accuracy || 0), 0) /
+        allResults.length
+      : recentResults.reduce((sum, result) => sum + (result.accuracy || 0), 0) /
+        Math.max(recentResults.length, 1)
   const totalXP = profile?.totalXP || 0
   const level = profile?.level || 1
   const streak = profile?.currentStreak || 0

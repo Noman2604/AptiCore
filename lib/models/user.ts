@@ -7,6 +7,11 @@ export interface IUserDocument extends Document {
   password: string
   role: "user" | "admin" | "super_admin"
   isActive: boolean
+  isEmailVerified: boolean
+  verificationCode?: string
+  verificationToken?: string
+  verificationExpires?: Date
+  lastVerificationResend?: Date
   createdAt: Date
   updatedAt: Date
   comparePassword(password: string): Promise<boolean>
@@ -43,6 +48,26 @@ const UserSchema = new Schema<IUserDocument>(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationCode: {
+      type: String,
+      select: false,
+    },
+    verificationToken: {
+      type: String,
+      select: false,
+    },
+    verificationExpires: {
+      type: Date,
+      select: false,
+    },
+    lastVerificationResend: {
+      type: Date,
+      select: false,
     },
   },
   {

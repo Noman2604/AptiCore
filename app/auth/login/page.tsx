@@ -37,11 +37,14 @@ export default function LoginPage() {
     setMounted(true)
   }, [])
 
+  const [unverifiedEmail, setUnverifiedEmail] = useState("")
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     setError("")
     setSuccess("")
+    setUnverifiedEmail("")
     setIsLoading(true)
 
     try {
@@ -67,6 +70,10 @@ export default function LoginPage() {
         err?.response?.data?.error || "Network error. Please try again."
 
       setError(message)
+
+      if (err?.response?.data?.requiresVerification) {
+        setUnverifiedEmail(err.response.data.email || form.email)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -188,9 +195,23 @@ export default function LoginPage() {
 
           {/* Alerts */}
           {error && (
-            <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-[rgba(242,85,90,0.3)] bg-[rgba(242,85,90,0.1)] p-3.5 text-sm text-[#f2555a]">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{error}</span>
+            <div className="mb-4 rounded-xl border border-[rgba(242,85,90,0.3)] bg-[rgba(242,85,90,0.1)] p-3.5 text-sm text-[#f2555a]">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+              {unverifiedEmail && (
+                <div className="mt-3 flex justify-end border-t border-[rgba(242,85,90,0.25)] pt-2.5">
+                  <Link
+                    href={`/auth/verify-email?email=${encodeURIComponent(
+                      unverifiedEmail
+                    )}`}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#6ee7c9] hover:underline"
+                  >
+                    Verify Email Now <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              )}
             </div>
           )}
           {success && (
