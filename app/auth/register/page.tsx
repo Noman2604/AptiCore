@@ -18,16 +18,6 @@ import {
 import api from "@/lib/api"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
-const STEPS = [{ id: 0, label: "Account", desc: "Your login details" }]
-
-const GOALS = [
-  "Campus Placements",
-  "Off-Campus Drives",
-  "Competitive Exams",
-  "Skill Building",
-  "Interview Prep",
-  "Coding Practice",
-]
 
 function StrengthBar({ password }: { password: string }) {
   const checks = [
@@ -277,9 +267,16 @@ export default function RegisterPage() {
         <div className="relative w-full max-w-105 py-8">
           {/* Mobile logo */}
           <Link href="/" className="mb-8 flex items-center gap-2 lg:hidden">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-linear-to-r from-purple-500 to-pink-600">
-              <Zap className="h-5 w-5 fill-current text-white" />
-            </div>
+            <div className="">
+            <Image
+              loading="lazy"
+              src="/logo.png"
+              alt="AptiCore Logo"
+              width={32}
+              height={32}
+              className="h-10 w-10 rounded-full object-cover sm:h-10 sm:w-10"
+            />
+          </div>
             <span className="font-display bg-linear-to-r from-purple-400 to-pink-400 bg-clip-text text-xl font-bold text-transparent">
               AptiCore
             </span>

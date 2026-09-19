@@ -1,85 +1,26 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import Image from "next/image"
+import axios from "axios"
+import {
+  TOTAL_SECONDS_KEY,
+  isQuestionAnswered,
+  type TestQuestion,
+  type TestRunnerProps,
+  type TestRunnerSubmitPayload,
+  ProctorStrip,
+  TestHeader,
+  TestProgressBar,
+  TestSectionRail,
+  QuestionCard,
+  QuestionPalette,
+  MobileBottomBar,
+  SubmitConfirmModal,
+  WarningModal,
+  TestToast,
+} from "./runner"
 
-type QuestionType =
-  | "mcq"
-  | "msq"
-  | "true_false"
-  | "fill_blank"
-  | "numerical"
-  | "coding"
-
-interface QuestionOption {
-  text: string
-  order: number
-}
-
-export interface TestQuestion {
-  _id: string
-  questionText: string
-  questionType: QuestionType
-  difficultyLevel: "easy" | "medium" | "hard"
-  marks: number
-  timeLimitSeconds: number
-  explanation?: string
-  options?: QuestionOption[]
-  correctAnswer?: string
-}
-
-interface TestRunnerProps {
-  test: {
-    title: string
-    description?: string
-    totalQuestions: number
-    totalMarks: number
-    durationMinutes: number
-  }
-  questions: TestQuestion[]
-  sectionLabel?: string
-  negativeMarking?: number
-  onProgressChange?: (progress: { answers: Record<string, string | string[]>; attemptedQuestions: number; skippedQuestions: number; correctAnswers: number; accuracy: number; timeSpentSeconds: number }) => void
-  onSubmit?: (payload: {
-    answers: {
-      questionId: string
-      userAnswer: string
-      isBookmarked: boolean
-      markedForReview: boolean
-      timeSpentSeconds: number
-      isCorrect: boolean
-    }[]
-    attemptedQuestions: number
-    skippedQuestions: number
-    correctAnswers: number
-    accuracy: number
-    totalQuestions: number
-    totalMarks: number
-    timeSpentSeconds: number
-    marksObtained: number
-  }) => void
-}
-const OPTION_KEYS = ["A", "B", "C", "D", "E", "F"]
-const RING_CIRCUMFERENCE = 169.6
-const TOTAL_SECONDS_KEY = (minutes: number) => minutes * 60
-
-function formatTimer(seconds: number) {
-  const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = String(seconds % 60).padStart(2, "0")
-  return `${String(minutes).padStart(2, "0")}:${remainingSeconds}`
-}
-
-function isQuestionAnswered(answer: string | string[] | undefined): boolean {
-  if (answer === undefined) return false
-  if (Array.isArray(answer)) return answer.length > 0
-  return String(answer).trim().length > 0
-}
-
-function difficultyPillClass(level: TestQuestion["difficultyLevel"]) {
-  if (level === "easy") return "text-[#3ecf8e] border-[rgba(62,207,142,0.35)]"
-  if (level === "hard") return "text-[#f2555a] border-[rgba(242,85,90,0.35)]"
-  return "text-[#f5a623] border-[rgba(245,166,35,0.35)]"
-}
+export type { TestQuestion, TestRunnerProps }
 
 export default function TestRunner({
   test,
@@ -109,15 +50,45 @@ export default function TestRunner({
   const [showWarningModal, setShowWarningModal] = useState(false)
   const [warningMessage, setWarningMessage] = useState("")
   const [isPaletteOpen, setIsPaletteOpen] = useState(false)
+
   const questionEnteredAt = useRef(Date.now())
   const toastTimer = useRef<number | null>(null)
   const lastWarnedStrike = useRef<number>(0)
-  const lastProgressUpdateRef = useRef<number>(0)
 
   const showToast = useCallback((message: string) => {
     setToast(message)
     if (toastTimer.current) window.clearTimeout(toastTimer.current)
     toastTimer.current = window.setTimeout(() => setToast(null), 1800)
+  }, [])
+
+  // Fetch existing bookmarks for the current user
+  useEffect(() => {
+    let isMounted = true
+    const loadUserBookmarks = async () => {
+      try {
+        const res = await axios.get("/api/bookmarks?limit=1000", {
+          withCredentials: true,
+        })
+        if (isMounted && res.data?.success && Array.isArray(res.data.data)) {
+          const ids = new Set<string>()
+          res.data.data.forEach((b: { questionId?: { _id?: string } | string }) => {
+            const qId =
+              typeof b.questionId === "object" && b.questionId !== null
+                ? b.questionId._id
+                : b.questionId
+            if (qId) ids.add(String(qId))
+          })
+          setBookmarkedQuestions(ids)
+        }
+      } catch (err) {
+        console.error("Failed to load bookmarks:", err)
+      }
+    }
+
+    loadUserBookmarks()
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   const currentQuestion = questions[currentIndex]
@@ -170,7 +141,13 @@ export default function TestRunner({
       accuracy,
       timeSpentSeconds: totalSeconds - remainingSeconds,
     })
-  }, [selectedAnswers, questions, onProgressChange, totalSeconds, remainingSeconds])
+  }, [
+    selectedAnswers,
+    questions,
+    onProgressChange,
+    totalSeconds,
+    remainingSeconds,
+  ])
 
   const skippedCount = questions.length - answeredCount
   const reviewCount = markedForReview.size
@@ -178,15 +155,6 @@ export default function TestRunner({
     questions.length > 0
       ? Math.round((answeredCount / questions.length) * 100)
       : 0
-
-  const timerPct = remainingSeconds / totalSeconds
-  const ringOffset = RING_CIRCUMFERENCE * (1 - timerPct)
-  const ringColor =
-    remainingSeconds < 60
-      ? "#f2555a"
-      : remainingSeconds < 5 * 60
-        ? "#f5a623"
-        : "#6ee7c9"
 
   const isAnswerCorrect = useCallback(
     (question: TestQuestion, userAnswer: string): boolean => {
@@ -212,7 +180,7 @@ export default function TestRunner({
     []
   )
 
-  const buildSubmitPayload = useCallback(() => {
+  const buildSubmitPayload = useCallback((): TestRunnerSubmitPayload => {
     const totalTimeSpentSeconds = totalSeconds - remainingSeconds
 
     const answers = questions.map((question) => {
@@ -266,13 +234,13 @@ export default function TestRunner({
     bookmarkedQuestions,
     isAnswerCorrect,
     markedForReview,
+    negativeMarking,
     questionTimeSpent,
     questions,
     remainingSeconds,
     selectedAnswers,
     test.totalMarks,
     totalSeconds,
-    negativeMarking,
   ])
 
   const finalizeSubmit = useCallback(() => {
@@ -289,7 +257,7 @@ export default function TestRunner({
     setShowSubmitModal(true)
   }, [submitted])
 
-  // Auto-submit when timer hits zero — no confirmation needed
+  // Auto-submit when timer hits zero
   useEffect(() => {
     if (submitted) return
     const interval = window.setInterval(() => {
@@ -335,7 +303,8 @@ export default function TestRunner({
     }
 
     document.addEventListener("visibilitychange", onVisibilityChange)
-    return () => document.removeEventListener("visibilitychange", onVisibilityChange)
+    return () =>
+      document.removeEventListener("visibilitychange", onVisibilityChange)
   }, [submitted])
 
   useEffect(() => {
@@ -345,10 +314,14 @@ export default function TestRunner({
     lastWarnedStrike.current = tabSwitches
 
     if (tabSwitches === 1) {
-      setWarningMessage("Tab switching is not allowed. Further violations will result in automatic submission.")
+      setWarningMessage(
+        "Tab switching is not allowed. Further violations will result in automatic submission."
+      )
       setShowWarningModal(true)
     } else if (tabSwitches === 2) {
-      setWarningMessage("FINAL WARNING: If you switch tabs one more time, your test will be automatically submitted.")
+      setWarningMessage(
+        "FINAL WARNING: If you switch tabs one more time, your test will be automatically submitted."
+      )
       setShowWarningModal(true)
     } else if (tabSwitches >= 3) {
       finalizeSubmit()
@@ -380,14 +353,46 @@ export default function TestRunner({
     })
   }
 
-  const toggleBookmark = (questionId: string) => {
+  const toggleBookmark = async (questionId: string) => {
     if (submitted) return
+    const wasBookmarked = bookmarkedQuestions.has(questionId)
+
+    // Optimistic local state update
     setBookmarkedQuestions((prev) => {
       const updated = new Set(prev)
-      if (updated.has(questionId)) updated.delete(questionId)
+      if (wasBookmarked) updated.delete(questionId)
       else updated.add(questionId)
       return updated
     })
+
+    try {
+      if (wasBookmarked) {
+        await axios.delete(`/api/bookmarks?questionId=${questionId}`, {
+          withCredentials: true,
+        })
+        showToast("Bookmark removed")
+      } else {
+        await axios.post(
+          "/api/bookmarks",
+          {
+            questionId,
+            notes: `Saved during test: ${test.title}`,
+          },
+          { withCredentials: true }
+        )
+        showToast("Question added to bookmarks ★")
+      }
+    } catch (error) {
+      console.error("Bookmark sync error:", error)
+      // Revert optimistic update
+      setBookmarkedQuestions((prev) => {
+        const reverted = new Set(prev)
+        if (wasBookmarked) reverted.add(questionId)
+        else reverted.delete(questionId)
+        return reverted
+      })
+      showToast("Failed to update bookmark")
+    }
   }
 
   const toggleMarkForReview = (questionId: string) => {
@@ -477,20 +482,6 @@ export default function TestRunner({
   }
 
   const currentAnswer = selectedAnswers[currentQuestion._id]
-  const isMultiple = currentQuestion.questionType === "msq"
-  const defaultOptions = currentQuestion.options?.length
-    ? currentQuestion.options
-    : currentQuestion.questionType === "true_false"
-      ? [
-          { order: 1, text: "True" },
-          { order: 2, text: "False" },
-        ]
-      : []
-
-  const needsTextInput = ["fill_blank", "numerical", "coding"].includes(
-    currentQuestion.questionType
-  )
-
   const sectionText =
     sectionLabel?.toUpperCase() ||
     test.description?.toUpperCase() ||
@@ -505,548 +496,90 @@ export default function TestRunner({
       }}
     >
       {/* Integrity strip */}
-      <div className="flex h-8.5 shrink-0 scrollbar-none items-center gap-0 overflow-x-auto overflow-y-hidden border-b border-slate-200 dark:border-[#212a37] bg-slate-100 dark:bg-[#070a0f] px-3 font-[JetBrains_Mono,monospace] text-[10.5px] tracking-wide whitespace-nowrap text-slate-500 dark:text-[#5b6577] sm:px-4 sm:text-[11px]">
-        <div className="flex h-full shrink-0 items-center gap-1.5 border-r border-slate-200 dark:border-[#1a212b] pr-3.5">
-          <span
-            className={`h-1.5 w-1.5 animate-pulse rounded-full ${tabSwitches >= 1 ? "bg-[#f5a623] shadow-[0_0_8px_#f5a623]" : "bg-[#3ecf8e] shadow-[0_0_8px_#3ecf8e]"}`}
-          />
-          PROCTOR: ACTIVE
-        </div>
-        <div className="flex h-full shrink-0 items-center border-r border-slate-200 dark:border-[#1a212b] px-3.5">
-          TAB SWITCHES: {tabSwitches}
-        </div>
-        <div className="hidden h-full shrink-0 items-center border-r border-slate-200 dark:border-[#1a212b] px-3.5 sm:flex">
-          FULLSCREEN: LOCKED
-        </div>
-        <div className="hidden h-full shrink-0 items-center border-r border-slate-200 dark:border-[#1a212b] px-3.5 md:flex">
-          SECTION: {sectionText}
-        </div>
-        <div className="flex h-full shrink-0 items-center px-3.5">
-          NEGATIVE MARKING: − {negativeMarking} / WRONG
-        </div>
-      </div>
+      <ProctorStrip
+        tabSwitches={tabSwitches}
+        sectionText={sectionText}
+        negativeMarking={negativeMarking}
+      />
 
       {/* Header */}
-      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 dark:border-[#212a37] bg-linear-to-b from-white to-slate-50 dark:from-[#0c1119] dark:to-[#0a0e14] px-4 py-3 sm:px-6 sm:py-3.5">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <div className="min-w-0">
-            <Image
-              loading="lazy"
-              src="/logo.png"
-              alt="AptiCore Logo"
-              width={32}
-              height={32}
-              className="h-8 w-8 rounded-full object-cover sm:h-9 sm:w-9"
-            />
-          </div>
-          <div className="min-w-0">
-            <div className="truncate font-[Space_Grotesk,sans-serif] text-[14px] font-bold tracking-wide sm:text-[15px]">
-              AptiCore
-            </div>
-            <div className="hidden font-[JetBrains_Mono,monospace] text-[11px] text-slate-500 dark:text-[#5b6577] sm:block">
-              campus placement engine
-            </div>
-          </div>
-        </div>
-        <div className="min-w-0 text-right">
-          <div className="truncate font-[Space_Grotesk,sans-serif] text-[13px] font-semibold sm:text-sm">
-            {test.title}
-          </div>
-          <div className="hidden font-[JetBrains_Mono,monospace] text-[11px] text-slate-500 dark:text-[#5b6577] sm:block">
-            {questions.length} Qs · {test.totalMarks} marks ·{" "}
-            {test.durationMinutes} min · Attempt 1 of 1
-          </div>
-          <div className="font-[JetBrains_Mono,monospace] text-[10.5px] text-slate-500 dark:text-[#5b6577] sm:hidden">
-            {questions.length} Qs · {test.durationMinutes} min
-          </div>
-        </div>
-      </header>
+      <TestHeader test={test} questionCount={questions.length} />
 
       {/* Progress bar */}
-      <div className="relative h-1 w-full shrink-0 bg-slate-200 dark:bg-[#151b24]">
-        <div
-          className="h-full bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] transition-[width] duration-500 ease-out"
-          style={{ width: `${progressPct}%` }}
-        />
-        <span className="absolute top-1.5 right-3 hidden font-[JetBrains_Mono,monospace] text-[10px] text-slate-500 dark:text-[#5b6577] sm:block">
-          {progressPct}% complete
-        </span>
-      </div>
+      <TestProgressBar progressPct={progressPct} />
 
       {/* Main layout */}
       <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[64px_1fr_300px]">
         {/* Left rail (desktop only) */}
-        <div className="hidden flex-col items-center gap-1.5 border-r border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] py-4 lg:flex">
-          <button
-            type="button"
-            className="flex h-9.5 w-9.5 items-center justify-center rounded-[9px] border border-[rgba(110,231,201,0.35)] bg-[rgba(110,231,201,0.12)] text-base text-[#6ee7c9]"
-            title={sectionText}
-          >
-            {sectionText.charAt(0)}
-          </button>
-          <div className="flex-1" />
-          <div className="mt-2 font-[JetBrains_Mono,monospace] text-[9px] tracking-[0.15em] text-slate-500 dark:text-[#5b6577] [writing-mode:vertical-rl]">
-            SECTION 1 / 1
-          </div>
-        </div>
+        <TestSectionRail sectionText={sectionText} />
 
-        {/* Center panel */}
-        <div className="overflow-y-auto px-4 py-5 pb-28 sm:px-6 sm:py-7 lg:px-10 lg:pb-24">
-          <div className="mb-4 flex flex-wrap items-center gap-2">
-            <div className="flex flex-wrap items-center gap-2 font-[JetBrains_Mono,monospace] text-[11px] text-slate-500 dark:text-[#5b6577] sm:gap-2.5 sm:text-xs">
-              <span>
-                QUESTION{" "}
-                <b className="text-slate-900 dark:text-[#e7ecf3]">
-                  {String(currentIndex + 1).padStart(2, "0")}
-                </b>{" "}
-                / {questions.length}
-              </span>
-              <span
-                className={`rounded-full border px-2 py-0.5 font-[JetBrains_Mono,monospace] text-[10px] tracking-wider uppercase ${difficultyPillClass(currentQuestion.difficultyLevel)}`}
-              >
-                {currentQuestion.difficultyLevel}
-              </span>
-              <span className="rounded-full border border-[rgba(139,124,246,0.35)] px-2 py-0.5 font-[JetBrains_Mono,monospace] text-[10px] tracking-wider text-[#8b7cf6] uppercase">
-                +{currentQuestion.marks} mark
-                {currentQuestion.marks === 1 ? "" : "s"}
-              </span>
-            </div>
-          </div>
+        {/* Center question panel */}
+        <QuestionCard
+          question={currentQuestion}
+          currentIndex={currentIndex}
+          totalQuestions={questions.length}
+          negativeMarking={negativeMarking}
+          currentAnswer={currentAnswer}
+          isBookmarked={bookmarkedQuestions.has(currentQuestion._id)}
+          isMarkedForReview={markedForReview.has(currentQuestion._id)}
+          submitted={submitted}
+          onOptionChange={handleOptionChange}
+          onToggleBookmark={toggleBookmark}
+          onToggleMarkForReview={toggleMarkForReview}
+          onPrev={goPrev}
+          onNext={goNext}
+        />
 
-          {negativeMarking > 0 && (
-            <div className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-[rgba(242,85,90,0.25)] bg-[rgba(242,85,90,0.08)] px-2.5 py-1 font-[JetBrains_Mono,monospace] text-[10.5px] text-[#f2555a]">
-              ⚠ Wrong answer deducts {negativeMarking} marks
-            </div>
-          )}
-
-          <h2 className="mb-6 max-w-160 font-[Space_Grotesk,sans-serif] text-[18px] leading-normal font-semibold sm:text-[21px]">
-            {currentIndex + 1}. {currentQuestion.questionText}
-          </h2>
-
-          <div className="flex max-w-155 flex-col gap-2.5">
-            {defaultOptions.length > 0 ? (
-              defaultOptions.map((option, index) => {
-                const value = String(option.text)
-                const checked = Array.isArray(currentAnswer)
-                  ? currentAnswer.includes(value)
-                  : currentAnswer === value
-
-                return (
-                  <label
-                    key={`${currentQuestion._id}-${option.order}`}
-                    className={`flex cursor-pointer items-center gap-3.5 rounded-[10px] border px-4 py-3.75 transition-all duration-150 ${
-                      checked
-                        ? "border-[#6ee7c9] bg-[rgba(110,231,201,0.07)]"
-                        : "border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] hover:border-slate-300 hover:bg-slate-50"
-                    } ${submitted ? "pointer-events-none opacity-70" : ""}`}
-                  >
-                    <span
-                      className={`flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-[7px] border font-[JetBrains_Mono,monospace] text-[11px] ${
-                        checked
-                          ? "border-[#6ee7c9] bg-[rgba(110,231,201,0.12)] text-[#6ee7c9]"
-                          : "border-slate-200 dark:border-[#212a37] text-slate-500 dark:text-[#5b6577]"
-                      }`}
-                    >
-                      {OPTION_KEYS[index] || "?"}
-                    </span>
-                    <span className="text-[14.5px]">{option.text}</span>
-                    <input
-                      type={isMultiple ? "checkbox" : "radio"}
-                      name={`question-${currentQuestion._id}`}
-                      checked={checked}
-                      value={value}
-                      onChange={() =>
-                        handleOptionChange(
-                          currentQuestion._id,
-                          value,
-                          isMultiple
-                        )
-                      }
-                      className="sr-only"
-                    />
-                  </label>
-                )
-              })
-            ) : needsTextInput ? (
-              <textarea
-                value={typeof currentAnswer === "string" ? currentAnswer : ""}
-                onChange={(event) =>
-                  handleOptionChange(
-                    currentQuestion._id,
-                    event.target.value,
-                    false
-                  )
-                }
-                disabled={submitted}
-                placeholder="Type your answer here..."
-                rows={4}
-                className="w-full resize-y rounded-[10px] border border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] px-4 py-3 text-sm text-slate-900 dark:text-[#e7ecf3] transition outline-none focus:border-[#6ee7c9] disabled:opacity-60"
-              />
-            ) : (
-              <div className="rounded-[10px] border border-dashed border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] p-4 text-sm text-slate-600 dark:text-[#8a96a8]">
-                This question type requires a written response.
-              </div>
-            )}
-          </div>
-
-          <div className="mt-7 flex max-w-155 flex-wrap items-center gap-2 sm:gap-2.5">
-            <button
-              type="button"
-              onClick={() => toggleBookmark(currentQuestion._id)}
-              disabled={submitted}
-              className={`flex items-center gap-1.5 rounded-lg border px-3.5 py-2.5 text-[12.5px] font-semibold transition disabled:opacity-35 sm:px-4 sm:text-[13px] ${
-                bookmarkedQuestions.has(currentQuestion._id)
-                  ? "border-[rgba(245,166,35,0.4)] bg-[rgba(245,166,35,0.08)] text-[#f5a623]"
-                  : "border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] text-slate-600 dark:text-[#8a96a8] hover:border-slate-300 hover:text-slate-900"
-              }`}
-            >
-              {bookmarkedQuestions.has(currentQuestion._id)
-                ? "★ Bookmarked"
-                : "☆ Bookmark"}
-            </button>
-            <button
-              type="button"
-              onClick={() => toggleMarkForReview(currentQuestion._id)}
-              disabled={submitted}
-              className={`flex items-center gap-1.5 rounded-lg border px-3.5 py-2.5 text-[12.5px] font-semibold transition disabled:opacity-35 sm:px-4 sm:text-[13px] ${
-                markedForReview.has(currentQuestion._id)
-                  ? "border-[rgba(139,124,246,0.4)] bg-[rgba(139,124,246,0.08)] text-[#8b7cf6]"
-                  : "border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] text-slate-600 dark:text-[#8a96a8] hover:border-slate-300 hover:text-slate-900"
-              }`}
-            >
-              {markedForReview.has(currentQuestion._id)
-                ? "✓ Marked for Review"
-                : "Mark for Review"}
-            </button>
-            <div className="hidden flex-1 sm:block" />
-            <button
-              type="button"
-              onClick={goPrev}
-              disabled={currentIndex === 0 || submitted}
-              className="rounded-lg border border-slate-200 dark:border-[#212a37] bg-transparent px-3.5 py-2.5 text-[12.5px] font-semibold text-slate-600 dark:text-[#8a96a8] transition hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-35 sm:px-4 sm:text-[13px]"
-            >
-              ← Prev
-            </button>
-            <button
-              type="button"
-              onClick={goNext}
-              disabled={submitted}
-              className="rounded-lg border border-[#6ee7c9] bg-[#6ee7c9] px-3.5 py-2.5 text-[12.5px] font-semibold text-[#08150f] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35 sm:px-4 sm:text-[13px]"
-            >
-              {currentIndex === questions.length - 1 ? "Finish →" : "Next →"}
-            </button>
-          </div>
-
-          {submitted && currentQuestion.explanation && (
-            <div className="mt-8 max-w-155 rounded-[10px] border border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] p-5">
-              <h3 className="mb-2 font-[Space_Grotesk,sans-serif] text-base font-semibold">
-                Explanation
-              </h3>
-              <p className="text-sm leading-7 text-slate-600 dark:text-[#8a96a8]">
-                {currentQuestion.explanation}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Sidebar (desktop: static column, mobile: slide-up drawer) */}
-        <aside
-          className={`fixed inset-x-0 bottom-0 z-40 flex max-h-[80vh] flex-col overflow-hidden rounded-t-2xl border-t border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-transform duration-300 lg:static lg:inset-auto lg:z-auto lg:max-h-none lg:translate-y-0 lg:rounded-none lg:border-t-0 lg:border-l lg:shadow-none ${
-            isPaletteOpen
-              ? "translate-y-0"
-              : "translate-y-full lg:translate-y-0"
-          }`}
-        >
-          {/* Mobile drag handle */}
-          <button
-            type="button"
-            onClick={() => setIsPaletteOpen(false)}
-            className="flex h-6 shrink-0 items-center justify-center lg:hidden"
-            aria-label="Close palette"
-          >
-            <span className="h-1 w-10 rounded-full bg-slate-300 dark:bg-[#2a3444]" />
-          </button>
-
-          <div className="flex items-center gap-4 border-b border-slate-200 dark:border-[#212a37] p-4 sm:p-5">
-            <div className="relative h-14 w-14 shrink-0 sm:h-16 sm:w-16">
-              <svg
-                width="100%"
-                height="100%"
-                viewBox="0 0 64 64"
-                className="-rotate-90"
-              >
-                <circle
-                  cx="32"
-                  cy="32"
-                  r="27"
-                  fill="none"
-                  stroke="#212a37"
-                  strokeWidth="5"
-                />
-                <circle
-                  cx="32"
-                  cy="32"
-                  r="27"
-                  fill="none"
-                  stroke={ringColor}
-                  strokeWidth="5"
-                  strokeLinecap="round"
-                  strokeDasharray={RING_CIRCUMFERENCE}
-                  strokeDashoffset={ringOffset}
-                  className="transition-[stroke-dashoffset,stroke] duration-1000"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center font-[JetBrains_Mono,monospace] text-[9px] text-slate-500 dark:text-[#5b6577]">
-                MIN
-              </div>
-            </div>
-            <div>
-              <div className="font-[JetBrains_Mono,monospace] text-xl font-bold tracking-tight sm:text-2xl">
-                {formatTimer(remainingSeconds)}
-              </div>
-              <div className="mt-0.5 text-[11px] text-slate-500 dark:text-[#5b6577]">
-                time remaining
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-2.5 border-b border-slate-200 dark:border-[#212a37] px-4 py-4 sm:px-5">
-            <div className="flex-1">
-              <div className="font-[Space_Grotesk,sans-serif] text-[18px] font-bold text-[#3ecf8e] sm:text-[19px]">
-                {answeredCount}
-              </div>
-              <div className="mt-0.5 text-[10px] tracking-wider text-slate-500 dark:text-[#5b6577] uppercase">
-                Answered
-              </div>
-            </div>
-            <div className="flex-1">
-              <div className="font-[Space_Grotesk,sans-serif] text-[18px] font-bold text-[#8b7cf6] sm:text-[19px]">
-                {reviewCount}
-              </div>
-              <div className="mt-0.5 text-[10px] tracking-wider text-slate-500 dark:text-[#5b6577] uppercase">
-                Review
-              </div>
-            </div>
-            <div className="flex-1">
-              <div className="font-[Space_Grotesk,sans-serif] text-[18px] font-bold text-slate-600 dark:text-[#8a96a8] sm:text-[19px]">
-                {skippedCount}
-              </div>
-              <div className="mt-0.5 text-[10px] tracking-wider text-slate-500 dark:text-[#5b6577] uppercase">
-                Skipped
-              </div>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="font-[JetBrains_Mono,monospace] text-[11px] tracking-wider text-slate-500 dark:text-[#5b6577] uppercase">
-                Question Palette
-              </span>
-            </div>
-            <div className="grid grid-cols-6 gap-1.75 sm:grid-cols-5">
-              {questions.map((question, index) => {
-                const answered = isQuestionAnswered(
-                  selectedAnswers[question._id]
-                )
-                const isCurrent = currentIndex === index
-                const isReview = markedForReview.has(question._id)
-                const isBookmarked = bookmarkedQuestions.has(question._id)
-
-                return (
-                  <button
-                    key={question._id}
-                    type="button"
-                    onClick={() => goToQuestion(index)}
-                    className={`relative flex aspect-square items-center justify-center rounded-[7px] border font-[JetBrains_Mono,monospace] text-[11px] transition ${
-                      isCurrent
-                        ? "border-[#e7ecf3] text-slate-900 dark:text-[#e7ecf3] shadow-[inset_0_0_0_1px_#e7ecf3]"
-                        : answered
-                          ? "border-[rgba(62,207,142,0.4)] bg-[rgba(62,207,142,0.1)] text-[#3ecf8e]"
-                          : isReview
-                            ? "border-[rgba(139,124,246,0.4)] bg-[rgba(139,124,246,0.1)] text-[#8b7cf6]"
-                            : "border-slate-200 dark:border-[#212a37] bg-slate-50 dark:bg-[#141b25] text-slate-600 dark:text-[#8a96a8]"
-                    } ${isReview && !isCurrent ? "after:absolute after:-top-0.75 after:-right-0.75 after:h-2 after:w-2 after:rounded-full after:border-[1.5px] after:border-[#10151d] after:bg-[#8b7cf6]" : ""} ${isBookmarked ? "before:absolute before:-bottom-1 before:left-1/2 before:-translate-x-1/2 before:text-[8px] before:text-[#f5a623] before:content-['★']" : ""}`}
-                  >
-                    {index + 1}
-                  </button>
-                )
-              })}
-            </div>
-            <div className="mt-3.5 flex flex-wrap gap-2.5 font-[JetBrains_Mono,monospace] text-[10px] text-slate-500 dark:text-[#5b6577]">
-              <span className="flex items-center gap-1.5">
-                <i className="inline-block h-2 w-2 rounded-sm bg-[rgba(62,207,142,0.4)]" />
-                Answered
-              </span>
-              <span className="flex items-center gap-1.5">
-                <i className="inline-block h-2 w-2 rounded-sm bg-[rgba(139,124,246,0.4)]" />
-                For Review
-              </span>
-              <span className="flex items-center gap-1.5">
-                <i className="inline-block h-2 w-2 rounded-sm border border-slate-200 dark:border-[#212a37] bg-slate-50 dark:bg-[#141b25]" />
-                Skipped
-              </span>
-            </div>
-          </div>
-
-          <div className="border-t border-slate-200 dark:border-[#212a37] p-4 sm:p-4.5">
-            <button
-              type="button"
-              onClick={requestSubmit}
-              disabled={submitted}
-              className="flex w-full items-center justify-center gap-2 rounded-[9px] bg-linear-to-br from-[#6ee7c9] to-[#57c9a8] py-3 font-[Space_Grotesk,sans-serif] text-sm font-bold text-[#06120d] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {submitted ? "Submitted ✓" : "Submit Test →"}
-            </button>
-            <p className="mt-2 text-center font-[JetBrains_Mono,monospace] text-[10.5px] text-slate-500 dark:text-[#5b6577]">
-              {submitted
-                ? `${answeredCount} of ${questions.length} questions answered`
-                : "You can still edit answers until you submit"}
-            </p>
-          </div>
-        </aside>
-
-        {/* Backdrop for mobile drawer */}
-        {isPaletteOpen && (
-          <div
-            className="fixed inset-0 z-30 bg-black/50 lg:hidden"
-            onClick={() => setIsPaletteOpen(false)}
-          />
-        )}
+        {/* Sidebar palette */}
+        <QuestionPalette
+          questions={questions}
+          currentIndex={currentIndex}
+          selectedAnswers={selectedAnswers}
+          bookmarkedQuestions={bookmarkedQuestions}
+          markedForReview={markedForReview}
+          remainingSeconds={remainingSeconds}
+          totalSeconds={totalSeconds}
+          answeredCount={answeredCount}
+          reviewCount={reviewCount}
+          skippedCount={skippedCount}
+          submitted={submitted}
+          isPaletteOpen={isPaletteOpen}
+          onClosePalette={() => setIsPaletteOpen(false)}
+          onSelectQuestion={goToQuestion}
+          onRequestSubmit={requestSubmit}
+        />
       </div>
 
       {/* Mobile bottom bar */}
-      <div className="flex shrink-0 items-center gap-2.5 border-t border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#0c1119] px-4 py-2.5 lg:hidden">
-        <button
-          type="button"
-          onClick={() => setIsPaletteOpen(true)}
-          className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] px-3 py-2 font-[JetBrains_Mono,monospace] text-[12px] text-slate-900 dark:text-[#e7ecf3]"
-        >
-          <span
-            className="h-1.5 w-1.5 rounded-full"
-            style={{ backgroundColor: ringColor }}
-          />
-          {formatTimer(remainingSeconds)}
-        </button>
-        <button
-          type="button"
-          onClick={() => setIsPaletteOpen(true)}
-          className="flex-1 rounded-lg border border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] px-3 py-2 text-center font-[JetBrains_Mono,monospace] text-[12px] text-slate-600 dark:text-[#8a96a8]"
-        >
-          {answeredCount}/{questions.length} answered · Palette
-        </button>
-        <button
-          type="button"
-          onClick={requestSubmit}
-          disabled={submitted}
-          className="rounded-lg bg-linear-to-br from-[#6ee7c9] to-[#57c9a8] px-4 py-2 font-[Space_Grotesk,sans-serif] text-[12.5px] font-bold text-[#06120d] disabled:opacity-50"
-        >
-          Submit
-        </button>
-      </div>
+      <MobileBottomBar
+        remainingSeconds={remainingSeconds}
+        totalSeconds={totalSeconds}
+        answeredCount={answeredCount}
+        totalQuestions={questions.length}
+        submitted={submitted}
+        onOpenPalette={() => setIsPaletteOpen(true)}
+        onRequestSubmit={requestSubmit}
+      />
 
       {/* Submit confirmation modal */}
-      {showSubmitModal && (
-        <div
-          className="fixed inset-0 z-70 flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4"
-          onClick={() => setShowSubmitModal(false)}
-        >
-          <div
-            onClick={(event) => event.stopPropagation()}
-            className="w-full max-w-100 rounded-t-2xl border border-slate-200 dark:border-[#212a37] bg-white dark:bg-[#10151d] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.5)] sm:rounded-2xl sm:p-6"
-          >
-            <h3 className="font-[Space_Grotesk,sans-serif] text-lg font-bold text-slate-900 dark:text-[#e7ecf3]">
-              Submit test?
-            </h3>
-            <p className="mt-1.5 text-[13px] leading-6 text-slate-600 dark:text-[#8a96a8]">
-              Once submitted, you won't be able to change your answers. Please
-              review your summary below.
-            </p>
-
-            <div className="mt-4 grid grid-cols-3 gap-2.5">
-              <div className="rounded-[10px] border border-slate-200 dark:border-[#212a37] bg-slate-50 dark:bg-[#141b25] px-3 py-2.5 text-center">
-                <div className="font-[Space_Grotesk,sans-serif] text-lg font-bold text-[#3ecf8e]">
-                  {answeredCount}
-                </div>
-                <div className="mt-0.5 text-[10px] tracking-wider text-slate-500 dark:text-[#5b6577] uppercase">
-                  Answered
-                </div>
-              </div>
-              <div className="rounded-[10px] border border-slate-200 dark:border-[#212a37] bg-slate-50 dark:bg-[#141b25] px-3 py-2.5 text-center">
-                <div className="font-[Space_Grotesk,sans-serif] text-lg font-bold text-[#8b7cf6]">
-                  {reviewCount}
-                </div>
-                <div className="mt-0.5 text-[10px] tracking-wider text-slate-500 dark:text-[#5b6577] uppercase">
-                  Review
-                </div>
-              </div>
-              <div className="rounded-[10px] border border-slate-200 dark:border-[#212a37] bg-slate-50 dark:bg-[#141b25] px-3 py-2.5 text-center">
-                <div className="font-[Space_Grotesk,sans-serif] text-lg font-bold text-[#f2555a]">
-                  {skippedCount}
-                </div>
-                <div className="mt-0.5 text-[10px] tracking-wider text-slate-500 dark:text-[#5b6577] uppercase">
-                  Skipped
-                </div>
-              </div>
-            </div>
-
-            {skippedCount > 0 && (
-              <div className="mt-3.5 rounded-[9px] border border-[rgba(245,166,35,0.3)] bg-[rgba(245,166,35,0.08)] px-3 py-2 text-[12px] text-[#f5a623]">
-                ⚠ You still have {skippedCount} unanswered question
-                {skippedCount > 1 ? "s" : ""}.
-              </div>
-            )}
-
-            <div className="mt-5 flex gap-2.5">
-              <button
-                type="button"
-                onClick={() => setShowSubmitModal(false)}
-                className="flex-1 rounded-lg border border-slate-200 dark:border-[#212a37] bg-transparent py-2.75 text-[13.5px] font-semibold text-slate-600 dark:text-[#8a96a8] transition hover:border-slate-300 hover:text-slate-900"
-              >
-                Keep Reviewing
-              </button>
-              <button
-                type="button"
-                onClick={finalizeSubmit}
-                className="flex-1 rounded-lg bg-linear-to-br from-[#6ee7c9] to-[#57c9a8] py-2.75 text-[13.5px] font-bold text-[#06120d] transition hover:brightness-105"
-              >
-                Yes, Submit
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <SubmitConfirmModal
+        isOpen={showSubmitModal}
+        answeredCount={answeredCount}
+        reviewCount={reviewCount}
+        skippedCount={skippedCount}
+        onClose={() => setShowSubmitModal(false)}
+        onConfirm={finalizeSubmit}
+      />
 
       {/* Warning Modal */}
-      {showWarningModal && (
-        <div className="fixed inset-0 z-80 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
-          <div className="w-full max-w-md rounded-2xl border border-red-500/50 bg-white dark:bg-[#10151d] p-6 text-center shadow-[0_20px_60px_rgba(239,68,68,0.2)]">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 text-red-500">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            </div>
-            <h3 className="font-[Space_Grotesk,sans-serif] text-xl font-bold text-red-500">
-              Warning: Tab Switch Detected
-            </h3>
-            <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-[#8a96a8]">
-              {warningMessage}
-            </p>
-            <button
-              onClick={() => setShowWarningModal(false)}
-              className="mt-6 w-full rounded-lg bg-red-500 py-3 font-bold text-white transition hover:bg-red-600"
-            >
-              I Understand, Continue Test
-            </button>
-          </div>
-        </div>
-      )}
+      <WarningModal
+        isOpen={showWarningModal}
+        warningMessage={warningMessage}
+        onClose={() => setShowWarningModal(false)}
+      />
 
-      {/* Toast */}
-      <div
-        className={`pointer-events-none fixed bottom-20 left-1/2 z-60 -translate-x-1/2 rounded-[9px] border border-slate-200 dark:border-[#212a37] bg-slate-800 dark:bg-[#131a24] px-4.5 py-2.75 font-[JetBrains_Mono,monospace] text-[12.5px] text-slate-900 dark:text-[#e7ecf3] shadow-[0_10px_30px_rgba(0,0,0,0.4)] transition-all duration-250 lg:bottom-5 ${
-          toast ? "translate-y-0 opacity-100" : "translate-y-5 opacity-0"
-        }`}
-      >
-        {toast}
-      </div>
+      {/* Toast notification */}
+      <TestToast message={toast} />
     </div>
   )
 }

@@ -49,8 +49,17 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
+    // Purge empty abandoned or ghost results
+    await Result.deleteMany({
+      userId,
+      $or: [
+        { status: { $in: ["abandoned", "in_progress"] } },
+        { totalMarks: 0, marksObtained: 0, accuracy: 0 },
+      ],
+    })
+
     const [results, totalResults, xpHistory, totalXpEntries, achievements, totalAchievements, feedback, totalFeedback] = await Promise.all([
-      Result.find({ userId })
+      Result.find({ userId, status: "completed" })
         .sort({
           submittedAt: -1,
           createdAt: -1,
@@ -73,7 +82,7 @@ export async function GET(request: NextRequest) {
         })
         .lean(),
 
-      Result.countDocuments({ userId }),
+      Result.countDocuments({ userId, status: "completed" }),
 
       XPHistory.find({ userId })
         .sort({ createdAt: -1 })

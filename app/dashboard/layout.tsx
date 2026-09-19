@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react"
 import axios from "axios"
 import Image from "next/image"
-import { LogOut, User, FileText } from "lucide-react"
-import { usePathname, useRouter } from "next/navigation"
+import Link from "next/link"
+import { LogOut, User, FileText, Play, Bell } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { AppSidebar } from "@/components/dashboardSidebar"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler"
@@ -16,12 +17,30 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 import { ThemeProvider, useTheme } from "next-themes"
+import { getInitials } from "@/lib/utils"
+import { AvatarFrame, resolveAvatarBorder } from "@/components/ui/game-avatar"
+
 type SidebarUser = {
   name: string
   email: string
   role: string
   avatar?: string
+  avatarBorder?: string
   xp?: number
   totalXP?: number
   level?: number
@@ -29,14 +48,6 @@ type SidebarUser = {
   currentStreak?: number
 }
 
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 function ThemedToggler() {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
@@ -47,7 +58,7 @@ function ThemedToggler() {
 
   if (!mounted) {
     return (
-      <div className="flex h-8 w-8 items-center justify-center">
+      <div className="flex h-9 w-9 items-center justify-center">
         <div className="h-4 w-4 rounded-full border border-[#8a96a8]" />
       </div>
     )
@@ -64,7 +75,7 @@ function ThemedToggler() {
       theme={currentTheme}
       onThemeChange={toggleTheme}
       variant="circle"
-      className="flex h-8 w-8 items-center justify-center rounded-md text-[--ac-text-2] transition-colors hover:bg-[--ac-hover] hover:text-[--ac-teal]"
+      className="flex h-9 w-9 items-center justify-center rounded-full text-[--ac-text-2] transition-colors hover:bg-[--ac-hover] hover:text-[--ac-text] cursor-pointer outline-none"
     />
   )
 }
@@ -77,26 +88,7 @@ export default function DashboardLayout({
   const [currentUser, setCurrentUser] = useState<SidebarUser | null>(null)
   const [loadingUser, setLoadingUser] = useState(true)
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
-  const pathname = usePathname()
-
-  const breadcrumbItems = pathname
-    .split("/")
-    .filter(Boolean)
-    .map((segment, index, segments) => {
-      const href = "/" + segments.slice(0, index + 1).join("/")
-
-      const label = segment
-        .replace(/-/g, " ")
-        .replace(/\b\w/g, (char) => char.toUpperCase())
-
-      return {
-        label,
-        href,
-        isCurrent: index === segments.length - 1,
-      }
-    })
-
+  const [loggingOut, setLoggingOut] = useState(false)
   const router = useRouter()
 
   const fetchUser = async () => {
@@ -116,6 +108,7 @@ export default function DashboardLayout({
         email: authData.email || "",
         role: authData.role || "",
         avatar: profileData.avatarUrl,
+        avatarBorder: profileData.avatarBorder || "basic",
         xp: profileData.totalXP,
         totalXP: profileData.totalXP,
         level: profileData.level,
@@ -129,10 +122,35 @@ export default function DashboardLayout({
     }
   }
 
+  const handleLogout = async () => {
+    try {
+      setLoggingOut(true)
+      await axios.post("/api/auth/logout")
+      router.push("/auth/login")
+    } catch (error) {
+      console.error("Logout error:", error)
+    } finally {
+      setLoggingOut(false)
+      setLogoutConfirmOpen(false)
+    }
+  }
+
   useEffect(() => {
     fetchUser()
-    setMounted(true)
+
+    const handleBorderUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<string>
+      if (customEvent.detail) {
+        setCurrentUser((prev) => (prev ? { ...prev, avatarBorder: customEvent.detail } : prev))
+      }
+    }
+    window.addEventListener("apticore_avatar_border_changed", handleBorderUpdate)
+    return () => window.removeEventListener("apticore_avatar_border_changed", handleBorderUpdate)
   }, [])
+
+  const userRole = currentUser?.role
+    ? currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)
+    : "Student"
 
   return (
     <ThemeProvider
@@ -141,156 +159,181 @@ export default function DashboardLayout({
       enableSystem
       disableTransitionOnChange
     >
-      <SidebarProvider className="flex min-h-screen ">
+      <SidebarProvider className="flex min-h-screen">
         <AppSidebar user={currentUser || undefined} />
 
         <main className="flex min-h-svh w-full flex-col">
-          {/* Mobile Header */}
-          <div className="sticky top-0 z-50 flex items-center bg-slate-100 dark:bg-[#0a0e14] justify-between gap-3 border-b border-black/10 dark:border-white/20 px-0 py-2">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="border-none text-[--ac-text] hover:bg-[--ac-hover] hover:text-[--ac-teal]" />
-              <Breadcrumb className="min-w-0">
-                <BreadcrumbList className="flex-nowrap text-xs sm:text-sm">
-                  <BreadcrumbItem>
-                    <BreadcrumbLink
-                      href="/dashboard"
-                      className="text-[--ac-text-2] hover:text-[--ac-teal]"
-                    >
-                      Dashboard
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-
-                  {breadcrumbItems
-                    .filter((item) => item.label !== "Dashboard")
-                    .map((item) => (
-                      <div
-                        key={item.href}
-                        className="flex min-w-0 items-center"
-                      >
-                        <BreadcrumbSeparator className="mx-2 text-[--ac-border-2]" />
-
-                        <BreadcrumbItem className="min-w-0">
-                          {item.isCurrent ? (
-                            <BreadcrumbPage className="truncate font-semibold text-[--ac-text]">
-                              {item.label}
-                            </BreadcrumbPage>
-                          ) : (
-                            <BreadcrumbLink
-                              href={item.href}
-                              className="truncate text-[--ac-text-2] hover:text-[--ac-teal]"
-                            >
-                              {item.label}
-                            </BreadcrumbLink>
-                          )}
-                        </BreadcrumbItem>
-                      </div>
-                    ))}
-                </BreadcrumbList>
-              </Breadcrumb>
+          {/* Top Navbar Header */}
+          <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-black/10 dark:border-white/10 bg-slate-100 dark:bg-[#0a0e14] px-3 sm:px-4">
+            {/* Left: Sidebar toggle + Mobile Logo */}
+            <div className="flex items-center gap-2.5">
+              <SidebarTrigger className="h-8 w-8 text-[--ac-text-2] hover:bg-[--ac-hover] hover:text-[--ac-text] transition cursor-pointer" />
+              
+              {/* Mobile / Tablet Logo */}
+              <Link href="/dashboard" className="flex items-center gap-2 lg:hidden">
+                <Image
+                  src="/logo.png"
+                  alt="AptiCore Platform Logo"
+                  width={28}
+                  height={28}
+                  className="h-7 w-7 rounded-full object-cover"
+                />
+                <span className="font-[Space_Grotesk,sans-serif] text-[15px] font-bold text-[--ac-text]">
+                  AptiCore
+                </span>
+              </Link>
             </div>
 
-            <div className="flex items-center justify-end gap-2">
-              <ThemedToggler />
-              {/* User Menu */}
-              <div className="flex items-center gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      className="flex items-center gap-2 rounded-xs px-2 py-1.5 transition outline-none hover:bg-[--ac-hover]"
-                    >
-                      {/* Name */}
-                      <div className="hidden max-w-32 text-left sm:block">
-                        <p className="truncate text-[13px] font-semibold text-[--ac-text]">
-                          {loadingUser
-                            ? "Loading..."
-                            : currentUser?.name || "User"}
-                        </p>
+            {/* Right: Start Test, Notification, Theme, Profile */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Notification Bell */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    title="Notifications"
+                    className="relative flex h-9 w-9 items-center justify-center  text-[--ac-text-2] transition-colors hover:bg-[--ac-hover] hover:text-[--ac-text] outline-none cursor-pointer"
+                  >
+                    <Bell className="h-4.5 w-4.5" />
+                  </button>
+                </PopoverTrigger>
+              </Popover>
 
-                        <p className="truncate text-[11px] text-[--ac-text-3]">
-                          {currentUser?.email || ""}
-                        </p>
-                      </div>
-                      {/* Avatar */}
-                      <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full border border-[--ac-border-2] bg-[--ac-surface]">
+              {/* Theme Toggler */}
+              <ThemedToggler />
+
+              {/* User Profile Pill Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex items-center gap-2.5 rounded-sm border-black/10 dark:border-white/15 bg-transparent py-1 pl-1 pr-3 sm:pr-4 transition outline-none hover:bg-[--ac-hover] cursor-pointer select-none"
+                  >
+                    {/* Avatar with Game Border */}
+                    <AvatarFrame
+                      border={resolveAvatarBorder(currentUser?.avatarBorder, currentUser?.level)}
+                      size="xs"
+                      shape="rounded"
+                    >
+                      {currentUser?.avatar ? (
+                        <Image
+                          src={currentUser.avatar}
+                          alt={currentUser.name || "User"}
+                          fill
+                          sizes="32px"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-[#6ee7c9] to-[#8b7cf6] text-xs font-bold text-[#08110d]">
+                          {getInitials(currentUser?.name || "User")}
+                        </div>
+                      )}
+                    </AvatarFrame>
+                  </button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent
+                  align="end"
+                  sideOffset={8}
+                  className="w-60 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#10151d] p-1.5 shadow-xl text-[--ac-text]"
+                >
+                  <DropdownMenuLabel className="px-3 py-2.5">
+                    <div className="flex items-center gap-3">
+                      <AvatarFrame
+                        border={resolveAvatarBorder(currentUser?.avatarBorder, currentUser?.level)}
+                        size="sm"
+                        shape="rounded"
+                      >
                         {currentUser?.avatar ? (
                           <Image
                             src={currentUser.avatar}
                             alt={currentUser.name || "User"}
                             fill
-                            sizes="36px"
+                            sizes="32px"
                             className="object-cover"
                           />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center text-sm font-bold text-[--ac-teal]">
-                            {currentUser?.name?.charAt(0)?.toUpperCase() || "U"}
+                          <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-[#6ee7c9] to-[#8b7cf6] text-xs font-bold text-[#08110d]">
+                            {getInitials(currentUser?.name || "User")}
                           </div>
                         )}
+                      </AvatarFrame>
+                      <div className="min-w-0">
+                        <p className="truncate text-[13px] font-semibold text-[--ac-text]">
+                          {currentUser?.name || "User"}
+                        </p>
+                        <p className="truncate text-[11px] font-normal text-[--ac-text-3]">
+                          {currentUser?.email || ""}
+                        </p>
                       </div>
-                    </button>
-                  </DropdownMenuTrigger>
+                    </div>
+                  </DropdownMenuLabel>
 
-                  <DropdownMenuContent
-                    align="end"
-                    sideOffset={8}
-                    className="border-[--ac-border]x w-64 p-1.5 text-[--ac-text]"
+                 <DropdownMenuSeparator className="bg-black/10 dark:bg-white/10" />
+
+                  <DropdownMenuItem
+                    onClick={() => router.push("/dashboard/profile")}
+                    className="cursor-pointer gap-2.5 rounded-lg px-3 py-2 text-xs font-medium hover:bg-[--ac-hover]"
                   >
-                    <DropdownMenuLabel className="px-3 py-2.5">
-                      <div className="flex items-center gap-3">
-                        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-[--ac-border-2]">
-                          {currentUser?.avatar ? (
-                            <Image
-                              src={currentUser.avatar}
-                              alt={currentUser.name || "User"}
-                              fill
-                              sizes="40px"
-                              className="object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center font-bold text-[--ac-teal]">
-                              {currentUser?.name?.charAt(0)?.toUpperCase() ||
-                                "U"}
-                            </div>
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-[13px] font-semibold">
-                            {currentUser?.name || "User"}
-                          </p>
+                    <User className="h-4 w-4 text-[--ac-teal]" />
+                    Profile
+                  </DropdownMenuItem>
 
-                          <p className="truncate text-[11px] font-normal text-[--ac-text-3]">
-                            {currentUser?.email || ""}
-                          </p>
-                        </div>
-                      </div>
-                    </DropdownMenuLabel>
+                  <DropdownMenuItem
+                    onClick={() => router.push("/dashboard/history")}
+                    className="cursor-pointer gap-2.5 rounded-lg px-3 py-2 text-xs font-medium hover:bg-[--ac-hover]"
+                  >
+                    <FileText className="h-4 w-4 text-[--ac-teal]" />
+                    History
+                  </DropdownMenuItem>
 
-                    <DropdownMenuSeparator />
+                  <DropdownMenuSeparator className="bg-black/10 dark:bg-white/10" />
 
-                    <DropdownMenuItem
-                      onClick={() => router.push("/dashboard/profile")}
-                      className="cursor-pointer gap-3 rounded-lg px-3 py-2.5"
-                    >
-                      <User className="h-4 w-4 text-[#6ee7c9]" />
-                      Profile
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem
-                      onClick={() => router.push("/dashboard/history")}
-                      className="cursor-pointer gap-3 rounded-lg px-3 py-2.5"
-                    >
-                      <FileText className="h-4 w-4 text-[#6ee7c9]" />
-                      History
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+                  <DropdownMenuItem
+                    onClick={() => setLogoutConfirmOpen(true)}
+                    className="cursor-pointer gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-red-500 hover:bg-red-500/10 focus:text-red-500"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-          </div>
+          </header>
 
           <div className="flex-1">{children}</div>
         </main>
       </SidebarProvider>
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog open={logoutConfirmOpen} onOpenChange={setLogoutConfirmOpen}>
+        <DialogContent className="border border-black/10 dark:border-white/10 bg-white dark:bg-[#10151d] text-[--ac-text] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">Confirm Logout</DialogTitle>
+            <DialogDescription className="text-xs text-[--ac-text-3]">
+              Are you sure you want to log out of your AptiCore account?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="ghost"
+              disabled={loggingOut}
+              onClick={() => setLogoutConfirmOpen(false)}
+              className="text-[--ac-text-2] hover:bg-[--ac-hover]"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={loggingOut}
+              onClick={handleLogout}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              {loggingOut ? "Logging out..." : "Log out"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </ThemeProvider>
   )
 }

@@ -26,6 +26,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "attemptId is required" }, { status: 400 })
     }
 
+    if (!progress?.attemptedQuestions || progress.attemptedQuestions <= 0) {
+      return NextResponse.json({ success: true, message: "No progress to save yet" })
+    }
+
     let effectiveCategoryId = categoryId
     let effectiveSubcategoryId = subcategoryId
 

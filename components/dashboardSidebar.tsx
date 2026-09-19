@@ -7,14 +7,12 @@ import {
   Award,
   BarChart2,
   BookOpen,
-  ChevronsUpDown,
   LayoutDashboard,
   LogOut,
-  Settings,
   Shield,
   Trophy,
-  UserRound,
   FileText,
+  Bookmark,
 } from "lucide-react"
 import axios from "axios"
 import Image from "next/image"
@@ -43,14 +41,6 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu"
 
 // Profile, History, and Feedback have been removed from nav items
 const navItems = [
@@ -63,7 +53,9 @@ const navItems = [
   { label: "Analytics", href: "/dashboard/analytics", icon: BarChart2 },
   { label: "Practice Tests", href: "/dashboard/tests", icon: BookOpen },
   { label: "Leaderboard", href: "/dashboard/leaderboard", icon: Trophy },
-  { label: "Achievements", href: "/dashboard/achievements", icon: Award },
+  { label: "Achievements & Badges", href: "/dashboard/achievements", icon: Award },
+  { label: "History", href: "/dashboard/history", icon: FileText },
+  { label: "Bookmark", href: "/dashboard/bookmark", icon: Bookmark },
 ]
 
 const bottomItems = [
@@ -117,38 +109,31 @@ export function AppSidebar({ user }: AppSidebarProps) {
     }
   }
   const name = sidebarUser?.name || "User"
-  const level = sidebarUser?.level || 1
-  const totalXP = sidebarUser?.totalXP ?? sidebarUser?.xp ?? 0
-  const streak = sidebarUser?.currentStreak ?? sidebarUser?.streak ?? 0
-  const xpPerLevel = 500
-  const levelProgress = Math.min(
-    ((totalXP % xpPerLevel) / xpPerLevel) * 100,
-    100
-  )
-  const isAdmin =
-    sidebarUser?.role === "admin" || sidebarUser?.role === "super_admin"
 
   const isActive = (href: string, exact?: boolean) =>
-    exact ? pathname === href : pathname.startsWith(href)
+    exact ? pathname === href : Boolean(pathname?.startsWith(href))
 
   return (
     <>
       <Sidebar
-        collapsible="offcanvas"
+        collapsible="icon"
         className="border-[--ac-border] bg-[--ac-bg] text-[--ac-text]"
       >
         {/* Brand */}
-        <SidebarHeader className="border-b border-[--ac-border] bg-[--ac-bg] px-4 py-4">
-          <Link href="/dashboard" className="flex items-center gap-2.5">
+        <SidebarHeader className="border-b border-[--ac-border] bg-[--ac-bg] px-4 py-3.5 group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:w-full"
+          >
             <Image
               loading="lazy"
-              src="/logo.ico"
+              src="/logo.png"
               alt="AptiCore Logo"
               width={32}
               height={32}
-              className="h-10 w-10 rounded-full object-cover"
+              className="h-8 w-8 rounded-full object-cover shrink-0"
             />
-            <div className="min-w-0">
+            <div className="min-w-0 group-data-[collapsible=icon]:hidden">
               <span className="block font-[Space_Grotesk,sans-serif] text-[15px] leading-5 font-bold text-[--ac-text]">
                 AptiCore
               </span>
@@ -157,30 +142,34 @@ export function AppSidebar({ user }: AppSidebarProps) {
         </SidebarHeader>
 
         {/* Nav */}
-        <SidebarContent className="bg-[--ac-bg] px-2 py-2">
-          <SidebarGroup>
+        <SidebarContent className="bg-[--ac-bg] px-2 py-2 group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:py-2">
+          <SidebarGroup className="p-0 group-data-[collapsible=icon]:p-0">
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="gap-1">
                 {navItems.map((item) => {
                   const active = isActive(item.href, item.exact)
                   return (
-                    <SidebarMenuItem key={item.href} className="mb-4">
+                    <SidebarMenuItem
+                      key={item.href}
+                      className="mb-2 group-data-[collapsible=icon]:mb-1.5 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center"
+                    >
                       <SidebarMenuButton
                         asChild
                         isActive={active}
+                        tooltip={item.label}
                         className={
                           active
                             ? "border border-[--ac-teal-border] bg-[--ac-teal-muted] text-[--ac-teal] hover:bg-[--ac-teal-muted] hover:text-[--ac-teal]"
                             : "text-[--ac-text-2] hover:bg-[--ac-hover] hover:text-[--ac-text]"
                         }
                       >
-                        <Link href={item.href} className="text-6 font-medium">
+                        <Link href={item.href} className="text-sm font-medium">
                           <item.icon
-                            className={` ${active ? "text-[--ac-teal]" : "text-[--ac-text-2]"}`}
+                            className={active ? "text-[--ac-teal]" : "text-[--ac-text-2]"}
                           />
                           <span>{item.label}</span>
                           {active && (
-                            <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[--ac-teal]" />
+                            <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[--ac-teal] group-data-[collapsible=icon]:hidden" />
                           )}
                         </Link>
                       </SidebarMenuButton>
@@ -193,43 +182,64 @@ export function AppSidebar({ user }: AppSidebarProps) {
         </SidebarContent>
 
         {/* Bottom items + logout */}
-        <SidebarFooter className="border-t border-[--ac-border] bg-[--ac-bg] px-2 pt-3 pb-4">
-          <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <div
-                  className=" flex gap-2 text-[--ac-text] hover:bg-[--ac-hover] data-[state=open]:bg-[--ac-hover]"
+        <SidebarFooter className="border-t border-[--ac-border] bg-[--ac-bg] px-2 pt-3 pb-3 group-data-[collapsible=icon]:p-2">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              {/* When expanded */}
+              <div className="flex items-center gap-2 text-[--ac-text] group-data-[collapsible=icon]:hidden p-1 rounded-md hover:bg-[--ac-hover]">
+                <Link
+                  href="/dashboard/profile"
+                  className="flex items-center gap-2 min-w-0 flex-1"
                 >
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-linear-to-br from-[#6ee7c9] to-[#8b7cf6] font-[Space_Grotesk,sans-serif] text-[12px] font-bold text-[#08110d]">
                     {sidebarUser?.avatar ? (
                       <img
                         src={sidebarUser?.avatar}
                         className="h-full w-full object-cover"
-                        alt=""
+                        alt={
+                          sidebarUser?.name
+                            ? `${sidebarUser.name}'s profile avatar`
+                            : "User Avatar"
+                        }
                       />
                     ) : (
                       getInitials(name)
                     )}
                   </div>
-                  <div className="grid min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
+                  <div className="grid min-w-0 flex-1 text-left leading-tight">
                     <span className="truncate text-[13px] font-semibold text-[--ac-text]">
                       {sidebarUser?.name}
                     </span>
                     <span className="flex items-center gap-1.5 truncate font-[JetBrains_Mono,monospace] text-[10.5px] text-[--ac-text-3]">
-                      {sidebarUser?.role.toUpperCase()}
+                      {sidebarUser?.role ? sidebarUser.role.toUpperCase() : "STUDENT"}
                     </span>
                   </div>
-                  <button
-                    disabled={loading}
-                    onClick={() => setLogoutConfirmOpen(true)}
-                    className="cursor-pointer text-[13.5px] p-2 flex items-center justify-center rounded-sm dark:hover:bg-red-300/30 bg-transparent hover:bg-slate-300 text-[#f2555a]/90 focus:text-[#ea0910]"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                  </button>
-                </div>
-              </DropdownMenuTrigger>
-            </DropdownMenu>
-          </SidebarMenuItem>
+                </Link>
+                <button
+                  type="button"
+                  title="Logout"
+                  disabled={loading}
+                  onClick={() => setLogoutConfirmOpen(true)}
+                  className="cursor-pointer p-1.5 flex items-center justify-center rounded-sm dark:hover:bg-red-500/20 bg-transparent hover:bg-red-100 text-[#f2555a] transition"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* When collapsed (icon mode) */}
+              <div className="hidden group-data-[collapsible=icon]:flex flex-col items-center gap-2.5">
+                <button
+                  type="button"
+                  title="Logout"
+                  disabled={loading}
+                  onClick={() => setLogoutConfirmOpen(true)}
+                  className="cursor-pointer h-8 w-8 flex items-center justify-center rounded-md hover:bg-red-500/20 text-[#f2555a] transition"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
+            </SidebarMenuItem>
+          </SidebarMenu>
         </SidebarFooter>
 
         <SidebarRail />

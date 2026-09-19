@@ -35,6 +35,7 @@ export interface IUserProfileDocument extends Document {
 
   bio?: string
   avatarUrl?: string
+  avatarBorder?: string
   phone?: string
   dateOfBirth?: Date
   location?: string
@@ -174,6 +175,10 @@ const UserProfileSchema = new Schema<IUserProfileDocument>(
       maxlength: 500,
     },
     avatarUrl: String,
+    avatarBorder: {
+      type: String,
+      default: "basic",
+    },
     phone: {
       type: String,
       trim: true,
@@ -226,6 +231,10 @@ const UserProfileSchema = new Schema<IUserProfileDocument>(
     timestamps: true,
   }
 )
+
+if (mongoose.models.UserProfile && !mongoose.models.UserProfile.schema.paths.avatarBorder) {
+  delete (mongoose.models as any).UserProfile
+}
 
 const UserProfile: Model<IUserProfileDocument> =
   mongoose.models.UserProfile ||

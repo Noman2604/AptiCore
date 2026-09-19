@@ -29,6 +29,16 @@ export async function GET(request: NextRequest) {
         }
 
         const userId = decoded.userId
+
+        // Purge empty abandoned or ghost results
+        await Result.deleteMany({
+            userId,
+            $or: [
+                { status: { $in: ["abandoned", "in_progress"] } },
+                { totalMarks: 0, marksObtained: 0, accuracy: 0 },
+            ],
+        })
+
         const [
             user,
             profile,
@@ -45,12 +55,12 @@ export async function GET(request: NextRequest) {
             UserProfile.findOne({ userId })
                 .lean(),
 
-            Result.find({ userId })
+            Result.find({ userId, status: "completed" })
                 .sort({ createdAt: -1 })
                 .limit(5)
                 .lean(),
 
-            Result.find({ userId })
+            Result.find({ userId, status: "completed" })
                 .select("accuracy totalMarks marksObtained status createdAt")
                 .lean(),
 
@@ -88,6 +98,50 @@ export async function GET(request: NextRequest) {
                 { status: 404 }
             )
         }
+        // Platform-wide benchmark aggregations
+        const [platformAgg, userProfileAgg, testsPerUserAgg] = await Promise.all([
+            Result.aggregate([
+                { $match: { status: "completed" } },
+                {
+                    $group: {
+                        _id: null,
+                        avgAccuracy: { $avg: "$accuracy" },
+                        avgScore: { $avg: "$marksObtained" },
+                        totalCompletedTests: { $sum: 1 },
+                    }
+                }
+            ]),
+            UserProfile.aggregate([
+                {
+                    $group: {
+                        _id: null,
+                        avgXP: { $avg: "$totalXP" },
+                        avgStreak: { $avg: "$currentStreak" },
+                        totalStudents: { $sum: 1 },
+                    }
+                }
+            ]),
+            Result.aggregate([
+                { $match: { status: "completed" } },
+                { $group: { _id: "$userId", testsCount: { $sum: 1 } } },
+                { $group: { _id: null, avgTestsPerUser: { $avg: "$testsCount" } } }
+            ])
+        ])
+
+        const avgAccRaw = platformAgg[0]?.avgAccuracy
+        const avgXPRaw = userProfileAgg[0]?.avgXP
+        const avgTestsRaw = testsPerUserAgg[0]?.avgTestsPerUser
+        const totalStudents = userProfileAgg[0]?.totalStudents || leaderboard.length || 1
+
+        const platformBenchmarks = {
+            avgAccuracy: Math.round(avgAccRaw && avgAccRaw > 0 ? avgAccRaw : 58),
+            avgXP: Math.round(avgXPRaw && avgXPRaw > 0 ? avgXPRaw : 480),
+            avgTestsCompleted: Number((avgTestsRaw && avgTestsRaw > 0 ? avgTestsRaw : 4.5).toFixed(1)),
+            avgStreak: Math.round(userProfileAgg[0]?.avgStreak || 2),
+            totalStudents: Math.max(totalStudents, 1),
+            placementCutoffAccuracy: 65,
+        }
+
         // Add rank based on sorted leaderboard
         const leaderboardWithRank = leaderboard.map((entry: any, index: number) => ({
             ...entry,
@@ -116,6 +170,7 @@ export async function GET(request: NextRequest) {
                 totalAvailableTests: allTests?.length || 0,
                 userachievements: userachievements || [],
                 leaderboard: leaderboardWithRank,
+                benchmarks: platformBenchmarks,
             },
         })
     } catch (error) {

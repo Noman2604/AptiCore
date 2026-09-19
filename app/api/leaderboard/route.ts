@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
         return {
           ...entry.toObject(),
           avatarUrl: profile?.avatarUrl || null,
+          avatarBorder: profile?.avatarBorder || "basic",
         }
       })
     )

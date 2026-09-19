@@ -21,16 +21,16 @@ async function getUserId(request: NextRequest) {
 }
 
 function profilePayload(body: any) {
-  const payload: Record<string, unknown> = {
-    bio: body.bio,
-    phone: body.phone,
-    dateOfBirth: body.dateOfBirth,
-    location: body.location,
-    avatarUrl:
-      body.avatarUrl === undefined ? undefined : body.avatarUrl || "",
-    resumeUrl: body.resumeUrl === undefined ? undefined : body.resumeUrl || "",
-    linkedinUrl: body.linkedinUrl || undefined,
-  }
+  const payload: Record<string, unknown> = {}
+
+  if (body.bio !== undefined) payload.bio = body.bio
+  if (body.phone !== undefined) payload.phone = body.phone
+  if (body.dateOfBirth !== undefined) payload.dateOfBirth = body.dateOfBirth
+  if (body.location !== undefined) payload.location = body.location
+  if (body.avatarUrl !== undefined) payload.avatarUrl = body.avatarUrl || ""
+  if (body.avatarBorder !== undefined) payload.avatarBorder = body.avatarBorder || "basic"
+  if (body.resumeUrl !== undefined) payload.resumeUrl = body.resumeUrl || ""
+  if (body.linkedinUrl !== undefined) payload.linkedinUrl = body.linkedinUrl || undefined
 
   if (Array.isArray(body.education) && body.education.length > 0) {
     payload.education = body.education.map((item: any) => ({
@@ -49,7 +49,7 @@ function profilePayload(body: any) {
       passingYear: item.passingYear,
       currentlyStudying: item.currentlyStudying,
     }))
-  } else {
+  } else if (body.education !== undefined) {
     const educationProvided = body.college || body.degree || body.specialization
 
     if (educationProvided) {
@@ -63,7 +63,7 @@ function profilePayload(body: any) {
           universityOrBoard: body.universityOrBoard || "",
           stream: body.stream || "",
           medium: body.medium || "",
-          cgpa: body.cgpa|| undefined,
+          cgpa: body.cgpa || undefined,
           percentage: body.percentage || undefined,
           startYear: body.startYear || undefined,
           endYear: body.endYear || undefined,
@@ -129,7 +129,7 @@ export async function PATCH(request: NextRequest) {
       {
         returnDocument: 'after',
         upsert: true,
-        runValidators: true,
+        runValidators: false,
       }
     )
 
@@ -146,7 +146,7 @@ export async function PATCH(request: NextRequest) {
       }
     )
   } catch (error) {
-    console.log(error)
+    console.error("Profile update error:", error)
 
     return NextResponse.json(
       {
