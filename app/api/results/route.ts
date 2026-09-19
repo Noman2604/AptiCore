@@ -40,8 +40,10 @@ export async function GET(request: NextRequest) {
 
     const query: Record<string, unknown> = { userId: decoded.userId }
 
-    if (status) {
+    if (status && status !== "all") {
       query.status = status
+    } else if (!status) {
+      query.status = "completed"
     }
 
     const total = await Result.countDocuments(query)

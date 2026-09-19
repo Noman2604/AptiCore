@@ -156,24 +156,45 @@
 - Noise overlay via `.noise-overlay::before`
 - Card hover via `.card-hover`
 
-## 6. Animations
+## 6. Animations & Interactive Motion
+ 
+ ### Tailwind Keyframes
+ | Animation | Duration | Description |
+ |-----------|----------|-------------|
+ | `animate-fade-in` | 0.5s | Fade in from opacity 0 |
+ | `animate-slide-up` | 0.5s | Slide up 30px |
+ | `animate-slide-in-right` | 0.3s | Slide from right 20px |
+ | `animate-pulse-slow` | 3s | Slow pulse |
+ | `animate-float` | 6s | Float up and down |
+ | `animate-glow` | 2s | Glow intensity oscillation |
+ | `animate-shimmer` | 2s | Shimmer sweep |
+ | `animate-count-up` | 1s | Count-up effect |
+ | `animate-spin-slow` | 8s | Slow rotation |
+ | `animate-bounce-soft` | 2s | Subtle bounce |
 
-### Tailwind Keyframes
-| Animation | Duration | Description |
-|-----------|----------|-------------|
-| `animate-fade-in` | 0.5s | Fade in from opacity 0 |
-| `animate-slide-up` | 0.5s | Slide up 30px |
-| `animate-slide-in-right` | 0.3s | Slide from right 20px |
-| `animate-pulse-slow` | 3s | Slow pulse |
-| `animate-float` | 6s | Float up and down |
-| `animate-glow` | 2s | Glow intensity oscillation |
-| `animate-shimmer` | 2s | Shimmer sweep |
-| `animate-count-up` | 1s | Count-up effect |
-| `animate-spin-slow` | 8s | Slow rotation |
-| `animate-bounce-soft` | 2s | Subtle bounce |
+### ScrollReveal Component Specifications
+The `ScrollReveal` component (`components/ScrollReveal.tsx`) provides 60fps GPU-accelerated reveals using native `IntersectionObserver`:
+- **Animations Supported**: `fade-up`, `fade-down`, `fade-left`, `fade-right`, `zoom-in`, `fade`
+- **Transforms Used**: `translate3d(x, y, 0)`, `scale(...)`, `opacity`, `filter: blur(...)`
+- **Stagger Delays**: Configurable `delay` prop (e.g. `0ms`, `100ms`, `200ms`, `300ms`) for staggered grid card entrances.
+- **Threshold & Margin**: `threshold: 0.1` and `rootMargin: '0px 0px -40px 0px'` to trigger smoothly before entering user view.
 
-### Page Transitions
-- Entry animation uses `.page-enter` with `animate-slideUp 0.4s ease-out`
+### 3D Interactive Card Tilt
+Applied to the Hero mock test card:
+- **Perspective**: `perspective(1000px)`
+- **Dynamic Rotation**: `rotateX((y - 0.5) * -16deg)` and `rotateY((x - 0.5) * 16deg)` calculated from mouse bounding rectangle.
+- **Glare / Reflection**: Dynamic subtle specular highlight following cursor coordinates.
+- **Restoration**: Smooth transition back to neutral `rotateX(0deg) rotateY(0deg)` on `onMouseLeave`.
+
+### Reading Scroll Progress Bar
+Sticky 3px gradient line anchored at `top: 0, zIndex: 60`:
+- **Gradient**: `linear-gradient(90deg, #0ea5e9, #6366f1, #d946ef)`
+- **Formula**: `(window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100%`
+
+### Company Recruiter Ticker
+Continuous horizontal marquee loop:
+- **Implementation**: Two identical sequences flexed in a row with `animate-[marquee_28s_linear_infinite]`.
+- **Mask**: Left and right linear alpha masks (`mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent)`).
 
 ## 7. Badge and Status Colors
 
@@ -198,15 +219,19 @@
 | Epic | `from-purple-500/20 to-purple-500/5` | `text-purple-400` |
 | Legendary | `from-yellow-500/20 to-yellow-500/5` | `text-yellow-400` |
 
-## 8. Responsive Breakpoints
+## 8. Responsive Breakpoints & Navigation
 
-| Breakpoint | Min Width | Target |
-|------------|-----------|--------|
-| `sm` | 640px | Large phones |
-| `md` | 768px | Tablets |
-| `lg` | 1024px | Small desktops |
-| `xl` | 1280px | Large desktops |
-| `2xl` | 1536px | Extra large |
+| Breakpoint | Min Width | Target | Behavior |
+|------------|-----------|--------|----------|
+| `sm` | 640px | Large phones | Stacked layouts, sticky mobile CTA active |
+| `md` | 768px | Tablets (iPad Mini / Portrait) | Sidebar collapses into off-canvas drawer (`<1024px`) |
+| `lg` | 1024px | Small desktops / iPad Pro Landscape | Full desktop sidebar expands, sticky CTA hidden |
+| `xl` | 1280px | Standard desktops | Max container margins |
+| `2xl` | 1536px | Large monitors | 7xl centered max-width container |
+
+### Tablet & Drawer Navigation Rules
+- **Sidebar Drawer**: `hooks/use-mobile.ts` treats all viewports `< 1024px` as mobile drawer viewports to protect tablet ergonomics.
+- **Touch Target**: Minimum button and nav item touch area is 44x44px.
 
 ## 9. Background Gradients
 
@@ -216,3 +241,61 @@
 | `card-gradient` | `linear-gradient(135deg, rgba(14,165,233,0.1) 0%, rgba(217,70,239,0.1) 100%)` |
 | `shimmer-gradient` | `linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%)` |
 | `grid-pattern` | `radial-gradient(circle, rgba(14,165,233,0.15) 1px, transparent 1px)` |
+
+## 10. Floating UI & Conversion Micro-Components
+
+### Sticky Mobile CTA Sheet
+- **Component**: `components/StickyMobileCTA.tsx`
+- **Placement**: Fixed bottom (`bottom-0 left-0 right-0 z-40`), active on mobile viewports (`sm:hidden`).
+- **Styling**: Frosted glassmorphic surface (`bg-background/90 backdrop-blur-md border-t border-border/60`).
+- **Interaction**: Features primary "Start Free Test" action button with pulsing indicator and direct test route navigation.
+
+### Cookie Consent Banner
+- **Component**: `components/CookieBanner.tsx`
+- **Placement**: Fixed bottom floating toast (`bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50`).
+- **Styling**: `bg-card/95 backdrop-blur-xl border border-border/80 shadow-2xl rounded-2xl`.
+- **Preferences**: Dual "Accept All" vs "Necessary Only" buttons with instant `localStorage` memory and settings modal integration.
+
+## 11. Avatar Border Gamification System
+
+The platform features 10 stylized, animated avatar borders rendered via `components/ui/game-avatar.tsx`:
+
+| ID | Name | Category | Rarity | Min Level | Glow Color | Visual Aesthetic |
+|---|---|---|---|---|---|---|
+| `basic` | Standard | All | Common | 1 | `#94a3b8` | Clean, minimalist rounded frame |
+| `elemental_fire_ice`| Frostfire Harmony | Streak | Epic | 3 | `#f97316` | Blazing crimson flame + glacial blue ice aura |
+| `valkyrie_wings` | Valkyrie Wings | Challenges | Epic | 5 | `#38bdf8` | Ethereal celestial wings with radiant auroral shimmer |
+| `cyber_lotus` | Cyber Lotus | Streak | Rare | 7 | `#ec4899` | Holographic neon lotus petals with synthwave scanlines |
+| `abyssal_shallows`| Abyssal Shallows | Challenges | Rare | 10 | `#06b6d4` | Deep-ocean cyan bioluminescence & coral ripples |
+| `solar_phoenix` | Solar Phoenix | Challenges | Legendary | 12 | `#eab308` | Molten coronal flares & immortal golden embers |
+| `mecha_sentinel` | Mecha Sentinel | Level | Legendary | 15 | `#10b981` | Armored emerald hyper-alloy vanguard with tactical visors |
+| `gladiator_legion`| Gladiator Legion | Challenges | Legendary | 18 | `#d97706` | Battle-worn auric laurels commemorating championship |
+| `prismatic_crystal`| Prismatic Crystal| Challenges | Mythic | 20 | `#a855f7` | Hyper-dimensional diamond refracting rainbow spectrums |
+| `golden_lion` | Golden Lion | Level | Mythic | 25 | `#f59e0b` | Sovereign imperial gold crest with diamond crown |
+
+### Avatar Customization UI & Rules
+- **Category Filter Tabs**: `all`, `streak`, `challenges`, `level`.
+- **Lock State**: Locked borders display a padlock badge, level requirement indicator, and an explicit unlock description tooltip.
+- **Preview Modal**: Interactive real-time preview allowing students to try on borders before applying them to their live profile.
+
+## 12. Modular Proctored Test Runner UI
+
+The test interface (`components/tests/runner/`) uses a focused, distraction-free proctoring design system:
+
+| Component | Responsibility | Visual Style |
+|---|---|---|
+| `ProctorStrip` | Sticky top status HUD | Dark slate backdrop with high-contrast countdown clock, tab-switch violation counter badge, and full-screen trigger button |
+| `TestSectionRail`| Section tabs | Horizontal tabbed pill selector with subject titles and progress checkmarks |
+| `QuestionPalette`| Question grid navigation | 4-state visual indicators: **Answered** (emerald green), **Marked for Review** (violet purple), **Answered & Flagged** (violet with dot), **Unanswered** (muted slate border) |
+| `QuestionCard` | Question content | High legibility typography, syntax-highlighted code blocks for technical items, and accessible radio/checkbox pill targets |
+| `WarningModal` | Anti-cheat violation alert | Warning alert overlay triggered on tab-switch/window-blur with countdown acknowledgment |
+| `SubmitConfirmModal`| Final submission verification | Modal with visual completion statistics (total answered, flagged, skipped) before final score calculation |
+| `MobileBottomBar`| Phone viewport controls | Sticky bottom bar with Prev, Next, Flag, and Submit actions for touch ergonomics |
+
+## 13. Question Bookmarks & Revision Interface
+
+The bookmark center (`app/dashboard/bookmark/page.tsx`) provides an integrated revision workspace:
+- **Filtering System**: Subject pills (Quantitative, Logical, Verbal, Technical), Difficulty badges (Easy, Medium, Hard), and custom revision tags.
+- **Practice Mode**: One-click toggling into self-assessment mode where answers are concealed until clicked, accompanied by detailed step-by-step solutions.
+- **Annotation Drawer**: Allows students to attach personal notes, mnemonic tips, or formula reminders directly to any question.
+

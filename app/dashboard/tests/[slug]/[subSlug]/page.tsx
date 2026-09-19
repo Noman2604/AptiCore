@@ -135,7 +135,8 @@ const SubcategoryTestPage = ({
         testStatus === "in-progress" &&
         testStartedAt &&
         category &&
-        subcategory
+        subcategory &&
+        Boolean(currentProgress?.attemptedQuestions && currentProgress.attemptedQuestions > 0)
       ) {
         // Mark test as abandoned
         fetch("/api/results/mark-abandoned", {
@@ -147,13 +148,14 @@ const SubcategoryTestPage = ({
             subcategoryId: subcategory._id,
             testStatus: "abandoned",
             startedAt: testStartedAt,
+            attemptedQuestions: currentProgress?.attemptedQuestions || 0,
           }),
         }).catch((error) =>
           console.error("Failed to mark test as abandoned:", error)
         )
       }
     }
-  }, [testStatus, testStartedAt, category, subcategory])
+  }, [testStatus, testStartedAt, category, subcategory, currentProgress, currentAttemptId])
 
   const test = useMemo(
     () => ({
@@ -255,7 +257,9 @@ const SubcategoryTestPage = ({
   }
   const handleProgressChange = useCallback((progress: any) => {
     setCurrentProgress(progress)
-    setHasUnsavedProgress(true)
+    setHasUnsavedProgress(
+      Boolean(progress?.attemptedQuestions && progress.attemptedQuestions > 0)
+    )
   }, [])
 
   if (loading) {

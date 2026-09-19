@@ -35,22 +35,25 @@ export async function GET(request: NextRequest) {
             profile,
             results,
             leaderboard,
-            achievements
+            achievements,
+            platformAgg,
+            userProfileAgg,
+            testsPerUserAgg
         ] = await Promise.all([
             User.findById(userId)
                 .select("_id name email role")
                 .lean(),
 
             UserProfile.findOne({ userId })
-                .select("currentStreak longestStreak")
+                .select("currentStreak longestStreak totalXP level questionsAttempted correctAnswers")
                 .lean(),
 
-            Result.find({ userId })
+            Result.find({ userId, status: "completed" })
                 .sort({ submittedAt: -1, createdAt: -1 })
-                .limit(10)
+                .limit(100)
                 .populate({
                     path: "testId",
-                    select: "title categoryId subcategory",
+                    select: "title categoryId subcategory totalMarks durationMinutes",
                     populate: {
                         path: "categoryId",
                         select: "name slug",
@@ -58,21 +61,57 @@ export async function GET(request: NextRequest) {
                 })
                 .lean(),
 
-            Leaderboard.find({userId})
+            Leaderboard.find({})
+                .sort({ totalXP: -1 })
+                .limit(100)
                 .populate({
                     path: "userId",
                     select: "_id name email",
                 })
                 .lean(),
+
             UserAchievement.find({ userId })
                 .sort({ unlockedAt: -1 })
-                .limit(4)
+                .limit(6)
                 .populate({
                     path: "achievementId",
                     select:
                         "name description iconUrl criteriaType criteriaValue pointsReward rarity",
                 })
                 .lean(),
+
+            // Platform aggregate results
+            Result.aggregate([
+                { $match: { status: "completed" } },
+                {
+                    $group: {
+                        _id: null,
+                        avgAccuracy: { $avg: "$accuracy" },
+                        avgTimeSpent: { $avg: "$timeSpentSeconds" },
+                        avgScore: { $avg: "$marksObtained" },
+                        totalTests: { $sum: 1 },
+                    }
+                }
+            ]),
+
+            // Platform aggregate profiles
+            UserProfile.aggregate([
+                {
+                    $group: {
+                        _id: null,
+                        avgXP: { $avg: "$totalXP" },
+                        avgStreak: { $avg: "$currentStreak" },
+                        totalStudents: { $sum: 1 },
+                    }
+                }
+            ]),
+
+            // Platform average tests per user
+            Result.aggregate([
+                { $match: { status: "completed" } },
+                { $group: { _id: "$userId", testsCount: { $sum: 1 } } },
+                { $group: { _id: null, avgTestsPerUser: { $avg: "$testsCount" } } }
+            ])
         ])
 
         if (!user) {
@@ -85,12 +124,29 @@ export async function GET(request: NextRequest) {
             )
         }
 
+        const avgAccRaw = platformAgg[0]?.avgAccuracy
+        const avgXPRaw = userProfileAgg[0]?.avgXP
+        const avgTestsRaw = testsPerUserAgg[0]?.avgTestsPerUser
+        const avgTimeRaw = platformAgg[0]?.avgTimeSpent
+        const totalStudents = userProfileAgg[0]?.totalStudents || leaderboard.length || 1
+
+        const platformBenchmarks = {
+            avgAccuracy: Math.round(avgAccRaw && avgAccRaw > 0 ? avgAccRaw : 58),
+            avgXP: Math.round(avgXPRaw && avgXPRaw > 0 ? avgXPRaw : 480),
+            avgTestsCompleted: Number((avgTestsRaw && avgTestsRaw > 0 ? avgTestsRaw : 4.5).toFixed(1)),
+            avgTimeSpentMinutes: Math.round((avgTimeRaw && avgTimeRaw > 0 ? avgTimeRaw : 900) / 60),
+            avgStreak: Math.round(userProfileAgg[0]?.avgStreak || 2),
+            totalStudents: Math.max(totalStudents, 1),
+            placementCutoffAccuracy: 65,
+        }
+
         const leaderboardWithRank = leaderboard.map(
             (entry: any, index: number) => ({
                 ...entry,
-                rank: entry.rank || index + 1,
+                rank: index + 1,
             })
         )
+
         return NextResponse.json({
             success: true,
             data: {
@@ -104,11 +160,14 @@ export async function GET(request: NextRequest) {
                 profile: {
                     currentStreak: profile?.currentStreak || 0,
                     longestStreak: profile?.longestStreak || 0,
+                    totalXP: profile?.totalXP || 0,
+                    level: profile?.level || 1,
                 },
 
                 results: results || [],
-                achievements: achievements||[],
-                leaderboard: leaderboardWithRank||[],
+                achievements: achievements || [],
+                leaderboard: leaderboardWithRank || [],
+                benchmarks: platformBenchmarks,
             },
         })
     } catch (error) {

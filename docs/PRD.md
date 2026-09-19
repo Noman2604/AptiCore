@@ -2,127 +2,151 @@
 
 ## 1. Product Overview
 
-**AptiCore** is an aptitude test preparation platform for Indian engineering students preparing for campus placements. It provides 24,600+ questions across quantitative aptitude, logical reasoning, verbal ability, coding MCQs, SQL, data interpretation, technical MCQs, and HR interview preparation.
+**AptiCore** is an enterprise-grade aptitude test preparation and assessment platform designed specifically for engineering students and job candidates preparing for competitive campus recruitment drives (TCS, Infosys, Wipro, Amazon, Google, etc.). It features 24,600+ questions spanning Quantitative Aptitude, Logical Reasoning, Verbal Ability, Coding MCQs, SQL, and Data Interpretation.
 
-**Tagline**: "Crack Your Placement With Confidence"
+**Tagline**: "Master Your Placement Prep With Confidence"
 
-## 2. Target Users
+## 2. Target Users & Stakeholders
 
-| User Type | Description | Key Needs |
-|-----------|-------------|-----------|
-| **Students** | Engineering students (UG/PG) preparing for placements | Mock tests, performance tracking, leaderboard competition, weak area analysis |
-| **Admins** | Content managers and platform operators | Question/test management, user management, result monitoring, analytics |
-| **Super Admins** | System operators with full control | User/role management, access policies, audit logs, system settings |
+| User Role | Description | Key Needs |
+|---|---|---|
+| **Students** | Engineering students (UG/PG) and job aspirants | Full-screen timed mock tests, performance analytics, revision bookmark queues, gamified XP progression, interactive weekly contests |
+| **Admins** | Content curators and academic moderators | High-speed Excel/CSV question bulk upload, test configuration, user role management, feedback moderation, report resolution |
+| **Super Admins** | System administrators and platform operators | Access policy configuration, immutable audit logs, global maintenance mode, XP rate multipliers, cross-platform metrics |
 
-## 3. Core Features
+## 3. Core Feature Scope & Status
 
-### 3.1 For Students
-
-| Feature | Description | Status |
-|---------|-------------|--------|
-| **User Authentication** | Email/password registration and login with JWT | Complete |
-| **Dashboard** | Personalized overview with XP, level, streak, recent results, achievements | Complete |
-| **Category-based Tests** | Browse tests by category with subcategory drilling | Complete |
-| **Test Taking** | Full-screen test runner with timer, question navigation, progress tracking | Complete |
-| **Test Results** | Score, accuracy, time taken, answer review | Complete |
-| **Analytics** | Performance trends, topic accuracy, focus areas, consistency tracking | Complete |
-| **Leaderboard** | Global ranking with XP, accuracy, tests completed | Complete |
-| **Achievements** | Milestone-based rewards (common/rare/epic/legendary) | Complete |
-| **XP and Level System** | Earn XP from tests, streaks, and achievements; level up | Complete |
-| **Streak Tracking** | Daily activity streaks with multipliers | Complete |
-| **Profile Management** | Bio, college, degree, location, social links | Complete |
-| **User Settings** | Notifications, privacy, appearance, security/password | Complete |
-| **Activity History** | Test history, XP history, achievement history with pagination | Complete |
-| **Contests** | Live/upcoming/ended weekly contests with countdown timers | Complete |
-| **Bookmarks** | Save questions for later review | Complete |
-| **Reports** | Report incorrect or unclear questions | Complete |
-
-### 3.2 For Admins
+### 3.1 Student Experience
 
 | Feature | Description | Status |
-|---------|-------------|--------|
-| **Admin Dashboard** | Quick overview with user counts, result stats, average accuracy | Complete |
-| **User Management** | CRUD users, role assignment (`user`, `admin`, `super_admin`), activate/deactivate | Complete |
-| **Question Bank** | CRUD questions with 6 types, category/subcategory assignment, duplicate | Complete |
-| **Test Management** | View/create/edit tests with pagination, filters, CSV export | Complete |
-| **Category Management** | View/create categories with subcategories | Complete |
-| **Results Viewing** | Filter/search test results with pagination, CSV export | Complete |
-| **Reports Review** | View user-submitted reports (pending/resolved/rejected) | Complete |
-| **Leaderboard View** | View global leaderboard with CSV export | Complete |
-| **Analytics** | Charts for accuracy trends, status distribution, top users | Complete |
-| **Settings** | Admin profile viewing | Complete |
+|---|---|---|
+| **Verified Authentication** | Email/password registration with 6-digit OTP and 1-click token email verification via SMTP | Complete |
+| **Student Dashboard** | Personalized overview with level, streak, XP progress bar, recent test attempts, and recommended focus areas | Complete |
+| **Category-Based Tests** | Categorized test navigation across Quantitative, Logical, Verbal, and Technical subjects | Complete |
+| **Proctored Test Runner** | Modular full-screen test engine with section rails, color-coded question palette, countdown timer, and tab-switch detection | Complete |
+| **Auto-Save & Abandon Recovery** | Background progress saving (`/api/results/save-progress`) and incomplete test detection (`/api/results/mark-abandoned`) | Complete |
+| **In-Depth Attempt Review** | Granular test analytics card (`TestAttemptCard`) showing marks, accuracy, time taken, and question-by-question review | Complete |
+| **Performance Analytics** | Recharts-driven accuracy trends, topic breakdown, consistency calendar, and weakest topic diagnostics | Complete |
+| **Question Bookmarks & Revision** | Dedicated revision center (`/dashboard/bookmark`) to filter, search, practice, and annotate saved questions | Complete |
+| **Gamified Avatar Borders** | Dynamic profile avatar frames (`game-avatar.tsx`) with 10 unlockable tiers (Standard, Frostfire, Valkyrie, Cyber Lotus, etc.) | Complete |
+| **XP & Level Progression** | Level 1–50+ scaling formula with XP rewards from tests, streaks, and milestone achievements | Complete |
+| **Live Competitive Leaderboard** | Real-time global standings with podium highlights, tests taken, accuracy metrics, and direct profile navigation | Complete |
+| **Achievement Badges** | Milestone badges with Common, Rare, Epic, and Legendary rarity tiers and social sharing | Complete |
+| **Feedback Submission** | In-app feedback system for students to rate questions, tests, or platform features with sentiment tags | Complete |
+| **Interactive Motion & Scroll** | 3D Hero card mouse-tilt, top reading bar, company ticker marquee, and GPU-accelerated `ScrollReveal` | Complete |
+| **Mobile & Tablet Optimization** | Off-canvas drawer sidebar on viewports <1024px, and sticky bottom floating CTA sheet on mobile devices | Complete |
+| **Contests Hub** | Weekly live, upcoming, and completed contests with countdown timers and candidate registration | Complete |
 
-### 3.3 For Super Admins
+### 3.2 Administrative Console
 
 | Feature | Description | Status |
-|---------|-------------|--------|
-| **Super Admin Dashboard** | System health, stats, activity feed, alerts | Complete |
-| **User Management** | Full user management with role control | Complete |
-| **Admin Management** | Manage admin-level accounts | Complete |
-| **Access Policies** | Role-based permission management | Complete |
-| **Audit Logs** | View admin action logs | Complete |
-| **System Settings** | Feature toggles, XP multipliers, maintenance mode | Complete |
-| **Analytics** | Cross-tenant analytics | Complete |
+|---|---|---|
+| **Admin Dashboard** | Operational overview with platform stats, test completion metrics, and user growth charts | Complete |
+| **Question Bank Management** | CRUD operations for 6 question types, category/subcategory tagging, search, and duplication | Complete |
+| **Bulk Excel / CSV Upload** | Client-side parsing (SheetJS), schema preview, validation warnings, and batch confirm insertion | Complete |
+| **Test Orchestration** | Create and configure tests with passing marks, negative marking, duration, and question pools | Complete |
+| **Test List & CSV Export** | Server-side paginated test table with multi-parameter search, status filtering, and CSV export | Complete |
+| **Category & Subcategory Manager** | Hierarchical taxonomy management with icon and slug controls | Complete |
+| **Achievement Management** | Admin interface to configure achievement criteria, XP rewards, icons, and rarity tiers | Complete |
+| **Feedback Moderation** | Review user-submitted ratings and platform suggestions with status toggles and admin notes | Complete |
+| **Question Report Resolution** | Review user-flagged question discrepancies (typos, invalid keys) with resolution status workflows | Complete |
+| **User Directory & RBAC** | User listing, search, status toggle (active/inactive), and role upgrades (`user`, `admin`) | Complete |
 
-## 4. Technical Stack
+### 3.3 Super-Admin Governance
+
+| Feature | Description | Status |
+|---|---|---|
+| **Super-Admin Overview** | System health, database connection status, error alerts, and cross-platform activity | Complete |
+| **Access Policy Engine** | Role-permission mappings to configure fine-grained API and UI access boundaries | Complete |
+| **Immutable Audit Logs** | Real-time audit trail capturing all administrative actions with timestamp, user ID, IP address, and payload | Complete |
+| **Platform System Settings** | Global toggles for maintenance mode, registration locks, and XP point rate multipliers | Complete |
+| **Enterprise Analytics** | Deep cross-tenant analytical reporting on user retention, exam completion rates, and platform usage | Complete |
+
+---
+
+## 4. Technical Specifications
 
 | Layer | Technology |
-|-------|------------|
-| **Framework** | Next.js 16.1.7 (App Router) |
-| **Language** | TypeScript 5.9 |
-| **Styling** | Tailwind CSS v4 + shadcn/ui components |
-| **Database** | MongoDB (Mongoose 9.x ODM) |
-| **Auth** | JWT (`jsonwebtoken`) + `bcryptjs` |
-| **Forms** | React Hook Form + Zod validation |
-| **HTTP Client** | Axios |
-| **Charts** | Recharts |
-| **UI Components** | Radix UI primitives, Lucide icons |
-| **Theme** | `next-themes` (dark/light) |
-| **Notifications** | `sonner` (toast) |
+|---|---|
+| **Framework** | Next.js 16.1.7 (App Router with Server & Client Components) |
+| **Language** | TypeScript 5.9 (Strict Mode) |
+| **Styling** | Tailwind CSS v4 + Semantic CSS Custom Variables + shadcn/ui primitives |
+| **Database** | MongoDB with Mongoose 9.x ODM (HMR-cached connection singleton) |
+| **Authentication** | JWT (HS256) stored in HTTP-Only, SameSite cookies + bcryptjs (12 salt rounds) |
+| **Email Verification** | Nodemailer SMTP (Gmail App Passwords / Custom SMTP) with 6-digit OTP & 32-byte tokens |
+| **Spreadsheet Engine** | XLSX (SheetJS) for client-side Excel/CSV parsing and data transformation |
+| **Data Fetching & Preload** | Composite Page-Data APIs (`/api/page-data/*`) to eliminate client waterfall requests |
+| **Validation** | Zod schemas shared across API boundary and React Hook Form client forms |
+| **Visual Charts** | Recharts (ResponsiveContainer, AreaChart, BarChart, PieChart) |
+| **Motion & Scroll** | CSS GPU Transforms + Native `IntersectionObserver` (`ScrollReveal`) |
+| **Theme Engine** | `next-themes` (Dark / Light / System) with zero flash of unstyled content |
+| **Toasts** | `sonner` rich notifications |
+| **Analytics & SEO** | GA4 integration with cookie-consent gating + dynamic `robots.ts` & `sitemap.ts` |
+| **Image Optimization** | Next.js Image Optimization (`image/avif`, `image/webp`) |
 
-## 5. Database Models
+---
 
-| Model | Description |
-|-------|-------------|
-| **User** | Authentication, roles (`user`, `admin`, `super_admin`) |
-| **UserProfile** | Extended profile data, XP, level, streaks |
-| **Category** | Test/question categories with slugs |
-| **Subcategory** | Nested subcategories under categories |
-| **Question** | 6 question types, options, difficulty, marks |
-| **Test** | Test configuration with question assignments |
-| **Result** | User test attempts with answers, scores |
-| **Achievement** | Achievement definitions with criteria |
-| **UserAchievement** | User-achievement unlock tracking |
-| **Leaderboard** | User ranking with XP, accuracy |
-| **XPHistory** | XP transaction log |
-| **Bookmark** | User question bookmarks |
-| **Contest** | Weekly contest definitions |
-| **ContestRegistration** | Contest participant tracking |
-| **Report** | Question/content/user reports |
-| **SystemSettings** | Platform configuration |
-| **AccessPolicy** | Role-permission mappings |
-| **AuditLog** | Admin action audit trail |
+## 5. Database Models (21 Models)
 
-## 6. API Routes
+| Model | Collection | Primary Responsibility |
+|---|---|---|
+| **User** | `users` | Base account credentials, role (`user`/`admin`/`super_admin`), verification tokens |
+| **UserProfile** | `userprofiles` | Gamified stats (totalXP, level, streaks), education records, avatar border ID |
+| **Category** | `categories` | High-level aptitude subjects (Quantitative, Logical, Verbal, Technical) |
+| **Subcategory** | `subcategories` | Topic breakdown under categories (Percentages, Syllogisms, Speed, Arrays) |
+| **Question** | `questions` | Question content, 6 question types, options, solutions, hints, difficulty, marks |
+| **Test** | `tests` | Test definitions, assigned question pools, time limits, passing & negative marks |
+| **Result** | `results` | Student exam submissions, question-by-question responses, score, accuracy, timing |
+| **Achievement** | `achievements` | Achievement definitions, criteria types (score, streak, tests, accuracy), XP reward |
+| **UserAchievement**| `userachievements`| User achievement completion records with unlocked timestamp |
+| **XPHistory** | `xphistories` | Granular audit trail of XP earned per activity (test completion, streaks, bonuses) |
+| **Leaderboard** | `leaderboards` | Cached rank index with user details, total XP, accuracy, and tests taken |
+| **Bookmark** | `bookmarks` | Saved questions per user with custom revision tags and annotations |
+| **Feedback** | `feedbacks` | User ratings, comments, target types (question, test, platform), moderation status |
+| **QuestionReport** | `questionreports` | User-reported question discrepancies with resolution workflows |
+| **Report** | `reports` | General platform error reports |
+| **Contest** | `contests` | Scheduled weekly competitive tests with start/end windows and prizes |
+| **ContestRegistration**| `contestregistrations`| Candidate registrations for upcoming contests |
+| **AccessPolicy** | `accesspolicies` | Dynamic role-to-permission mapping rules |
+| **AuditLog** | `auditlogs` | Non-repudiation audit trail of admin mutations (IP, actor, action, timestamp) |
+| **SystemSettings** | `systemsettings` | Global platform settings (maintenance mode, XP multipliers, registration) |
 
-| Route | Purpose |
-|-------|---------|
-| `/api/auth/*` | Login, register, logout, me |
-| `/api/categories` | Category CRUD |
-| `/api/categories/[slug]` | Category detail/update |
-| `/api/subcategories` | Subcategory management |
-| `/api/subcategories/[id]` | Subcategory update/delete |
-| `/api/questions` | Question CRUD |
-| `/api/questions/[id]` | Question detail/update/delete |
-| `/api/tests` | Test CRUD and listing |
-| `/api/tests/[id]` | Test detail/update/delete |
-| `/api/results` | User test results |
-| `/api/results/[id]` | Result detail/update/delete |
-| `/api/profile` | User profile CRUD |
-| `/api/leaderboard` | Global leaderboard |
-| `/api/achievements/*` | Achievement definitions and user progress |
-| `/api/xp-history` | XP transaction log |
-| `/api/bookmarks` | User bookmarks |
-| `/api/bookmarks/[id]` | Bookmark update/delete |
-| `/api/admin/*` | Admin-specific endpoints |
-| `/api/super-admin/*` | Super admin endpoints |
+---
+
+## 6. Complete API Route Catalog
+
+| Group | Route | Purpose |
+|---|---|---|
+| **Auth** | `/api/auth/register` | Create account & send verification email |
+| **Auth** | `/api/auth/login` | Authenticate & issue HTTP-only JWT cookie |
+| **Auth** | `/api/auth/logout` | Clear auth session |
+| **Auth** | `/api/auth/me` | Return active user session & profile |
+| **Auth** | `/api/auth/verify-email` | Validate 6-digit OTP code or cryptographic token |
+| **Auth** | `/api/auth/resend-verification`| Resend verification code with cooldown rate-limit |
+| **Student** | `/api/dashboard/overview` | Fetch user dashboard KPIs |
+| **Student** | `/api/dashboard/analytics` | Fetch performance graphs and topic breakdown |
+| **Student** | `/api/dashboard/history` | Paginated attempt history |
+| **Student** | `/api/dashboard/achievements` | User achievements and unlocked avatar borders |
+| **Student** | `/api/tests` & `[id]` | Browse tests and load question pool |
+| **Student** | `/api/results` & `[id]` | Submit test attempt & view comprehensive review |
+| **Student** | `/api/results/save-progress` | Periodic auto-save during active test session |
+| **Student** | `/api/results/mark-abandoned`| Auto-flag abandoned or timed-out test attempts |
+| **Student** | `/api/bookmarks` & `[id]` | Manage saved questions and revision tags |
+| **Student** | `/api/feedback` & `[id]` | Submit platform feedback or question comments |
+| **Student** | `/api/profile` | Update profile details and avatar border styling |
+| **Student** | `/api/leaderboard` | View global top ranking candidates |
+| **Admin** | `/api/admin/questions/bulk-upload/parse` | Parse and validate uploaded Excel/CSV files |
+| **Admin** | `/api/admin/questions/bulk-upload/confirm` | Batch insert validated questions into MongoDB |
+| **Admin** | `/api/admin/questions` & `[id]` | Create, update, duplicate, or delete questions |
+| **Admin** | `/api/admin/tests` & `[id]` | Configure tests with pagination and CSV export |
+| **Admin** | `/api/admin/categories` | Manage categories and subcategories |
+| **Admin** | `/api/admin/achievements` | Configure achievement requirements and XP rewards |
+| **Admin** | `/api/admin/feedback` | Moderate student feedback and post admin notes |
+| **Admin** | `/api/admin/reports` | Resolve question defect reports |
+| **Admin** | `/api/admin/users` & `[id]` | Manage user status and permissions |
+| **Admin** | `/api/admin/logs` | Inspect system audit trail |
+| **Super-Admin** | `/api/super-admin/overview` | High-level system statistics |
+| **Super-Admin** | `/api/super-admin/analytics` | Advanced usage metrics |
+| **Super-Admin** | `/api/super-admin/access` | RBAC access policies |
+| **Optimization**| `/api/page-data/*` | Preload composite data for instant tab transitions |
+| **SEO** | `/robots.txt` & `/sitemap.xml`| Dynamic search engine crawl directives & 19-route sitemap |

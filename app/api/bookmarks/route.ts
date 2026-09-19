@@ -102,10 +102,20 @@ export async function POST(request: NextRequest) {
     })
 
     if (existing) {
-      return NextResponse.json(
-        { success: false, error: "Question already bookmarked" },
-        { status: 400 }
-      )
+      if (body.toggle) {
+        await Bookmark.findByIdAndDelete(existing._id)
+        return NextResponse.json({
+          success: true,
+          bookmarked: false,
+          message: "Bookmark removed",
+        })
+      }
+      return NextResponse.json({
+        success: true,
+        bookmarked: true,
+        data: existing,
+        message: "Question already bookmarked",
+      })
     }
 
     const bookmark = await Bookmark.create({
@@ -121,12 +131,73 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      bookmarked: true,
       data: bookmark,
+      message: "Question bookmarked successfully",
     })
   } catch (error) {
     console.error("Create bookmark error:", error)
     return NextResponse.json(
       { success: false, error: "Failed to create bookmark" },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE /api/bookmarks - Remove bookmark by questionId
+export async function DELETE(request: NextRequest) {
+  try {
+    await connectDB()
+
+    const accessToken = request.cookies.get("accessToken")?.value
+    if (!accessToken) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      )
+    }
+
+    const decoded = verifyAccessToken(accessToken)
+    if (!decoded) {
+      return NextResponse.json(
+        { success: false, error: "Invalid token" },
+        { status: 401 }
+      )
+    }
+
+    const { searchParams } = new URL(request.url)
+    let questionId = searchParams.get("questionId")
+
+    if (!questionId) {
+      try {
+        const body = await request.json()
+        questionId = body?.questionId
+      } catch {
+        // Body was empty or not json
+      }
+    }
+
+    if (!questionId) {
+      return NextResponse.json(
+        { success: false, error: "Missing questionId" },
+        { status: 400 }
+      )
+    }
+
+    await Bookmark.findOneAndDelete({
+      userId: decoded.userId,
+      questionId,
+    })
+
+    return NextResponse.json({
+      success: true,
+      bookmarked: false,
+      message: "Bookmark removed successfully",
+    })
+  } catch (error) {
+    console.error("Delete bookmark by questionId error:", error)
+    return NextResponse.json(
+      { success: false, error: "Failed to delete bookmark" },
       { status: 500 }
     )
   }

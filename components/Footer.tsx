@@ -133,12 +133,15 @@ export default function Footer() {
           </p>
 
           <div className="flex flex-wrap items-center gap-4 text-sm text-[#8a96a8]">
-            <span className="inline-flex items-center gap-2">
+            <a
+              href="mailto:support@apticore.in"
+              className="inline-flex items-center gap-2 hover:text-[#6ee7c9] transition-colors"
+            >
               <Mail className="h-4 w-4 text-[#6ee7c9]" />
-              support@apticore.com
-            </span>
+              support@apticore.in
+            </a>
             <span className="hidden h-1 w-1 rounded-full bg-[#212a37] sm:inline-flex" />
-            <span>Built for placement success</span>
+            <span>BKC, Mumbai, India</span>
           </div>
         </div>
       </div>

@@ -164,11 +164,61 @@ const schema = new Schema({
 - Keep bundle size small; lazy load heavy components where possible
 
 ## 8. UI and UX Consistency
+ 
+ - Dark mode: all pages must support dark/light theme via `next-themes`
+ - Color scheme: use CSS variables from `globals.css`
+ - Gradients: use the `.gradient-text` class for gradient text
+ - Cards: use the `.card-hover` class for hover effects on cards
+ - Glassmorphism: use the `.glass` class for glass effects
+ - Animations: use predefined Tailwind classes like `animate-fade-in` and `animate-slide-up`
+ - Responsive: all pages must work on mobile, tablet, and desktop
+ - Tablet drawer: use `hooks/use-mobile.ts` (1024px threshold) for sidebars to prevent cramped tablet layouts
 
-- Dark mode: all pages must support dark/light theme via `next-themes`
-- Color scheme: use CSS variables from `globals.css`
-- Gradients: use the `.gradient-text` class for gradient text
-- Cards: use the `.card-hover` class for hover effects on cards
-- Glassmorphism: use the `.glass` class for glass effects
-- Animations: use predefined Tailwind classes like `animate-fade-in` and `animate-slide-up`
-- Responsive: all pages must work on mobile, tablet, and desktop
+## 9. SEO & Accessibility Rules
+
+- **Metadata**: Every route folder must define an exported `metadata` object with a unique `<title>` and descriptive `<meta name="description">`.
+- **Images**: All `Image` components and inline SVG illustrations MUST have meaningful `alt` text or `aria-label` tags. Never leave an image without an alt tag.
+- **Sitemap & Robots**: When adding public routes, always register them in `app/sitemap.ts`. Protected routes (`/admin/*`, `/dashboard/*`, `/super-admin/*`) must remain disallowed in `app/robots.ts`.
+- **Open Graph**: Maintain social sharing cards with high-contrast, branded 1200x630 assets.
+- **Interactive Elements**: All buttons and links must have a visible focus ring and meet the minimum 44x44px touch target guideline.
+
+## 10. Motion & Animation Rules
+
+- **Performance**: Use GPU-accelerated transforms (`translate3d`, `scale`, `opacity`, `rotate`) exclusively for transitions and scroll effects.
+- **Avoid Layout Thrashing**: Never animate properties that trigger layout recalculation (such as `width`, `height`, `top`, `left`, `margin`, `padding`).
+- **Observer Efficiency**: Use the shared `ScrollReveal` component with `IntersectionObserver` rather than continuous scroll event listeners.
+- **Reduced Motion**: Respect user accessibility preferences by supporting `prefers-reduced-motion: reduce`.
+
+## 11. Privacy & Analytics Rules
+
+- **Consent Gating**: Never trigger tracking scripts or analytics beacons without checking user cookie consent.
+- **Cookie Banner**: All consent states must be persisted in `localStorage` under a unified key (`apticore_cookie_consent`).
+- **Data Minimization**: Do not transmit personally identifiable information (PII) like raw email addresses or passwords to analytics or third-party platforms.
+
+## 12. Bulk Question Import & Spreadsheet Rules
+
+- **Supported Formats**: Only `.xlsx`, `.xls`, and `.csv` MIME types are permitted.
+- **Two-Stage Architecture**: Never insert directly from an uploaded file; always parse and validate in `/api/admin/questions/bulk-upload/parse` before requiring explicit admin confirmation in `/confirm`.
+- **Batch Limits**: Limit single-file imports to 500 questions maximum to prevent event loop blocking.
+- **Header Validation**: Enforce required spreadsheet column headers: `question`, `type`, `options`, `correctAnswer`, `points`, `difficulty`, `category`.
+- **Sanitization**: Trim and sanitize all text inputs to prevent script injection in question text or code blocks.
+
+## 13. Email Verification & Security Rules
+
+- **Cryptographic Security**: Always use `crypto.randomBytes` or `crypto.randomInt` for verification tokens and 6-digit OTP codes. Never use `Math.random()`.
+- **Token Lifecycles**: Email verification tokens must expire after 24 hours (`EMAIL_VERIFICATION_EXPIRES`).
+- **Rate-Limiting & Cooldown**: Enforce a mandatory 60-second cooldown period between resend verification requests to prevent SMTP abuse.
+- **One-Time Use**: Invalidate existing verification codes upon successful verification or when issuing a newer token.
+
+## 14. Test Proctoring & State Integrity Rules
+
+- **Proctoring Telemetry**: Tab switching and window blurring must be detected using `document.hidden` and `window.onblur`.
+- **Auto-Save Frequency**: Test answers must be persisted automatically every 30–60 seconds or immediately upon section transition to guard against power/network failure.
+- **Prevent Multi-Session Cheating**: A user must not have more than one active test attempt in "in-progress" status simultaneously.
+- **Abandoned Attempts**: If a candidate closes their browser or does not submit within test duration + 5 minutes grace, the backend must flag the attempt as `abandoned`.
+
+## 15. Gamification & Avatar Border Rules
+
+- **Server-Side Verification**: Never trust client claims for avatar borders or XP amounts. All border equip requests must verify user level, streak, or achievement unlock criteria against `UserProfile` in the database.
+- **Catalog Consistency**: Avatar border IDs must match keys defined in `AVATAR_BORDER_CONFIGS` (`components/ui/game-avatar.tsx`).
+

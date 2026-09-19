@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import Link from "next/link"
 import {
   Zap,
@@ -31,6 +31,9 @@ import {
 } from "lucide-react"
 import Navbar from "@/components/Navbar"
 import Footer from "@/components/Footer"
+import StickyMobileCTA from "@/components/StickyMobileCTA"
+import ScrollReveal from "@/components/ScrollReveal"
+import AnimatedCounter from "@/components/AnimatedCounter"
 import { cn, formatNumber } from "@/lib/utils"
 import axios from "axios"
 
@@ -119,6 +122,35 @@ const CATEGORY_STYLES = [
 export default function LandingPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [categoriesLoading, setCategoriesLoading] = useState(true)
+  const [scrollProgress, setScrollProgress] = useState(0)
+
+  // 3D card tilt state
+  const [tilt, setTilt] = useState({ x: 0, y: 0 })
+
+  const handleCardMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = (e.clientX - rect.left) / rect.width - 0.5
+    const y = (e.clientY - rect.top) / rect.height - 0.5
+    setTilt({ x: x * 8, y: -y * 8 })
+  }
+
+  const handleCardMouseLeave = () => {
+    setTilt({ x: 0, y: 0 })
+  }
+
+  // Track scroll progress for the top reading indicator
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalScroll =
+        document.documentElement.scrollHeight - window.innerHeight
+      if (totalScroll > 0) {
+        setScrollProgress((window.scrollY / totalScroll) * 100)
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   useEffect(() => {
     async function loadCategories() {
@@ -143,91 +175,140 @@ export default function LandingPage() {
           "radial-gradient(circle at 15% 0%, rgba(139,124,246,0.06), transparent 40%), radial-gradient(circle at 85% 10%, rgba(110,231,201,0.05), transparent 40%)",
       }}
     >
+      {/* ── Scroll Progress Line ──────────────────────────────── */}
+      <div
+        role="progressbar"
+        aria-label="Reading progress"
+        aria-valuenow={Math.round(scrollProgress)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        className="fixed top-0 left-0 right-0 z-50 h-0.75 bg-linear-to-r from-[#6ee7c9] via-[#8b7cf6] to-[#f5a623] transition-all duration-75 ease-out"
+        style={{ width: `${scrollProgress}%` }}
+      />
+
       <Navbar />
 
-      {/* Hero Section */}
+      {/* ── Hero Section ────────────────────────────────────────── */}
       <section className="relative flex min-h-screen items-center overflow-hidden pt-16">
-        {/* Animated background */}
+        {/* Animated ambient background orbs */}
         <div
-          className="animate-pulse-slow absolute top-1/4 -left-64 h-96 w-96 rounded-full blur-3xl"
+          className="animate-pulse-slow pointer-events-none absolute top-1/4 -left-64 h-96 w-96 rounded-full blur-3xl"
           style={{ backgroundColor: "rgba(110,231,201,0.14)" }}
         />
         <div
-          className="animate-pulse-slow absolute -right-64 bottom-1/4 h-96 w-96 rounded-full blur-3xl"
-          style={{ backgroundColor: "rgba(139,124,246,0.14)", animationDelay: "1s" }}
+          className="animate-pulse-slow pointer-events-none absolute -right-64 bottom-1/4 h-96 w-96 rounded-full blur-3xl"
+          style={{
+            backgroundColor: "rgba(139,124,246,0.14)",
+            animationDelay: "1.2s",
+          }}
         />
         <div
-          className="absolute top-1/2 left-1/2 h-200 w-200 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
+          className="pointer-events-none absolute top-1/2 left-1/2 h-200 w-200 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
           style={{ backgroundColor: "rgba(110,231,201,0.04)" }}
         />
 
-        <div className="max-w-9xl relative mx-auto grid items-center gap-16 px-4 py-24 sm:px-6 lg:grid-cols-2 lg:px-8">
-          <div className="animate-fade-in">
+        <div className="max-w-9xl relative mx-auto grid items-center gap-10 px-4 py-12 sm:py-20 lg:grid-cols-2 lg:gap-16 lg:px-8 lg:py-24">
+          <div>
             {/* Badge */}
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-[rgba(110,231,201,0.3)] bg-[rgba(110,231,201,0.1)] px-4 py-2 font-[JetBrains_Mono,monospace] text-[12.5px] font-medium text-[#6ee7c9]">
-              <Sparkles className="h-4 w-4" />
-              <span>India's #1 Aptitude Platform</span>
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#6ee7c9]" />
-            </div>
+            <ScrollReveal direction="down" delay={100}>
+              <div className="mb-5 sm:mb-8 inline-flex items-center gap-2 rounded-full border border-[rgba(110,231,201,0.3)] bg-[rgba(110,231,201,0.1)] px-4 py-2 font-[JetBrains_Mono,monospace] text-[12.5px] font-medium text-[#6ee7c9]">
+                <Sparkles className="h-4 w-4" />
+                <span>India's #1 Aptitude Platform</span>
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#6ee7c9]" />
+              </div>
+            </ScrollReveal>
 
-            <h1 className="mb-6 font-[Space_Grotesk,sans-serif] text-5xl leading-[1.05] font-extrabold sm:text-6xl lg:text-7xl">
-              <span className="text-[#e7ecf3]">Crack Your</span>
-              <br />
-              <span className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text text-transparent">
-                Placement
-              </span>
-              <br />
-              <span className="text-[#e7ecf3]">With Confidence</span>
-            </h1>
+            {/* Headline */}
+            <ScrollReveal direction="up" delay={200}>
+              <h1 className="mb-4 sm:mb-6 font-[Space_Grotesk,sans-serif] text-4xl leading-[1.08] font-extrabold sm:text-6xl lg:text-7xl">
+                <span className="text-[#e7ecf3]">Crack Your</span>
+                <br />
+                <span className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text text-transparent">
+                  Placement
+                </span>
+                <br />
+                <span className="text-[#e7ecf3]">With Confidence</span>
+              </h1>
+            </ScrollReveal>
 
-            <p className="mb-8 max-w-lg text-lg leading-relaxed text-[#8a96a8]">
-              Master quantitative aptitude, logical reasoning, coding MCQs and
-              more with
-              <strong className="text-[#e7ecf3]"> 24,600+ questions</strong>,
-              real-time leaderboards, and AI-powered analytics.
-            </p>
+            {/* Subheading */}
+            <ScrollReveal direction="up" delay={300}>
+              <p className="mb-6 sm:mb-8 max-w-lg text-base sm:text-lg leading-relaxed text-[#8a96a8]">
+                Master quantitative aptitude, logical reasoning, coding MCQs and
+                more with{" "}
+                <strong className="text-[#e7ecf3]">
+                  <AnimatedCounter end={24600} suffix="+" /> questions
+                </strong>
+                , real-time leaderboards, and AI-powered analytics.
+              </p>
+            </ScrollReveal>
 
-            <div className="mb-10 flex flex-wrap gap-4">
-              <Link
-                href="/auth/register"
-                className="group flex items-center gap-2 rounded-xl bg-linear-to-br from-[#6ee7c9] to-[#57c9a8] px-6 py-3.5 text-sm font-bold text-[#06120d] shadow-[0_0_24px_rgba(110,231,201,0.25)] transition-all hover:-translate-y-0.5 hover:brightness-105"
-              >
-                Start Practicing Free
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Link>
-              <Link
-                href="/contest"
-                className="group flex items-center gap-2 rounded-xl border border-[#212a37] px-6 py-3.5 text-sm font-semibold text-[#e7ecf3] transition-all hover:bg-[#141b25]"
-              >
-                <Play className="h-4 w-4 text-[#6ee7c9]" />
-                Watch Demo
-              </Link>
-            </div>
+            {/* CTAs */}
+            <ScrollReveal direction="up" delay={400}>
+              <div className="mb-8 sm:mb-10 flex flex-wrap gap-4">
+                <Link
+                  href="/auth/register"
+                  className="group flex items-center gap-2 rounded-xl bg-linear-to-br from-[#6ee7c9] to-[#57c9a8] px-6 py-3.5 text-sm font-bold text-[#06120d] shadow-[0_0_24px_rgba(110,231,201,0.25)] transition-all hover:-translate-y-0.5 hover:brightness-105"
+                >
+                  Start Practicing Free
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Link>
+                <Link
+                  href="/contest"
+                  className="group flex items-center gap-2 rounded-xl border border-[#212a37] px-6 py-3.5 text-sm font-semibold text-[#e7ecf3] transition-all hover:bg-[#141b25]"
+                >
+                  <Play className="h-4 w-4 text-[#6ee7c9]" />
+                  Watch Demo
+                </Link>
+              </div>
+            </ScrollReveal>
 
-            {/* Mini stats */}
-            <div className="flex flex-wrap gap-6">
-              {[
-                { v: "128K+", label: "Students" },
-                { v: "2840+", label: "Tests" },
-                { v: "85+", label: "Companies" },
-              ].map((s) => (
-                <div key={s.label}>
-                  <div className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text font-[Space_Grotesk,sans-serif] text-lg font-bold text-transparent">
-                    {s.v}
+            {/* Live Counter Mini stats */}
+            <ScrollReveal direction="up" delay={500}>
+              <div className="flex flex-wrap gap-8">
+                <div>
+                  <div className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text font-[Space_Grotesk,sans-serif] text-2xl font-bold text-transparent">
+                    <AnimatedCounter end={128} suffix="K+" />
                   </div>
                   <div className="font-[JetBrains_Mono,monospace] text-xs text-[#5b6577]">
-                    {s.label}
+                    Students
                   </div>
                 </div>
-              ))}
-            </div>
+
+                <div>
+                  <div className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text font-[Space_Grotesk,sans-serif] text-2xl font-bold text-transparent">
+                    <AnimatedCounter end={2840} suffix="+" />
+                  </div>
+                  <div className="font-[JetBrains_Mono,monospace] text-xs text-[#5b6577]">
+                    Mock Tests
+                  </div>
+                </div>
+
+                <div>
+                  <div className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text font-[Space_Grotesk,sans-serif] text-2xl font-bold text-transparent">
+                    <AnimatedCounter end={85} suffix="+" />
+                  </div>
+                  <div className="font-[JetBrains_Mono,monospace] text-xs text-[#5b6577]">
+                    Companies
+                  </div>
+                </div>
+              </div>
+            </ScrollReveal>
           </div>
 
-          {/* Hero Visual */}
-          <div className="animate-slide-up relative hidden lg:block">
-            <div className="relative">
-              {/* Main card */}
-              <div className="rounded-3xl border border-[#212a37] bg-[#10151d] p-6 shadow-2xl">
+          {/* Hero Visual Card with Interactive 3D Tilt */}
+          <ScrollReveal direction="left" delay={300} className="relative hidden lg:block">
+            <div
+              onMouseMove={handleCardMouseMove}
+              onMouseLeave={handleCardMouseLeave}
+              style={{
+                transform: `perspective(1000px) rotateX(${tilt.y}deg) rotateY(${tilt.x}deg)`,
+                transition: "transform 0.15s ease-out",
+              }}
+              className="relative transition-transform will-change-transform"
+            >
+              {/* Main test simulator card */}
+              <div className="rounded-3xl border border-[#212a37] bg-[#10151d] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
                 <div className="mb-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full bg-[#f2555a]" />
@@ -240,7 +321,7 @@ export default function LandingPage() {
                 </div>
 
                 <div className="space-y-3">
-                  <div className="rounded-xl border border-[rgba(110,231,201,0.3)] bg-[rgba(110,231,201,0.08)] p-3">
+                  <div className="rounded-xl border border-[rgba(110,231,201,0.3)] bg-[rgba(110,231,201,0.08)] p-3.5">
                     <p className="mb-2 text-sm font-medium">
                       Q14. If 15% of x = 20% of y, then x:y = ?
                     </p>
@@ -251,7 +332,7 @@ export default function LandingPage() {
                           className={cn(
                             "rounded-lg border p-2 text-left font-[JetBrains_Mono,monospace] text-xs transition-all",
                             i === 1
-                              ? "border-[#6ee7c9] bg-[rgba(110,231,201,0.15)] text-[#6ee7c9]"
+                              ? "border-[#6ee7c9] bg-[rgba(110,231,201,0.15)] text-[#6ee7c9] shadow-[0_0_12px_rgba(110,231,201,0.2)]"
                               : "border-[#212a37] text-[#8a96a8] hover:border-[#3a4a5e]"
                           )}
                         >
@@ -275,8 +356,8 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Floating cards */}
-              <div className="animate-float absolute -top-6 -right-6 rounded-2xl border border-[#212a37] bg-[#10151d] p-4 shadow-xl">
+              {/* Floating micro-cards */}
+              <div className="animate-float pointer-events-none absolute -top-6 -right-6 rounded-2xl border border-[#212a37] bg-[#10151d] p-4 shadow-xl">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-[#f5a623] to-[#e0901a] font-[Space_Grotesk,sans-serif] text-sm font-bold text-[#241503]">
                     1
@@ -292,7 +373,7 @@ export default function LandingPage() {
               </div>
 
               <div
-                className="animate-float absolute -bottom-6 -left-6 rounded-2xl border border-[#212a37] bg-[#10151d] p-4 shadow-xl"
+                className="animate-float pointer-events-none absolute -bottom-6 -left-6 rounded-2xl border border-[#212a37] bg-[#10151d] p-4 shadow-xl"
                 style={{ animationDelay: "2s" }}
               >
                 <div className="mb-2 flex items-center gap-2">
@@ -315,57 +396,61 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </ScrollReveal>
         </div>
       </section>
 
-      {/* Company Logos ticker */}
-      <section className="overflow-hidden border-y border-[#212a37] bg-[#10151d] py-12">
-        <div className="mb-6 text-center">
-          <p className="font-[JetBrains_Mono,monospace] text-[12.5px] text-[#5b6577]">
-            Questions from top company placement drives
-          </p>
-        </div>
-        <div
-          className="flex gap-8"
-          style={{ animation: "ticker 25s linear infinite" }}
-        >
-          {[...companies, ...companies].map((c, i) => (
-            <div
-              key={i}
-              className="shrink-0 cursor-default rounded-lg border border-[#212a37] bg-[#141b25] px-6 py-2 text-sm font-semibold whitespace-nowrap text-[#8a96a8] transition-colors hover:border-[#3a4a5e] hover:text-[#e7ecf3]"
-            >
-              {c}
-            </div>
-          ))}
-        </div>
+      {/* ── Recruiter Company Logos Marquee ─────────────────────── */}
+      <section className="overflow-hidden border-y border-[#212a37] bg-[#10151d] py-10">
+        <ScrollReveal direction="up" threshold={0.1}>
+          <div className="mb-5 text-center">
+            <p className="font-[JetBrains_Mono,monospace] text-xs uppercase tracking-wider text-[#5b6577]">
+              Trusted questions from recruitment drives of 85+ global companies
+            </p>
+          </div>
+          <div
+            className="group flex gap-6 hover:paused"
+            style={{ animation: "ticker 26s linear infinite" }}
+          >
+            {[...companies, ...companies].map((c, i) => (
+              <div
+                key={i}
+                className="shrink-0 cursor-default rounded-xl border border-[#212a37] bg-[#141b25] px-5 py-2.5 text-xs font-semibold whitespace-nowrap text-[#8a96a8] shadow-sm transition-all hover:border-[#6ee7c9]/40 hover:bg-[#192230] hover:text-[#e7ecf3]"
+              >
+                {c}
+              </div>
+            ))}
+          </div>
+        </ScrollReveal>
         <style>{`@keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }`}</style>
       </section>
 
-      {/* Categories */}
-      <section className="py-20">
+      {/* ── Categories Section ──────────────────────────────────── */}
+      <section className="py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-12 flex flex-col items-center gap-3 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
-            <div>
-              <h2 className="mb-4 font-[Space_Grotesk,sans-serif] text-4xl font-bold">
-                Explore{" "}
-                <span className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text text-transparent">
-                  Categories
-                </span>
-              </h2>
-              <p className="mx-auto max-w-xl text-[#8a96a8] sm:mx-0">
-                Pick a category and start practicing from thousands of curated
-                questions across every placement topic.
-              </p>
+          <ScrollReveal direction="up">
+            <div className="mb-12 flex flex-col items-center gap-3 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left">
+              <div>
+                <h2 className="mb-3 font-[Space_Grotesk,sans-serif] text-3xl font-bold sm:text-4xl">
+                  Explore{" "}
+                  <span className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text text-transparent">
+                    Aptitude Categories
+                  </span>
+                </h2>
+                <p className="mx-auto max-w-xl text-sm leading-relaxed text-[#8a96a8] sm:mx-0 sm:text-base">
+                  Pick a topic and start practicing from thousands of curated
+                  questions across every campus placement requirement.
+                </p>
+              </div>
+              <Link
+                href="/categories"
+                className="group hidden shrink-0 items-center gap-1.5 text-sm font-semibold text-[#6ee7c9] transition-colors hover:text-[#8ef2d6] sm:flex"
+              >
+                View all categories
+                <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </Link>
             </div>
-            <Link
-              href="/categories"
-              className="group hidden shrink-0 items-center gap-1.5 text-sm font-semibold text-[#6ee7c9] transition-colors hover:text-[#8ef2d6] sm:flex"
-            >
-              View all
-              <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Link>
-          </div>
+          </ScrollReveal>
 
           {categoriesLoading ? (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -387,35 +472,46 @@ export default function LandingPage() {
                 const subCount = category.subcategories?.length || 0
 
                 return (
-                  <Link
+                  <ScrollReveal
                     key={category._id}
-                    href={`/categories/${category.slug}`}
-                    className="group rounded-2xl border border-[#212a37] bg-[#10151d] p-6 transition-all duration-200 hover:-translate-y-1 hover:border-[#3a4a5e] hover:shadow-lg"
+                    direction="up"
+                    delay={i * 65}
+                    distance={24}
                   >
-                    <div
-                      className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border transition-transform group-hover:scale-110"
-                      style={{
-                        borderColor: `${style.color}40`,
-                        backgroundColor: `${style.color}14`,
-                        color: style.color,
-                      }}
+                    <Link
+                      href={`/categories/${category.slug}`}
+                      className="group flex h-full flex-col justify-between rounded-2xl border border-[#212a37] bg-[#10151d] p-6 transition-all duration-300 hover:-translate-y-1.5 hover:border-[#6ee7c9]/40 hover:shadow-[0_12px_30px_rgba(0,0,0,0.4)]"
                     >
-                      <style.icon className="h-6 w-6" />
-                    </div>
-                    <h3 className="mb-1.5 flex items-center gap-1.5 font-[Space_Grotesk,sans-serif] font-semibold">
-                      {category.name}
-                      <ArrowRight className="h-3.5 w-3.5 -translate-x-1 text-[#6ee7c9] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
-                    </h3>
-                    <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-[#8a96a8]">
-                      {category.description ||
-                        "Practice curated questions on this topic."}
-                    </p>
-                    {subCount > 0 && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-[#212a37] bg-[#141b25] px-2.5 py-1 font-[JetBrains_Mono,monospace] text-[10.5px] text-[#8a96a8]">
-                        {subCount} subtopic{subCount === 1 ? "" : "s"}
-                      </span>
-                    )}
-                  </Link>
+                      <div>
+                        <div
+                          className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border transition-transform duration-300 group-hover:scale-110"
+                          style={{
+                            borderColor: `${style.color}40`,
+                            backgroundColor: `${style.color}14`,
+                            color: style.color,
+                          }}
+                        >
+                          <style.icon className="h-6 w-6" />
+                        </div>
+                        <h3 className="mb-1.5 flex items-center gap-1.5 font-[Space_Grotesk,sans-serif] font-semibold text-[#e7ecf3]">
+                          {category.name}
+                          <ArrowRight className="h-3.5 w-3.5 -translate-x-1 text-[#6ee7c9] opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
+                        </h3>
+                        <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-[#8a96a8]">
+                          {category.description ||
+                            "Practice curated questions on this topic."}
+                        </p>
+                      </div>
+
+                      {subCount > 0 && (
+                        <div>
+                          <span className="inline-flex items-center gap-1 rounded-full border border-[#212a37] bg-[#141b25] px-2.5 py-1 font-[JetBrains_Mono,monospace] text-[10.5px] text-[#8a96a8]">
+                            {subCount} subtopic{subCount === 1 ? "" : "s"}
+                          </span>
+                        </div>
+                      )}
+                    </Link>
+                  </ScrollReveal>
                 )
               })}
             </div>
@@ -437,100 +533,116 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section className="border-y border-[#212a37] bg-[#10151d] py-20">
+      {/* ── Features Section ────────────────────────────────────── */}
+      <section className="border-y border-[#212a37] bg-[#10151d] py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-12 text-center">
-            <h2 className="mb-4 font-[Space_Grotesk,sans-serif] text-4xl font-bold">
-              Built for{" "}
-              <span className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text text-transparent">
-                Serious Learners
-              </span>
-            </h2>
-            <p className="mx-auto max-w-xl text-[#8a96a8]">
-              Every feature designed to maximize your preparation efficiency and
-              keep you motivated.
-            </p>
-          </div>
+          <ScrollReveal direction="up">
+            <div className="mb-16 text-center">
+              <h2 className="mb-4 font-[Space_Grotesk,sans-serif] text-3xl font-bold sm:text-4xl">
+                Built for{" "}
+                <span className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text text-transparent">
+                  Serious Placement Aspirants
+                </span>
+              </h2>
+              <p className="mx-auto max-w-xl text-sm leading-relaxed text-[#8a96a8] sm:text-base">
+                Every feature is engineered to accelerate your speed, pinpoint
+                weak areas, and keep you confident on test day.
+              </p>
+            </div>
+          </ScrollReveal>
+
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {features.map((f) => (
-              <div
+            {features.map((f, i) => (
+              <ScrollReveal
                 key={f.title}
-                className="group rounded-2xl border border-[#212a37] bg-[#0a0e14] p-6 transition-all duration-200 hover:-translate-y-1 hover:border-[#3a4a5e] hover:shadow-lg"
+                direction="up"
+                delay={i * 80}
+                distance={28}
               >
-                <div
-                  className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border transition-transform group-hover:scale-110"
-                  style={{
-                    borderColor: `${f.color}40`,
-                    backgroundColor: `${f.color}14`,
-                    color: f.color,
-                  }}
-                >
-                  <f.icon className="h-6 w-6" />
+                <div className="group h-full rounded-2xl border border-[#212a37] bg-[#0a0e14] p-6 transition-all duration-300 hover:-translate-y-1.5 hover:border-[#3a4a5e] hover:shadow-[0_12px_30px_rgba(0,0,0,0.5)]">
+                  <div
+                    className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border transition-transform duration-300 group-hover:scale-110"
+                    style={{
+                      borderColor: `${f.color}40`,
+                      backgroundColor: `${f.color}14`,
+                      color: f.color,
+                    }}
+                  >
+                    <f.icon className="h-6 w-6" />
+                  </div>
+                  <h3 className="mb-2 font-[Space_Grotesk,sans-serif] font-semibold text-[#e7ecf3]">
+                    {f.title}
+                  </h3>
+                  <p className="text-sm leading-relaxed text-[#8a96a8]">
+                    {f.desc}
+                  </p>
                 </div>
-                <h3 className="mb-2 font-[Space_Grotesk,sans-serif] font-semibold">
-                  {f.title}
-                </h3>
-                <p className="text-sm leading-relaxed text-[#8a96a8]">
-                  {f.desc}
-                </p>
-              </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
+      {/* ── Final Call to Action ─────────────────────────────────── */}
       <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-        <div
-          className="relative overflow-hidden rounded-3xl border p-12 text-center"
-          style={{
-            borderColor: "rgba(110,231,201,0.25)",
-            background: "linear-gradient(135deg, rgba(16,26,25,0.9), rgba(30,20,45,0.9))",
-          }}
-        >
+        <ScrollReveal direction="up" threshold={0.2}>
           <div
-            className="absolute top-0 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full blur-3xl"
-            style={{ backgroundColor: "rgba(110,231,201,0.18)" }}
-          />
-          <div className="relative">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 font-[JetBrains_Mono,monospace] text-xs font-medium text-white/80">
-              <Zap className="h-3.5 w-3.5 text-[#6ee7c9]" />
-              Free to start, forever
-            </div>
-            <h2 className="mb-4 font-[Space_Grotesk,sans-serif] text-2xl font-extrabold text-white md:text-5xl">
-              Ready to ace your next placement?
-            </h2>
-            <p className="mx-auto mb-8 max-w-xl text-lg text-white/70">
-              Join thousands of students preparing smarter with AptiCore.
-              Start free today.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link
-                href="/auth/register"
-                className="flex items-center gap-2 rounded-xl bg-linear-to-br from-[#6ee7c9] to-[#57c9a8] px-8 py-4 text-sm font-bold text-[#06120d] shadow-[0_0_28px_rgba(110,231,201,0.3)] transition-all hover:-translate-y-1 hover:brightness-105"
-              >
-                Create Free Account <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
+            className="relative overflow-hidden rounded-3xl border p-8 text-center sm:p-14"
+            style={{
+              borderColor: "rgba(110,231,201,0.25)",
+              background:
+                "linear-gradient(135deg, rgba(16,26,25,0.95), rgba(30,20,45,0.95))",
+            }}
+          >
+            {/* Ambient pulsating glow */}
+            <div
+              className="animate-pulse-slow pointer-events-none absolute top-0 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full blur-3xl"
+              style={{ backgroundColor: "rgba(110,231,201,0.2)" }}
+            />
 
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm text-white/60">
-              {[
-                "No credit card required",
-                "Free forever plan",
-                "Instant results",
-              ].map((f) => (
-                <span key={f} className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-[#3ecf8e]" />
-                  {f}
-                </span>
-              ))}
+            <div className="relative">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 font-[JetBrains_Mono,monospace] text-xs font-medium text-white/80">
+                <Zap className="h-3.5 w-3.5 text-[#6ee7c9]" />
+                <span>Free to start, forever</span>
+              </div>
+
+              <h2 className="mb-4 font-[Space_Grotesk,sans-serif] text-3xl font-extrabold text-white sm:text-4xl md:text-5xl">
+                Ready to ace your next placement?
+              </h2>
+
+              <p className="mx-auto mb-8 max-w-xl text-base leading-relaxed text-white/70 sm:text-lg">
+                Join over 128,000 students preparing smarter with AptiCore. Take
+                your first diagnostic test in seconds.
+              </p>
+
+              <div className="flex flex-wrap justify-center gap-4">
+                <Link
+                  href="/auth/register"
+                  className="flex items-center gap-2 rounded-xl bg-linear-to-br from-[#6ee7c9] to-[#57c9a8] px-8 py-4 text-sm font-bold text-[#06120d] shadow-[0_0_28px_rgba(110,231,201,0.35)] transition-all hover:-translate-y-1 hover:brightness-105"
+                >
+                  Create Free Account <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm text-white/60">
+                {[
+                  "No credit card required",
+                  "Free forever plan",
+                  "Instant detailed solutions",
+                ].map((f) => (
+                  <span key={f} className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-4 w-4 text-[#3ecf8e]" />
+                    {f}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        </ScrollReveal>
       </section>
 
       <Footer />
+      <StickyMobileCTA />
     </div>
   )
 }

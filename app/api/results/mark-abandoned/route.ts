@@ -18,10 +18,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { attemptId, categoryId, subcategoryId, startedAt } = body
+    const { attemptId, startedAt, attemptedQuestions } = body
 
     if (!attemptId) {
       return NextResponse.json({ success: false, error: "attemptId is required" }, { status: 400 })
+    }
+
+    // Do not create ghost abandoned results if no questions were attempted
+    if (!attemptedQuestions || attemptedQuestions <= 0) {
+      await Result.deleteOne({ userId: decoded.userId, attemptId })
+      return NextResponse.json({ success: true, message: "Cleaned up unattempted session" })
     }
 
     const updateData = {
@@ -32,6 +38,7 @@ export async function POST(request: NextRequest) {
       testName: "Practice Session",
       totalQuestions: 0,
       totalMarks: 0,
+      attemptedQuestions,
     }
 
     await Result.findOneAndUpdate(

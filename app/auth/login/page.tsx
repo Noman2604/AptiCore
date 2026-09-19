@@ -176,9 +176,16 @@ export default function LoginPage() {
         <div className="relative w-full max-w-105">
           {/* Mobile logo */}
           <Link href="/" className="mb-8 flex items-center gap-2 lg:hidden">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] bg-linear-to-br from-[#6ee7c9] to-[#8b7cf6] font-[Space_Grotesk,sans-serif] text-sm font-bold text-[#08110d]">
-              AC
-            </div>
+           <div className="">
+            <Image
+              loading="lazy"
+              src="/logo.png"
+              alt="AptiCore Logo"
+              width={32}
+              height={32}
+              className="h-10 w-10 rounded-full object-cover sm:h-10 sm:w-10"
+            />
+          </div>
             <span className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text font-[Space_Grotesk,sans-serif] text-xl font-bold text-transparent">
               ApticCore
             </span>
@@ -237,7 +244,10 @@ export default function LoginPage() {
                   placeholder="you@example.com"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="h-11 w-full rounded-xl border border-[#212a37] bg-[#10151d] pr-4 pl-10 text-sm text-[#e7ecf3] transition-all outline-none placeholder:text-[#5b6577] focus:border-[#6ee7c9] focus:ring-2 focus:ring-[#6ee7c9]/15"
+                  className={cn(
+                    "h-11 w-full rounded-xl border border-[#212a37] bg-[#10151d] pr-4 pl-10 text-sm text-[#e7ecf3] transition-all outline-none placeholder:text-[#5b6577] focus:border-[#6ee7c9] focus:ring-2 focus:ring-[#6ee7c9]/15",
+                    error && "border-red-500/50 bg-red-500/5 focus:border-red-500 focus:ring-red-500/15"
+                  )}
                 />
               </div>
             </div>
@@ -264,7 +274,10 @@ export default function LoginPage() {
                   onChange={(e) =>
                     setForm({ ...form, password: e.target.value })
                   }
-                  className="h-11 w-full rounded-xl border border-[#212a37] bg-[#10151d] pr-10 pl-10 text-sm text-[#e7ecf3] transition-all outline-none placeholder:text-[#5b6577] focus:border-[#6ee7c9] focus:ring-2 focus:ring-[#6ee7c9]/15"
+                  className={cn(
+                    "h-11 w-full rounded-xl border border-[#212a37] bg-[#10151d] pr-10 pl-10 text-sm text-[#e7ecf3] transition-all outline-none placeholder:text-[#5b6577] focus:border-[#6ee7c9] focus:ring-2 focus:ring-[#6ee7c9]/15",
+                    error && "border-red-500/50 bg-red-500/5 focus:border-red-500 focus:ring-red-500/15"
+                  )}
                 />
                 <button
                   type="button"

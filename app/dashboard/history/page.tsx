@@ -1,28 +1,32 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import {
-  Trophy,
-  FileText,
-  Star,
-  ChevronLeft,
-  ChevronRight,
-  MessageSquareText,
   Activity,
-  Zap,
-  Award,
-  Inbox,
   AlertCircle,
   ArrowRight,
+  Award,
+  BookOpen,
+  Calendar,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  ExternalLink,
+  FileText,
+  Flame,
+  Inbox,
+  MessageSquareText,
+  Sparkles,
+  Star,
+  Target,
+  Trophy,
+  Zap,
 } from "lucide-react"
 import axios from "axios"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import { cn } from "@/lib/utils"
+import { TestAttemptCard } from "@/components/history/TestAttemptCard"
 
 interface ResultHistoryItem {
   _id: string
@@ -36,6 +40,7 @@ interface ResultHistoryItem {
   totalMarks: number
   status: string
   submittedAt?: string
+  createdAt?: string
   timeSpentSeconds?: number
   testId?: {
     _id?: string
@@ -54,6 +59,7 @@ interface AchievementHistoryItem {
     _id: string
     name: string
     pointsReward: number
+    rarity?: string
   }
   unlockedAt?: string
 }
@@ -98,31 +104,70 @@ interface HistoryResponse {
 
 type SectionKey = "tests" | "xp" | "achievements" | "feedback"
 
-const sourceLabels: Record<string, string> = {
-  achievement: "Achievement",
-  test_completion: "Test Completion",
-  correct_answer: "Correct Answer",
-  streak: "Streak Bonus",
-  bonus: "Bonus",
+const SOURCE_LABELS: Record<
+  string,
+  { label: string; icon: typeof Zap; color: string; bg: string }
+> = {
+  achievement: {
+    label: "Achievement",
+    icon: Award,
+    color: "#f5a623",
+    bg: "rgba(245,166,35,0.1)",
+  },
+  test_completion: {
+    label: "Test Completion",
+    icon: BookOpen,
+    color: "#3ecf8e",
+    bg: "rgba(62,207,142,0.1)",
+  },
+  correct_answer: {
+    label: "Correct Answer",
+    icon: CheckCircle2,
+    color: "#6ee7c9",
+    bg: "rgba(110,231,201,0.1)",
+  },
+  streak: {
+    label: "Streak Bonus",
+    icon: Flame,
+    color: "#ef4444",
+    bg: "rgba(239,68,68,0.1)",
+  },
+  bonus: {
+    label: "Bonus XP",
+    icon: Zap,
+    color: "#8b7cf6",
+    bg: "rgba(139,124,246,0.1)",
+  },
 }
 
 const FEEDBACK_STATUS_STYLES: Record<
   FeedbackHistoryItem["status"],
   { color: string; bg: string; border: string; label: string }
 > = {
-  pending: { color: "#F59E0B", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.3)", label: "Pending" },
-  resolved: { color: "#10B981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.3)", label: "Resolved" },
-  hidden: { color: "var(--muted-foreground)", bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.3)", label: "Hidden" },
-  published: { color: "#10B981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.3)", label: "Published" },
-}
-
-const TEST_STATUS_STYLES: Record<
-  string,
-  { color: string; bg: string; border: string; progress: string }
-> = {
-  completed: { color: "#10B981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.3)", progress: "#10B981" },
-  in_progress: { color: "#F59E0B", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.3)", progress: "#F59E0B" },
-  abandoned: { color: "var(--muted-foreground)", bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.3)", progress: "#94A3B8" },
+  pending: {
+    color: "#f5a623",
+    bg: "rgba(245,166,35,0.1)",
+    border: "rgba(245,166,35,0.3)",
+    label: "Pending Review",
+  },
+  resolved: {
+    color: "#3ecf8e",
+    bg: "rgba(62,207,142,0.1)",
+    border: "rgba(62,207,142,0.3)",
+    label: "Resolved",
+  },
+  hidden: {
+    color: "#94a3b8",
+    bg: "rgba(148,163,184,0.1)",
+    border: "rgba(148,163,184,0.3)",
+    label: "Archived",
+  },
+  published: {
+    color: "#3ecf8e",
+    bg: "rgba(62,207,142,0.1)",
+    border: "rgba(62,207,142,0.3)",
+    label: "Published",
+  },
 }
 
 const ITEMS_PER_PAGE = 10
@@ -138,256 +183,72 @@ function formatDate(value?: string) {
   }).format(new Date(value))
 }
 
-
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  accent,
-}: {
-  icon: typeof FileText
-  label: string
-  value: string | number
-  accent: string
-}) {
-  return (
-    <Card
-      className=" overflow-hidden  border hover:shadow-lg"
-      style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}
-    >
-      <CardContent className=" p-4 sm:p-5 flex items-center justify-center gap-1.5">
-        <div className="flex items-center justify-center">
-          <div
-            className="flex sm:h-10 sm:w-10 h-8 w-8 items-center justify-center  rounded-sm border"
-            style={{ borderColor: `${accent}40`, backgroundColor: `${accent}14`, color: accent }}
-          >
-            <Icon className="h-5 w-5" />
-          </div>
-        </div>
-        <div className="ml-3 flex flex-col items-start justify-center ">
-          <p className="text-sm font-bold tracking-tight text-foreground sm:text-3xl">
-            {value}
-          </p>
-          <p className="mt-1 text-xs font-medium text-muted-foreground sm:text-sm">{label}</p>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function EmptyState({
-  icon: Icon,
-  title,
-  description,
-  ctaLabel,
-  ctaHref,
-}: {
-  icon: typeof Inbox
-  title: string
-  description: string
-  ctaLabel?: string
-  ctaHref?: string
-}) {
-  return (
-    <div className="flex flex-col bg-[#f4f4f4] dark:bg-[#16191f] items-center justify-center rounded-2xl border border-dashed py-14 text-center" style={{ borderColor: "var(--border)" }}>
-      <div
-        className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border"
-        style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}
-      >
-        <Icon className="h-7 w-7 text-muted-foreground" />
-      </div>
-      <h3 className="text-base font-semibold text-foreground">{title}</h3>
-      <p className="mt-1.5 max-w-sm text-sm leading-6 text-muted-foreground">{description}</p>
-      {ctaLabel && ctaHref && (
-        <Button asChild className="mt-5 gap-2 bg-[#10B981] text-[#09090B] hover:bg-[#10B981]/90">
-          <Link href={ctaHref}>
-            {ctaLabel}
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </Button>
-      )}
-    </div>
-  )
-}
-
-function SkeletonCards({ count = 4 }: { count?: number }) {
-  return (
-    <div className="space-y-3">
-      {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          className="flex items-center justify-between rounded-2xl border p-4"
-          style={{ borderColor: "var(--border)", backgroundColor: "var(--card)" }}
-        >
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-40 bg-muted" />
-            <Skeleton className="h-3 w-24 bg-muted" />
-          </div>
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-8 w-14 bg-muted" />
-            <Skeleton className="h-8 w-16 rounded-full bg-muted" />
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function Pagination({
-  currentPage,
-  totalPages,
-  totalItems,
-  onPageChange,
-}: {
-  currentPage: number
-  totalPages: number
-  totalItems: number
-  onPageChange: (page: number) => void
-}) {
-  if (totalPages <= 1) return null
-
-  const getPages = () => {
-    const pages: number[] = []
-    let start = Math.max(1, currentPage - 2)
-    let end = Math.min(totalPages, currentPage + 2)
-    if (currentPage <= 3) end = Math.min(5, totalPages)
-    if (currentPage >= totalPages - 2) start = Math.max(1, totalPages - 4)
-    for (let i = start; i <= end; i++) pages.push(i)
-    return pages
-  }
-
-  const rangeStart = (currentPage - 1) * ITEMS_PER_PAGE + 1
-  const rangeEnd = Math.min(currentPage * ITEMS_PER_PAGE, totalItems)
-
-  return (
-    <div
-      className="mt-6 flex flex-col items-center justify-between gap-4 border-t pt-5 sm:flex-row"
-      style={{ borderColor: "var(--border)" }}
-    >
-      <p className="text-xs text-muted-foreground sm:text-sm">
-        Showing{" "}
-        <span className="font-semibold text-foreground">
-          {rangeStart}–{rangeEnd}
-        </span>{" "}
-        of <span className="font-semibold text-foreground">{totalItems}</span>
-      </p>
-
-      <div className="flex items-center gap-1.5">
-        <Button
-          variant="outline"
-          size="icon"
-          disabled={currentPage === 1}
-          onClick={() => onPageChange(currentPage - 1)}
-          className="h-8 w-8 border-border bg-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-
-        {getPages().map((page) => (
-          <Button
-            key={page}
-            size="icon"
-            onClick={() => onPageChange(page)}
-            className={cn(
-              "h-8 w-8 text-xs font-semibold",
-              page === currentPage
-                ? "bg-[#10B981] text-[#09090B] hover:bg-[#10B981]/90"
-                : "border border-border bg-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"
-            )}
-          >
-            {page}
-          </Button>
-        ))}
-
-        <Button
-          variant="outline"
-          size="icon"
-          disabled={currentPage === totalPages}
-          onClick={() => onPageChange(currentPage + 1)}
-          className="h-8 w-8 border-border bg-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  )
+function formatDuration(seconds?: number): string {
+  if (!seconds || seconds <= 0) return "< 1 min"
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  if (mins === 0) return `${secs}s`
+  return `${mins}m ${secs}s`
 }
 
 export default function HistoryPage() {
   const router = useRouter()
-  const backHref = "/dashboard"
-  const [section, setSection] = useState<SectionKey>("tests")
-  const [results, setResults] = useState<ResultHistoryItem[]>([])
-  const [achievements, setAchievements] = useState<AchievementHistoryItem[]>([])
-  const [xpHistory, setXpHistory] = useState<XpHistoryItem[]>([])
-  const [feedbackHistory, setFeedbackHistory] = useState<FeedbackHistoryItem[]>([])
+  const searchParams = useSearchParams()
+  const initialSection = (searchParams.get("tab") as SectionKey) || "tests"
+
+  const [section, setSection] = useState<SectionKey>(initialSection)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const [results, setResults] = useState<ResultHistoryItem[]>([])
+  const [xpHistory, setXpHistory] = useState<XpHistoryItem[]>([])
+  const [achievements, setAchievements] = useState<AchievementHistoryItem[]>([])
+  const [feedbackHistory, setFeedbackHistory] = useState<FeedbackHistoryItem[]>(
+    []
+  )
+
   const [testPage, setTestPage] = useState(1)
   const [xpPage, setXpPage] = useState(1)
   const [achievementPage, setAchievementPage] = useState(1)
   const [feedbackPage, setFeedbackPage] = useState(1)
-  const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
 
   useEffect(() => {
     const loadHistory = async () => {
       try {
         setLoading(true)
+        setError(null)
 
-        const { data } = await axios.get(
-          `/api/dashboard/history?page=${page}&limit=10`,
-          {
-            withCredentials: true,
-          }
-        )
+        const { data } = await axios.get("/api/dashboard/history?limit=100", {
+          withCredentials: true,
+        })
 
         if (!data.success) {
           throw new Error(data.error || "Failed to load history")
         }
 
         const history: HistoryResponse = data.data || {}
+        // Filter only valid completed results with marks
+        const validResults = (history.results || []).filter(
+          (r) =>
+            r.status === "completed" && (r.totalMarks ? r.totalMarks > 0 : true)
+        )
 
-        setResults(history.results || [])
+        setResults(validResults)
         setXpHistory(history.xpHistory || [])
         setAchievements(history.achievements || [])
         setFeedbackHistory(history.feedback || [])
-        setTotalPages(history.pagination?.totalPages || 1)
-      } catch (error) {
-        console.error("Failed to load history:", error)
-        setError(error instanceof Error ? error.message : "Failed to load history")
+      } catch (err) {
+        console.error("Failed to load history:", err)
+        setError(err instanceof Error ? err.message : "Failed to load history")
       } finally {
         setLoading(false)
       }
     }
 
     void loadHistory()
-  }, [page])
-  const paginatedTests = useMemo(() => {
-    const start = (testPage - 1) * ITEMS_PER_PAGE
-    return results.slice(start, start + ITEMS_PER_PAGE)
-  }, [results, testPage])
-  const totalTestPages = Math.ceil(results.length / ITEMS_PER_PAGE)
+  }, [])
 
-  const paginatedAchievements = useMemo(() => {
-    const start = (achievementPage - 1) * ITEMS_PER_PAGE
-    return achievements.slice(start, start + ITEMS_PER_PAGE)
-  }, [achievements, achievementPage])
-  const totalAchievementPages = Math.ceil(achievements.length / ITEMS_PER_PAGE)
-
-  const paginatedXP = useMemo(() => {
-    const start = (xpPage - 1) * ITEMS_PER_PAGE
-    return xpHistory.slice(start, start + ITEMS_PER_PAGE)
-  }, [xpHistory, xpPage])
-  const totalXpPages = Math.ceil(xpHistory.length / ITEMS_PER_PAGE)
-
-  const paginatedFeedback = useMemo(() => {
-    const start = (feedbackPage - 1) * ITEMS_PER_PAGE
-    return feedbackHistory.slice(start, start + ITEMS_PER_PAGE)
-  }, [feedbackHistory, feedbackPage])
-  const totalFeedbackPages = Math.ceil(feedbackHistory.length / ITEMS_PER_PAGE)
-
-  // Hero stats — derived only, no logic change to underlying data
+  // Derived summaries
   const totalXPEarned = useMemo(
     () =>
       xpHistory
@@ -396,120 +257,201 @@ export default function HistoryPage() {
     [xpHistory]
   )
 
+  const averageAccuracy = useMemo(() => {
+    if (results.length === 0) return 0
+    return Math.round(
+      results.reduce((sum, r) => sum + (r.accuracy || 0), 0) / results.length
+    )
+  }, [results])
+
+  // Pagination slicing
+  const paginatedTests = useMemo(() => {
+    const start = (testPage - 1) * ITEMS_PER_PAGE
+    return results.slice(start, start + ITEMS_PER_PAGE)
+  }, [results, testPage])
+  const totalTestPages = Math.ceil(results.length / ITEMS_PER_PAGE)
+
+  const paginatedXP = useMemo(() => {
+    const start = (xpPage - 1) * ITEMS_PER_PAGE
+    return xpHistory.slice(start, start + ITEMS_PER_PAGE)
+  }, [xpHistory, xpPage])
+  const totalXpPages = Math.ceil(xpHistory.length / ITEMS_PER_PAGE)
+
+  const paginatedAchievements = useMemo(() => {
+    const start = (achievementPage - 1) * ITEMS_PER_PAGE
+    return achievements.slice(start, start + ITEMS_PER_PAGE)
+  }, [achievements, achievementPage])
+  const totalAchievementPages = Math.ceil(achievements.length / ITEMS_PER_PAGE)
+
+  const paginatedFeedback = useMemo(() => {
+    const start = (feedbackPage - 1) * ITEMS_PER_PAGE
+    return feedbackHistory.slice(start, start + ITEMS_PER_PAGE)
+  }, [feedbackHistory, feedbackPage])
+  const totalFeedbackPages = Math.ceil(feedbackHistory.length / ITEMS_PER_PAGE)
+
   const sections: {
     key: SectionKey
     label: string
     icon: typeof FileText
     count: number
   }[] = [
-    { key: "tests", label: "Tests", icon: FileText, count: results.length },
-    { key: "xp", label: "XP", icon: Star, count: xpHistory.length },
-    { key: "achievements", label: "Achievements", icon: Award, count: achievements.length },
-    { key: "feedback", label: "Feedback", icon: MessageSquareText, count: feedbackHistory.length },
+    {
+      key: "tests",
+      label: "Test Attempts",
+      icon: FileText,
+      count: results.length,
+    },
+    { key: "xp", label: "XP Velocity", icon: Zap, count: xpHistory.length },
+    {
+      key: "achievements",
+      label: "Badges Earned",
+      icon: Award,
+      count: achievements.length,
+    },
+    {
+      key: "feedback",
+      label: "Feedback & Notes",
+      icon: MessageSquareText,
+      count: feedbackHistory.length,
+    },
   ]
 
-  const buildResultHref = (item: ResultHistoryItem) => {
-    const slug = item.testId?.categoryId?.slug
-    const subSlug = item.testId?.subcategory?.slug
-
-    if (slug && subSlug) {
-      return `/results?resultId=${item._id}`
-    }
-
-    return `/results?resultId=${item._id}`
-  }
-
   return (
-    <div
-      className="min-h-screen bg-background font-sans transition-colors duration-300"
-      style={{ color: "var(--foreground)" }}
-    >
-      <div className="mx-auto max-w-6xl px-4 pt-2 pb-16 sm:px-6 md:pt-10 lg:px-8">
-        {/* ============ HERO ============ */}
-        <div className="mb-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex items-center gap-3">
-              <div
-                className="flex h-11 w-11 items-center justify-center rounded-xl border p-2"
-                style={{
-                  borderColor: "rgba(16,185,129,0.35)",
-                  backgroundColor: "rgba(16,185,129,0.1)",
-                }}
-              >
-                <Activity className="h-5.5 w-5.5 text-[#10B981]" />
+    <div className="min-h-screen bg-[--ac-bg] text-[--ac-text] transition-colors duration-300">
+      <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+        {/* ================= HERO BANNER ================= */}
+        <div className="relative overflow-hidden rounded-2xl border border-black/10 bg-linear-to-br from-teal-500/10 via-purple-500/5 to-amber-500/10 p-6 shadow-sm backdrop-blur-md sm:p-8 dark:border-white/10">
+          <div className="pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full bg-teal-400/15 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-20 left-1/3 h-64 w-64 rounded-full bg-purple-500/15 blur-3xl" />
+
+          <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl space-y-2.5">
+              <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3.5 py-1 text-xs font-semibold text-teal-600 dark:text-teal-300">
+                <Activity className="h-3.5 w-3.5" />
+                <span>Performance Ledger</span>
               </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                  Activity History
-                </h1>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  Review your recent test performance, earned achievements, XP history, and feedback.
-                </p>
-              </div>
+              <h1 className="font-[Space_Grotesk,sans-serif] text-3xl font-bold tracking-tight text-[--ac-text] sm:text-4xl">
+                Activity & Test History
+              </h1>
+              <p className="text-sm leading-relaxed text-[--ac-text-3]">
+                Inspect your complete evaluation audit log, question precision
+                breakdowns, accumulated XP points, and unlocked milestones.
+              </p>
             </div>
 
-            <Button
-              variant="outline"
-              onClick={() => router.push(backHref)}
-              className="border-border bg-transparent text-foreground hover:bg-muted"
-            >
-              Back
-            </Button>
-          </div>
-
-          {/* Stat cards */}
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            <StatCard
-              icon={FileText}
-              label="Total Tests complete"
-              value={results.length}
-              accent="#10B981"
-            />
-            <StatCard
-              icon={Zap}
-              label="Total XP Earned"
-              value={totalXPEarned.toLocaleString()}
-              accent="#8B5CF6"
-            />
-            <StatCard
-              icon={Award}
-              label="All Achievements"
-              value={achievements.length}
-              accent="#F59E0B"
-            />
-            <StatCard
-              icon={MessageSquareText}
-              label="Feedback Submitted"
-              value={feedbackHistory.length}
-              accent="#10B981"
-            />
+            <div className="flex flex-wrap items-center gap-3">
+              <Link href="/dashboard/tests">
+                <button className="cursor-pointer rounded-lg bg-teal-500 px-4 py-2 text-xs font-bold text-black shadow-sm transition hover:bg-teal-400">
+                  Take Practice Test →
+                </button>
+              </Link>
+              <Link href="/dashboard/analytics">
+                <button className="cursor-pointer rounded-lg border border-black/10 bg-white px-4 py-2 text-xs font-semibold text-[--ac-text] transition hover:border-black/25 dark:border-white/10 dark:bg-[#10151d] dark:hover:border-white/25">
+                  Analytics Hub
+                </button>
+              </Link>
+            </div>
           </div>
         </div>
 
-        {/* ============ SECTION NAV ============ */}
-        <div className="mb-6 grid scrollbar-none grid-cols-2 gap-2.5 overflow-x-auto pt-1 pb-1 lg:grid-cols-4">
+        {/* ================= 4 KEY KPI METRICS ================= */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          {/* Card 1: Completed Tests */}
+          <div className="rounded-xl border border-black/10 bg-white p-4.5 shadow-sm transition hover:border-teal-500/40 dark:border-white/10 dark:bg-[#10151d]">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-[--ac-text-3]">
+                Total Tests Evaluated
+              </span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400">
+                <BookOpen className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="mt-3 font-[Space_Grotesk,sans-serif] text-2xl font-bold text-[--ac-text] sm:text-3xl">
+              {results.length}
+            </div>
+            <p className="mt-1 text-[11px] text-[--ac-text-3]">
+              Full syllabus tests submitted
+            </p>
+          </div>
+
+          {/* Card 2: Average Accuracy */}
+          <div className="rounded-xl border border-black/10 bg-white p-4.5 shadow-sm transition hover:border-emerald-500/40 dark:border-white/10 dark:bg-[#10151d]">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-[--ac-text-3]">
+                Lifetime Accuracy
+              </span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <Target className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="mt-3 font-[Space_Grotesk,sans-serif] text-2xl font-bold text-emerald-600 sm:text-3xl dark:text-emerald-400">
+              {averageAccuracy}%
+            </div>
+            <p className="mt-1 text-[11px] text-[--ac-text-3]">
+              Across all completed sessions
+            </p>
+          </div>
+
+          {/* Card 3: Total XP */}
+          <div className="rounded-xl border border-black/10 bg-white p-4.5 shadow-sm transition hover:border-purple-500/40 dark:border-white/10 dark:bg-[#10151d]">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-[--ac-text-3]">
+                Total XP Earned
+              </span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-300">
+                <Zap className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="mt-3 font-[Space_Grotesk,sans-serif] text-2xl font-bold text-purple-600 sm:text-3xl dark:text-purple-300">
+              +{totalXPEarned.toLocaleString()}
+            </div>
+            <p className="mt-1 text-[11px] text-[--ac-text-3]">
+              From tests, streaks, and bonuses
+            </p>
+          </div>
+
+          {/* Card 4: Milestones */}
+          <div className="rounded-xl border border-black/10 bg-white p-4.5 shadow-sm transition hover:border-amber-500/40 dark:border-white/10 dark:bg-[#10151d]">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-[--ac-text-3]">
+                Badges Unlocked
+              </span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <Award className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="mt-3 font-[Space_Grotesk,sans-serif] text-2xl font-bold text-amber-600 sm:text-3xl dark:text-amber-400">
+              {achievements.length}
+            </div>
+            <p className="mt-1 text-[11px] text-[--ac-text-3]">
+              Recognized placement achievements
+            </p>
+          </div>
+        </div>
+
+        {/* ================= SECTION TABS ================= */}
+        <div className="grid grid-cols-2 gap-2 rounded-xl border border-black/10 bg-white p-1.5 shadow-sm sm:grid-cols-4 dark:border-white/10 dark:bg-[#10151d]">
           {sections.map((s) => {
             const active = section === s.key
             return (
               <button
                 key={s.key}
+                type="button"
                 onClick={() => setSection(s.key)}
-                className={cn(
-                  "flex shrink-0 items-center gap-2.5 rounded-xl border px-2 py-3 text-xs font-semibold transition-all duration-200 lg:text-sm",
+                className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all ${
                   active
-                    ? "border-transparent bg-linear-to-br from-[#10B981] to-[#0d9c6f] text-[#09090B] shadow-lg shadow-emerald-500/20"
-                    : "border-border bg-card text-muted-foreground hover:-translate-y-0.5 hover:border-border hover:text-foreground"
-                )}
+                    ? "border border-teal-500/30 bg-teal-500/15 text-teal-600 shadow-xs dark:text-teal-300"
+                    : "border border-transparent text-[--ac-text-3] hover:bg-slate-100 hover:text-[--ac-text] dark:hover:bg-white/5"
+                }`}
               >
-                <s.icon className="h-4 w-4" />
-                {s.label}
+                <s.icon className="h-4 w-4 shrink-0" />
+                <span>{s.label}</span>
                 <span
-                  className={cn(
-                    "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                  className={`py-0.2 rounded-full px-1.5 text-[10px] font-bold ${
                     active
-                      ? "bg-black/15 text-[#09090B]"
-                      : "bg-muted text-muted-foreground"
-                  )}
+                      ? "bg-teal-500/25 text-teal-700 dark:text-teal-200"
+                      : "bg-slate-200 text-[--ac-text-3] dark:bg-white/10"
+                  }`}
                 >
                   {s.count}
                 </span>
@@ -518,363 +460,407 @@ export default function HistoryPage() {
           })}
         </div>
 
-        {/* ============ CONTENT ============ */}
-        {loading ? (
-          <SkeletonCards count={5} />
-        ) : error ? (
-          <div
-            className="flex items-center gap-3 rounded-2xl border p-6"
-            style={{
-              borderColor: "rgba(239,68,68,0.3)",
-              backgroundColor: "rgba(239,68,68,0.06)",
-            }}
-          >
-            <AlertCircle className="h-5 w-5 shrink-0 text-[#EF4444]" />
-            <p className="text-sm text-[#EF4444]">{error}</p>
-          </div>
-        ) : (
-          <Card
-            className="border"
-            style={{
-              borderColor: "var(--border)",
-              backgroundColor: "var(--card)",
-            }}
-          >
-            <CardContent className="p-4 sm:p-6">
-              {/* ---------- TESTS ---------- */}
+        {/* ================= CONTENT PANEL ================= */}
+        <div className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm sm:p-7 dark:border-white/10 dark:bg-[#10151d]">
+          {loading ? (
+            <div className="space-y-3 py-4">
+              {Array.from({ length: 4 }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className="flex animate-pulse items-center justify-between rounded-xl border border-black/5 p-4 dark:border-white/5"
+                >
+                  <div className="space-y-2">
+                    <div className="h-4 w-48 rounded bg-slate-200 dark:bg-white/10" />
+                    <div className="h-3 w-32 rounded bg-slate-200 dark:bg-white/10" />
+                  </div>
+                  <div className="h-8 w-24 rounded-lg bg-slate-200 dark:bg-white/10" />
+                </div>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="flex items-center gap-3 rounded-xl border border-rose-500/20 bg-rose-500/5 p-6">
+              <AlertCircle className="h-5 w-5 shrink-0 text-rose-500" />
+              <p className="text-sm text-rose-500">{error}</p>
+            </div>
+          ) : (
+            <>
+              {/* ---------- TAB 1: TESTS ---------- */}
               {section === "tests" && (
-                <>
-                  <h2 className="mb-4 text-base font-bold sm:text-lg">
-                    Test History
-                  </h2>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="font-[Space_Grotesk,sans-serif] text-base font-bold text-[--ac-text] sm:text-lg">
+                        Completed Test Sessions
+                      </h2>
+                      <p className="text-xs text-[--ac-text-3]">
+                        Detailed record of your aptitude test evaluations
+                      </p>
+                    </div>
+                    <span className="text-xs text-[--ac-text-3]">
+                      Showing {paginatedTests.length} of {results.length}{" "}
+                      attempts
+                    </span>
+                  </div>
+
                   {paginatedTests.length === 0 ? (
-                    <EmptyState
-                      icon={FileText}
-                      title="No Tests Yet"
-                      description="Take your first aptitude test to begin tracking your progress."
-                      ctaLabel="Browse tests"
-                      ctaHref="/dashboard/tests"
-                    />
+                    <div className="rounded-xl border border-dashed border-black/10 p-12 text-center dark:border-white/10">
+                      <FileText className="mx-auto mb-3 h-10 w-10 text-[--ac-text-3]" />
+                      <h3 className="font-semibold text-[--ac-text]">
+                        No test attempts recorded yet
+                      </h3>
+                      <p className="mt-1 text-xs text-[--ac-text-3]">
+                        Attempt your first timed aptitude mock test to track
+                        your performance trajectory.
+                      </p>
+                      <Link href="/dashboard/tests">
+                        <button className="mt-4 cursor-pointer rounded-lg bg-teal-500 px-4 py-2 text-xs font-bold text-black transition hover:bg-teal-400">
+                          Browse Practice Tests
+                        </button>
+                      </Link>
+                    </div>
                   ) : (
                     <div className="space-y-3">
-                      {paginatedTests.map((item) => {
-                        const style =
-                          TEST_STATUS_STYLES[item.status] ||
-                          TEST_STATUS_STYLES.abandoned
-                        return (
-                          <div
-                            key={item._id}
-                            className="group rounded-xl border p-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-5"
-                            style={{
-                              borderColor: "var(--border)",
-                              backgroundColor: "var(--card)",
-                            }}
-                          >
-                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-2">
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-xs font-semibold text-foreground sm:text-xl">
-                                  {item.testName}
-                                </p>
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                  {formatDate(item.submittedAt)} ·{" "}
-                                  {item.attemptedQuestions}/
-                                  {item.totalQuestions} attempted
-                                </p>
-                              </div>
-
-                              <div className="flex flex-wrap items-center gap-5 sm:justify-end">
-                                <div className="text-right">
-                                  <div className="text-xs font-bold sm:text-lg">
-                                    {item.marksObtained}/{item.totalMarks}
-                                  </div>
-                                  <div className="text-[10px] tracking-wide text-muted-foreground uppercase">
-                                    Score
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <div className="text-xs font-bold text-[#10B981] sm:text-lg">
-                                    {item.accuracy}%
-                                  </div>
-                                  <div className="text-[10px] tracking-wide text-muted-foreground uppercase">
-                                    Accuracy
-                                  </div>
-                                </div>
-                                <Badge
-                                  className="border text-xs font-semibold capitalize sm:text-lg"
-                                  style={{
-                                    color: style.color,
-                                    borderColor: style.border,
-                                    backgroundColor: style.bg,
-                                  }}
-                                >
-                                  {item.status.replace("_", " ")}
-                                </Badge>
-                              </div>
-                            </div>
-
-                            {/* Progress bar */}
-                            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                              <div
-                                className="h-full rounded-full transition-[width] duration-700 ease-out"
-                                style={{
-                                  width: `${Math.min(100, Math.max(0, item.accuracy))}%`,
-                                  backgroundColor: style.progress,
-                                }}
-                              />
-                            </div>
-
-                            <div className="mt-2 flex flex-col justify-end">
-                              <Button
-                                asChild
-                                className="bg-[#10B981] text-[#09090B] hover:bg-[#10B981]/90"
-                              >
-                                <Link href={buildResultHref(item)}>
-                                  View result
-                                </Link>
-                              </Button>
-                            </div>
-                          </div>
-                        )
-                      })}
+                      {paginatedTests.map((item) => (
+                        <TestAttemptCard key={item._id} item={item} />
+                      ))}
                     </div>
                   )}
-                  <Pagination
-                    currentPage={testPage}
-                    totalPages={totalTestPages}
-                    totalItems={results.length}
-                    onPageChange={setTestPage}
-                  />
-                </>
+
+                  {/* Pagination */}
+                  {totalTestPages > 1 && (
+                    <div className="flex items-center justify-between border-t border-black/5 pt-4 dark:border-white/5">
+                      <span className="text-xs text-[--ac-text-3]">
+                        Page {testPage} of {totalTestPages}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          disabled={testPage === 1}
+                          onClick={() => setTestPage((p) => Math.max(1, p - 1))}
+                          className="rounded-md border border-black/10 p-1.5 text-xs disabled:opacity-40 dark:border-white/10"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <button
+                          disabled={testPage === totalTestPages}
+                          onClick={() =>
+                            setTestPage((p) => Math.min(totalTestPages, p + 1))
+                          }
+                          className="rounded-md border border-black/10 p-1.5 text-xs disabled:opacity-40 dark:border-white/10"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
 
-              {/* ---------- XP TIMELINE ---------- */}
+              {/* ---------- TAB 2: XP TIMELINE ---------- */}
               {section === "xp" && (
-                <>
-                  <h2 className="mb-4 text-base font-bold sm:text-lg">
-                    XP History
-                  </h2>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="font-[Space_Grotesk,sans-serif] text-base font-bold text-[--ac-text] sm:text-lg">
+                        XP Reward Velocity
+                      </h2>
+                      <p className="text-xs text-[--ac-text-3]">
+                        Chronological stream of experience points gained across
+                        activities
+                      </p>
+                    </div>
+                    <span className="text-xs font-bold text-purple-600 dark:text-purple-300">
+                      +{totalXPEarned.toLocaleString()} Lifetime XP
+                    </span>
+                  </div>
+
                   {paginatedXP.length === 0 ? (
-                    <EmptyState
-                      icon={Zap}
-                      title="No XP Yet"
-                      description="Complete tests and unlock achievements to start earning XP."
-                    />
+                    <div className="rounded-xl border border-dashed border-black/10 p-12 text-center dark:border-white/10">
+                      <Zap className="mx-auto mb-3 h-10 w-10 text-[--ac-text-3]" />
+                      <h3 className="font-semibold text-[--ac-text]">
+                        No XP events recorded
+                      </h3>
+                      <p className="mt-1 text-xs text-[--ac-text-3]">
+                        Answer test questions and complete practice sessions to
+                        earn XP.
+                      </p>
+                    </div>
                   ) : (
-                    <div className="relative space-y-0">
-                      {paginatedXP.map((item, idx) => {
-                        const positive = item.xpPoints > 0
-                        const isLast = idx === paginatedXP.length - 1
+                    <div className="space-y-2.5">
+                      {paginatedXP.map((item) => {
+                        const meta = SOURCE_LABELS[item.sourceType] || {
+                          label: item.sourceType.replace(/_/g, " "),
+                          icon: Zap,
+                          color: "#8b7cf6",
+                          bg: "rgba(139,124,246,0.1)",
+                        }
+                        const Icon = meta.icon
+
                         return (
                           <div
                             key={item._id}
-                            className="relative flex gap-4 pb-6 last:pb-0"
+                            className="flex items-center justify-between rounded-xl border border-black/5 bg-slate-50/70 p-3.5 transition hover:border-black/15 dark:border-white/5 dark:bg-white/2 dark:hover:border-white/15"
                           >
-                            {/* Timeline rail */}
-                            <div className="relative flex flex-col items-center">
-                              <span
-                                className="z-10 flex h-3 w-3 shrink-0 rounded-full ring-4"
+                            <div className="flex items-center gap-3">
+                              <div
+                                className="flex h-9 w-9 items-center justify-center rounded-lg"
                                 style={{
-                                  backgroundColor: positive
-                                    ? "#10B981"
-                                    : "#EF4444",
-                                  boxShadow: `0 0 0 4px ${positive ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)"}`,
+                                  backgroundColor: meta.bg,
+                                  color: meta.color,
                                 }}
-                              />
-                              {!isLast && (
-                                <span
-                                  className="mt-1 w-px flex-1"
-                                  style={{ backgroundColor: "#1F2937" }}
-                                />
-                              )}
-                            </div>
-
-                            <div className="flex flex-1 items-center justify-between gap-3 pt-[-2px]">
+                              >
+                                <Icon className="h-4.5 w-4.5" />
+                              </div>
                               <div>
-                                <p className="text-xs sm:text-lg font-semibold text-foreground ">
-                                  {sourceLabels[item.sourceType] ||
-                                    item.sourceType}
+                                <p className="text-xs font-bold text-[--ac-text] capitalize sm:text-sm">
+                                  {meta.label}
                                 </p>
-                                <p className="mt-0.5 text-xs sm:text-lg text-muted-foreground">
+                                <p className="text-[11px] text-[--ac-text-3]">
                                   {formatDate(item.createdAt)}
                                 </p>
                               </div>
-                              <span
-                                className="shrink-0 text-xs sm:text-xl font-bold"
-                                style={{
-                                  color: positive ? "#10B981" : "#EF4444",
-                                }}
-                              >
-                                {positive ? `+${item.xpPoints}` : item.xpPoints}{" "}
-                                XP
-                              </span>
                             </div>
+
+                            <span className="font-[JetBrains_Mono,monospace] text-sm font-bold text-purple-600 dark:text-purple-300">
+                              +{item.xpPoints} XP
+                            </span>
                           </div>
                         )
                       })}
                     </div>
                   )}
-                  <Pagination
-                    currentPage={xpPage}
-                    totalPages={totalXpPages}
-                    totalItems={xpHistory.length}
-                    onPageChange={setXpPage}
-                  />
-                </>
+
+                  {/* Pagination */}
+                  {totalXpPages > 1 && (
+                    <div className="flex items-center justify-between border-t border-black/5 pt-4 dark:border-white/5">
+                      <span className="text-xs text-[--ac-text-3]">
+                        Page {xpPage} of {totalXpPages}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          disabled={xpPage === 1}
+                          onClick={() => setXpPage((p) => Math.max(1, p - 1))}
+                          className="rounded-md border border-black/10 p-1.5 text-xs disabled:opacity-40 dark:border-white/10"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <button
+                          disabled={xpPage === totalXpPages}
+                          onClick={() =>
+                            setXpPage((p) => Math.min(totalXpPages, p + 1))
+                          }
+                          className="rounded-md border border-black/10 p-1.5 text-xs disabled:opacity-40 dark:border-white/10"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
 
-              {/* ---------- ACHIEVEMENTS ---------- */}
+              {/* ---------- TAB 3: ACHIEVEMENTS ---------- */}
               {section === "achievements" && (
-                <>
-                  <h2 className="mb-4 text-base font-bold sm:text-lg">
-                    Achievement History
-                  </h2>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="font-[Space_Grotesk,sans-serif] text-base font-bold text-[--ac-text] sm:text-lg">
+                        Unlocked Milestones & Badges
+                      </h2>
+                      <p className="text-xs text-[--ac-text-3]">
+                        Honors you have achieved during your preparation
+                      </p>
+                    </div>
+                    <Link
+                      href="/dashboard/achievements"
+                      className="flex items-center gap-1 text-xs font-semibold text-teal-600 hover:underline dark:text-teal-300"
+                    >
+                      All Badges <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  </div>
+
                   {paginatedAchievements.length === 0 ? (
-                    <EmptyState
-                      icon={Trophy}
-                      title="No Achievements Yet"
-                      description="Keep practicing — achievements unlock automatically as you hit milestones."
-                    />
+                    <div className="rounded-xl border border-dashed border-black/10 p-12 text-center dark:border-white/10">
+                      <Award className="mx-auto mb-3 h-10 w-10 text-[--ac-text-3]" />
+                      <h3 className="font-semibold text-[--ac-text]">
+                        No achievements unlocked yet
+                      </h3>
+                      <p className="mt-1 text-xs text-[--ac-text-3]">
+                        Complete mock tests and build streaks to unlock
+                        achievements.
+                      </p>
+                      <Link href="/dashboard/achievements">
+                        <button className="mt-4 cursor-pointer rounded-lg bg-teal-500 px-4 py-2 text-xs font-bold text-black transition hover:bg-teal-400">
+                          View Available Badges
+                        </button>
+                      </Link>
+                    </div>
                   ) : (
-                    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-3 sm:grid-cols-2">
                       {paginatedAchievements.map((item) => (
                         <div
                           key={item._id}
-                          className="group relative overflow-hidden rounded-sm border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-                          style={{
-                            borderColor: "rgba(245,158,11,0.25)",
-                            backgroundColor: "rgba(245,158,11,0.05)",
-                          }}
+                          className="flex items-center justify-between rounded-xl border border-black/5 bg-slate-50/70 p-4 transition hover:border-black/15 dark:border-white/5 dark:bg-white/2 dark:hover:border-white/15"
                         >
-                          <div
-                            className="pointer-events-none absolute -top-6 -right-6 h-24 w-24 rounded-full opacity-0 blur-2xl transition-opacity duration-200 group-hover:opacity-100"
-                            style={{ backgroundColor: "rgba(245,158,11,0.25)" }}
-                          />
-                          <div className="relative flex items-center gap-3 justify-center">
-                            <div
-                              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm border"
-                              style={{
-                                borderColor: "rgba(245,158,11,0.35)",
-                                backgroundColor: "rgba(245,158,11,0.12)",
-                              }}
-                            >
-                              <Trophy className="h-5 w-5 text-[#F59E0B]" />
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-500">
+                              <Trophy className="h-5 w-5" />
                             </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-xs font-semibold text-foreground">
-                                {item.achievementId.name}
-                              </p>
-                              <p className="mt-0.5 text-[10px] text-muted-foreground">
+                            <div>
+                              <h4 className="text-xs font-bold text-[--ac-text] sm:text-sm">
+                                {item.achievementId?.name || "Milestone"}
+                              </h4>
+                              <p className="text-[11px] text-[--ac-text-3]">
                                 {formatDate(item.unlockedAt)}
                               </p>
                             </div>
-                            <div>
-                              <span className="mt-2 inline-block text-xs font-bold text-[#F59E0B]">
-                                +{item.achievementId.pointsReward} XP
-                              </span>
-                            </div>
                           </div>
+
+                          <span className="rounded-full border border-purple-500/20 bg-purple-500/10 px-2.5 py-0.5 font-[JetBrains_Mono,monospace] text-xs font-bold text-purple-600 dark:text-purple-300">
+                            +{item.achievementId?.pointsReward || 0} XP
+                          </span>
                         </div>
                       ))}
                     </div>
                   )}
-                  <Pagination
-                    currentPage={achievementPage}
-                    totalPages={totalAchievementPages}
-                    totalItems={achievements.length}
-                    onPageChange={setAchievementPage}
-                  />
-                </>
+
+                  {/* Pagination */}
+                  {totalAchievementPages > 1 && (
+                    <div className="flex items-center justify-between border-t border-black/5 pt-4 dark:border-white/5">
+                      <span className="text-xs text-[--ac-text-3]">
+                        Page {achievementPage} of {totalAchievementPages}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          disabled={achievementPage === 1}
+                          onClick={() =>
+                            setAchievementPage((p) => Math.max(1, p - 1))
+                          }
+                          className="rounded-md border border-black/10 p-1.5 text-xs disabled:opacity-40 dark:border-white/10"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <button
+                          disabled={achievementPage === totalAchievementPages}
+                          onClick={() =>
+                            setAchievementPage((p) =>
+                              Math.min(totalAchievementPages, p + 1)
+                            )
+                          }
+                          className="rounded-md border border-black/10 p-1.5 text-xs disabled:opacity-40 dark:border-white/10"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
 
-              {/* ---------- FEEDBACK ---------- */}
+              {/* ---------- TAB 4: FEEDBACK ---------- */}
               {section === "feedback" && (
-                <>
-                  <h2 className="mb-4 text-base font-bold sm:text-lg">
-                    Feedback History
-                  </h2>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="font-[Space_Grotesk,sans-serif] text-base font-bold text-[--ac-text] sm:text-lg">
+                        Submitted Feedback & Reports
+                      </h2>
+                      <p className="text-xs text-[--ac-text-3]">
+                        Status of questions reported and platform improvement
+                        suggestions
+                      </p>
+                    </div>
+                  </div>
+
                   {paginatedFeedback.length === 0 ? (
-                    <EmptyState
-                      icon={MessageSquareText}
-                      title="No Feedback Yet"
-                      description="Share your thoughts to help us improve AptiCore."
-                      ctaLabel="Send feedback"
-                      ctaHref="/dashboard/feedback"
-                    />
+                    <div className="rounded-xl border border-dashed border-black/10 p-12 text-center dark:border-white/10">
+                      <MessageSquareText className="mx-auto mb-3 h-10 w-10 text-[--ac-text-3]" />
+                      <h3 className="font-semibold text-[--ac-text]">
+                        No feedback entries found
+                      </h3>
+                      <p className="mt-1 text-xs text-[--ac-text-3]">
+                        You haven't submitted any question queries or platform
+                        feedback yet.
+                      </p>
+                    </div>
                   ) : (
-                    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                    <div className="space-y-3">
                       {paginatedFeedback.map((item) => {
-                        const style = FEEDBACK_STATUS_STYLES[item.status]
+                        const style =
+                          FEEDBACK_STATUS_STYLES[item.status] ||
+                          FEEDBACK_STATUS_STYLES.pending
+
                         return (
                           <div
                             key={item._id}
-                            className="flex flex-col rounded-2xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-                            style={{
-                              borderColor: "var(--border)",
-                              backgroundColor: "var(--card)",
-                            }}
+                            className="rounded-xl border border-black/5 bg-slate-50/70 p-4 transition hover:border-black/15 dark:border-white/5 dark:bg-white/2 dark:hover:border-white/15"
                           >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-0.5">
-                                {Array.from({ length: 5 }).map((_, i) => (
-                                  <Star
-                                    key={i}
-                                    className="h-3.5 w-3.5"
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-bold text-[--ac-text] capitalize">
+                                    {item.title || `${item.targetType} inquiry`}
+                                  </span>
+                                  <span
+                                    className="rounded-full border px-2 py-0.5 text-[10px] font-bold"
                                     style={{
-                                      color: "#F59E0B",
-                                      fill:
-                                        item.rating && i < item.rating
-                                          ? "#F59E0B"
-                                          : "transparent",
+                                      color: style.color,
+                                      borderColor: style.border,
+                                      backgroundColor: style.bg,
                                     }}
-                                  />
-                                ))}
+                                  >
+                                    {style.label}
+                                  </span>
+                                </div>
+                                <p className="text-xs leading-relaxed text-[--ac-text-3]">
+                                  {item.content}
+                                </p>
                               </div>
-                              <Badge
-                                className="border text-[10px] font-semibold tracking-wide uppercase"
-                                style={{
-                                  color: style.color,
-                                  borderColor: style.border,
-                                  backgroundColor: style.bg,
-                                }}
-                              >
-                                {style.label}
-                              </Badge>
-                            </div>
 
-                            {item.title && (
-                              <p className="mt-3 text-sm font-semibold text-foreground">
-                                {item.title}
-                              </p>
-                            )}
-                            <p className="mt-1 line-clamp-2 flex-1 text-xs leading-5 text-muted-foreground">
-                              {item.content}
-                            </p>
-
-                            <div
-                              className="mt-3 flex items-center justify-between border-t pt-3 text-[11px] text-muted-foreground"
-                              style={{ borderColor: "var(--border)" }}
-                            >
-                              <span className="capitalize">
-                                {item.feedbackType} · {item.targetType}
+                              <span className="shrink-0 text-[11px] text-[--ac-text-3]">
+                                {formatDate(item.createdAt)}
                               </span>
-                              <span>{formatDate(item.createdAt)}</span>
                             </div>
                           </div>
                         )
                       })}
                     </div>
                   )}
-                  <Pagination
-                    currentPage={feedbackPage}
-                    totalPages={totalFeedbackPages}
-                    totalItems={feedbackHistory.length}
-                    onPageChange={setFeedbackPage}
-                  />
-                </>
+
+                  {/* Pagination */}
+                  {totalFeedbackPages > 1 && (
+                    <div className="flex items-center justify-between border-t border-black/5 pt-4 dark:border-white/5">
+                      <span className="text-xs text-[--ac-text-3]">
+                        Page {feedbackPage} of {totalFeedbackPages}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          disabled={feedbackPage === 1}
+                          onClick={() =>
+                            setFeedbackPage((p) => Math.max(1, p - 1))
+                          }
+                          className="rounded-md border border-black/10 p-1.5 text-xs disabled:opacity-40 dark:border-white/10"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <button
+                          disabled={feedbackPage === totalFeedbackPages}
+                          onClick={() =>
+                            setFeedbackPage((p) =>
+                              Math.min(totalFeedbackPages, p + 1)
+                            )
+                          }
+                          className="rounded-md border border-black/10 p-1.5 text-xs disabled:opacity-40 dark:border-white/10"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
-            </CardContent>
-          </Card>
-        )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   )
