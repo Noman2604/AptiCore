@@ -24,6 +24,12 @@ export default function AnimatedCounter({
   const ref = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setCount(end)
+      setHasAnimated(true)
+      return
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !hasAnimated) {
@@ -38,10 +44,14 @@ export default function AnimatedCounter({
     }
 
     return () => observer.disconnect()
-  }, [hasAnimated])
+  }, [end, hasAnimated])
 
   useEffect(() => {
     if (!hasAnimated) return
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setCount(end)
+      return
+    }
 
     let startTime: number | null = null
     let animationFrameId: number
@@ -68,9 +78,7 @@ export default function AnimatedCounter({
   }, [hasAnimated, end, duration])
 
   const formattedValue =
-    decimals > 0
-      ? count.toFixed(decimals)
-      : Math.floor(count).toLocaleString()
+    decimals > 0 ? count.toFixed(decimals) : Math.floor(count).toLocaleString()
 
   return (
     <span ref={ref} className={className}>

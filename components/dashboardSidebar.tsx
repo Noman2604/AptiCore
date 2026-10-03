@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import axios from "axios"
 import Image from "next/image"
+import { toast } from "sonner"
 import { getInitials } from "@/lib/utils"
 import { Button } from "./ui/button"
 
@@ -100,9 +101,11 @@ export function AppSidebar({ user }: AppSidebarProps) {
     try {
       setLoading(true)
       await axios.post("/api/auth/logout")
+      toast.success("Logged out successfully")
       router.push("/auth/login")
     } catch (error) {
       console.error("Logout error:", error)
+      toast.error("Failed to log out. Please try again.")
       setLoading(false)
     } finally {
       setLogoutConfirmOpen(false)

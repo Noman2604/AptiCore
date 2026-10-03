@@ -241,31 +241,28 @@ export default function BookmarkPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[--ac-bg] text-[--ac-text] transition-colors duration-300">
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
       <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
         
         {/* ================= HEADER HERO BANNER ================= */}
-        <div className="relative overflow-hidden rounded-2xl border border-black/10 dark:border-white/10 bg-linear-to-br from-amber-500/10 via-purple-500/5 to-teal-500/10 p-5 sm:p-7 backdrop-blur-sm shadow-sm">
-          <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-amber-400/15 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-16 left-1/2 h-56 w-56 rounded-full bg-teal-400/15 blur-3xl" />
-
-          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1.5">
-              <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                <Bookmark className="h-3.5 w-3.5 fill-current" />
+        <div className="rounded-2xl border border-border bg-card p-5 sm:p-7 shadow-xs">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-2">
+              <div className="section-eyebrow">
+                <span className="section-eyebrow-dot" />
                 <span>Personal Study Deck</span>
               </div>
-              <h1 className="font-[Space_Grotesk,sans-serif] text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl text-[--ac-text]">
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl text-foreground">
                 Saved Bookmarks
               </h1>
-              <p className="text-xs sm:text-sm text-[--ac-text-2] max-w-xl">
+              <p className="text-xs sm:text-sm text-muted-foreground max-w-xl leading-relaxed">
                 Revisit questions you flagged during mock tests. Self-test your knowledge, review explanations, and add personal study notes.
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
               <Link href="/dashboard/tests">
-                <button className="flex items-center gap-2 rounded-xl bg-linear-to-r from-[#6ee7c9] to-[#3ecf8e] px-4 py-2.5 text-xs sm:text-sm font-bold text-[#06120d] shadow-sm shadow-teal-500/20 transition hover:brightness-105 active:scale-98 cursor-pointer">
+                <button className="flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-xs sm:text-sm font-semibold text-white shadow-xs transition hover:bg-emerald-600 active:scale-98 cursor-pointer">
                   <Play className="h-3.5 w-3.5 fill-current" />
                   <span>Practice Tests</span>
                 </button>

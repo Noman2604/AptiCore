@@ -218,7 +218,7 @@ export async function POST(request: NextRequest) {
       marksObtained: marksObtained || 0,
       totalMarks: totalMarks || 0,
       timeSpentSeconds: timeSpentSeconds || 0,
-      status: "completed",
+      status: "completed" as const,
       answers: normalizedAnswers,
       startedAt: startedAt || new Date(),
       submittedAt: new Date(),

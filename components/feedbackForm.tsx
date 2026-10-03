@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import axios from "axios"
-import { CheckCircle2, Star, XCircle } from "lucide-react"
+import { Star } from "lucide-react"
+import { toast } from "sonner"
 import { Label } from "./ui/label"
 type FeedbackType = "feedback" | "comment"
 type TargetType = "question" | "test" | "result" | "page" | "platform"
@@ -39,14 +40,10 @@ export default function FeedbackForm({
   const [isAnonymous, setIsAnonymous] = useState(false)
   const [isPublic, setIsPublic] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  const [success, setSuccess] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setSubmitting(true)
-    setError(null)
-    setSuccess(null)
 
     try {
       await axios.post("/api/feedback", {
@@ -65,13 +62,13 @@ export default function FeedbackForm({
       setRating("")
       setIsAnonymous(false)
       setIsPublic(true)
-      setSuccess("Thanks. Your feedback was submitted successfully.")
+      toast.success("Feedback submitted successfully!")
       onSubmitted?.()
     } catch (err: unknown) {
       const message = axios.isAxiosError(err)
         ? err.response?.data?.error || "Failed to submit feedback"
         : "Failed to submit feedback"
-      setError(message)
+      toast.error(message)
     } finally {
       setSubmitting(false)
     }
@@ -172,20 +169,6 @@ export default function FeedbackForm({
           </div>
         </div>
       </div>
-
-      {success && (
-        <div className="flex items-center gap-2 rounded-lg border border-[rgba(62,207,142,0.3)] bg-[rgba(62,207,142,0.1)] px-3.5 py-2.5 text-[13px] text-[#3ecf8e]">
-          <CheckCircle2 className="h-4 w-4 shrink-0" />
-          {success}
-        </div>
-      )}
-
-      {error && (
-        <div className="flex items-center gap-2 rounded-lg border border-[rgba(242,85,90,0.3)] bg-[rgba(242,85,90,0.1)] px-3.5 py-2.5 text-[13px] text-[#f2555a]">
-          <XCircle className="h-4 w-4 shrink-0" />
-          {error}
-        </div>
-      )}
 
       <button
         type="submit"

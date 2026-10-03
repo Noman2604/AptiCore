@@ -189,7 +189,15 @@ export default function SubcategoryResultsPage() {
     { key: "review", label: "Flagged", color: "#8b7cf6" },
   ]
 
-  const backHref = `/dashboard/tests/${params?.slug || ""}`
+  const categorySlug =
+    result?.testId?.categoryId?.slug ||
+    (result as any)?.categoryId?.slug ||
+    params?.slug ||
+    ""
+
+  const backHref = categorySlug
+    ? `/dashboard/tests?category=${encodeURIComponent(categorySlug)}`
+    : "/dashboard/tests"
 
   const handleBack = () => {
     if (typeof window !== "undefined") {

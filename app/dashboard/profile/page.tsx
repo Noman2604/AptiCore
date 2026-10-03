@@ -17,7 +17,6 @@ import {
   GraduationCap,
   Plus,
   Trash2,
-  CheckCircle2,
   Sparkles,
   Zap,
   ArrowUpRight,
@@ -34,6 +33,7 @@ import {
 } from "lucide-react"
 import axios from "axios"
 import Image from "next/image"
+import { toast } from "sonner"
 import { CldUploadWidget } from "next-cloudinary"
 import { cn, formatNumber, getInitials } from "@/lib/utils"
 import {
@@ -267,7 +267,6 @@ export default function ProfilePage() {
     }
   })
   const [educationList, setEducationList] = useState<EducationFormEntry[]>([])
-  const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -399,11 +398,12 @@ export default function ProfilePage() {
       }
       setEducationList((data.data.education || []).map((edu: IEducation) => toFormEntry(edu)))
       setEditing(false)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
-    } catch (error) {
+      toast.success("Profile updated successfully")
+    } catch (error: any) {
       console.error("Failed to save profile:", error)
-      alert("Failed to save profile. Please check your inputs.")
+      const message =
+        error?.response?.data?.error || "Failed to save profile. Please check your inputs."
+      toast.error(message)
     } finally {
       setSaving(false)
     }
@@ -426,10 +426,10 @@ export default function ProfilePage() {
       if (data?.data) {
         setUser(data.data)
       }
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
+      toast.success("Avatar border equipped successfully!")
     } catch (err) {
       console.error("Failed to update avatar border:", err)
+      toast.error("Failed to equip avatar border. Please try again.")
     }
   }
 
@@ -476,29 +476,29 @@ export default function ProfilePage() {
       label: "Current Streak",
       value: `${currentStreak} Days`,
       icon: Flame,
-      color: "text-orange-500",
-      bg: "bg-orange-500/10 border-orange-500/20",
+      color: "text-amber-500",
+      bg: "bg-card border-border",
     },
     {
       label: "Best Streak",
       value: `${longestStreak} Days`,
       icon: Award,
-      color: "text-purple-500",
-      bg: "bg-purple-500/10 border-purple-500/20",
+      color: "text-emerald-500",
+      bg: "bg-card border-border",
     },
     {
       label: "Total XP",
       value: `${formatNumber(totalXP)} XP`,
       icon: Trophy,
       color: "text-amber-500",
-      bg: "bg-amber-500/10 border-amber-500/20",
+      bg: "bg-card border-border",
     },
     {
       label: "Level Tier",
       value: `Level ${level}`,
       icon: Medal,
-      color: "text-teal-500",
-      bg: "bg-teal-500/10 border-teal-500/20",
+      color: "text-sky-500",
+      bg: "bg-card border-border",
     },
   ]
 
@@ -517,29 +517,22 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[--ac-bg] pb-24 text-[--ac-text] transition-colors duration-300">
+    <div className="min-h-screen bg-background pb-24 text-foreground transition-colors duration-300">
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-        {/* ================= SAVED TOAST ALERT ================= */}
-        {saved && (
-          <div className="flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-xs font-semibold text-emerald-600 dark:text-emerald-400 animate-in fade-in slide-in-from-top-2">
-            <CheckCircle2 className="h-4 w-4" />
-            <span>Profile changes saved successfully!</span>
-          </div>
-        )}
 
         {/* ================= HERO & COVER CARD ================= */}
-        <div className="relative overflow-hidden rounded-3xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#10151d]/80 backdrop-blur-md shadow-sm">
-          {/* Cover Mesh Banner */}
-          <div className="relative h-44 sm:h-52 w-full overflow-hidden bg-linear-to-r from-teal-500/30 via-purple-500/25 to-amber-500/30 border-b border-black/10 dark:border-white/10">
-            <div className="pointer-events-none absolute -left-10 -top-10 h-48 w-48 rounded-full bg-teal-400/20 blur-2xl" />
-            <div className="pointer-events-none absolute right-10 top-5 h-56 w-56 rounded-full bg-purple-500/20 blur-3xl" />
-            <div className="pointer-events-none absolute right-1/3 -bottom-10 h-40 w-40 rounded-full bg-amber-400/20 blur-2xl" />
-
-            {/* Subtle Tag in banner */}
-            <div className="absolute right-4 top-4 hidden sm:flex items-center gap-1.5 rounded-full border border-black/10 dark:border-white/10 bg-black/30 dark:bg-black/40 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur-md">
-              <Sparkles className="h-3 w-3 text-amber-400" />
-              <span>AptiCore Learner Profile</span>
+        <div className="relative overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+          {/* Clean Solid Banner */}
+          <div className="relative h-32 sm:h-40 w-full overflow-hidden bg-muted/40 border-b border-border flex items-center justify-between px-6">
+            <div className="section-eyebrow">
+              <span className="section-eyebrow-dot" />
+              <span>03 / LEARNER PROFILE</span>
             </div>
+
+            <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
+              <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
+              <span>AptiCore Verified Candidate</span>
+            </span>
           </div>
 
           {/* Profile Header Body */}
@@ -548,7 +541,7 @@ export default function ProfilePage() {
               {/* Avatar + Main Info */}
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
                 {/* Avatar with Gaming Border & Camera Trigger */}
-                <div className="relative -mt-16 sm:-mt-20 shrink-0 mx-auto sm:mx-0">
+                <div className="relative -mt-14 sm:-mt-18 shrink-0 mx-auto sm:mx-0">
                   <AvatarFrame
                     border={activeBorder}
                     size="2xl"
@@ -562,7 +555,7 @@ export default function ProfilePage() {
                       }}
                       title={user?.avatarUrl ? "Click to view full photo" : undefined}
                       className={cn(
-                        "group relative h-full w-full overflow-hidden rounded-3xl border-4 border-white dark:border-[#10151d] bg-linear-to-tr from-teal-500/30 to-purple-500/30 shadow-xl transition-all duration-300",
+                        "group relative h-full w-full overflow-hidden rounded-2xl border-4 border-card bg-muted shadow-md transition-all duration-300",
                         user?.avatarUrl && "cursor-pointer hover:scale-[1.02]"
                       )}
                     >
@@ -572,18 +565,18 @@ export default function ProfilePage() {
                             src={user.avatarUrl}
                             alt="Profile avatar"
                             fill
-                            className="object-cover transition-transform duration-300 group-hover:scale-110"
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
                           />
                           {/* Hover Overlay Hint */}
-                          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/45 opacity-0 backdrop-blur-[2px] transition-opacity duration-200 group-hover:opacity-100">
-                            <Eye className="h-6 w-6 text-white drop-shadow-md transition-transform duration-200 group-hover:scale-110" />
-                            <span className="mt-1 font-[JetBrains_Mono,monospace] text-[10px] font-bold text-white tracking-wider uppercase drop-shadow-md">
+                          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 opacity-0 backdrop-blur-[2px] transition-opacity duration-200 group-hover:opacity-100">
+                            <Eye className="h-5 w-5 text-white drop-shadow-md" />
+                            <span className="mt-1 text-[10px] font-bold text-white tracking-wider uppercase">
                               View Photo
                             </span>
                           </div>
                         </>
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center font-[Space_Grotesk,sans-serif] text-3xl font-extrabold text-[--ac-text]">
+                        <div className="flex h-full w-full items-center justify-center font-heading text-3xl font-extrabold text-foreground">
                           {getInitials(userdata?.name || "Learner")}
                         </div>
                       )}
@@ -602,11 +595,10 @@ export default function ProfilePage() {
                           avatarUrl: newAvatarUrl,
                         })
                         setUser(profileRes.data)
-                        setSaved(true)
-                        setTimeout(() => setSaved(false), 3000)
+                        toast.success("Avatar photo updated successfully")
                       } catch (err) {
                         console.error("Avatar update error:", err)
-                        alert("Failed to update profile avatar.")
+                        toast.error("Failed to update profile avatar. Please try again.")
                       } finally {
                         setUploadingImage(false)
                       }
@@ -618,12 +610,12 @@ export default function ProfilePage() {
                         onClick={() => open()}
                         disabled={uploadingImage}
                         title="Upload new avatar photo"
-                        className="absolute bottom-0 right-0 z-30 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white dark:border-[#10151d] bg-teal-500 text-slate-950 shadow-xl transition-all hover:scale-110 hover:bg-teal-400 active:scale-95 disabled:opacity-70 cursor-pointer"
+                        className="absolute bottom-0 right-0 z-30 flex h-8 w-8 items-center justify-center rounded-full border-2 border-card bg-primary text-primary-foreground shadow-md transition-all hover:bg-emerald-600 active:scale-95 disabled:opacity-70 cursor-pointer"
                       >
                         {uploadingImage ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         ) : (
-                          <Camera className="h-4 w-4" />
+                          <Camera className="h-3.5 w-3.5" />
                         )}
                       </button>
                     )}
@@ -633,16 +625,16 @@ export default function ProfilePage() {
                 {/* Name & Role */}
                 <div className="space-y-1 text-center sm:text-left">
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                    <h1 className="font-[Space_Grotesk,sans-serif] text-2xl font-bold text-[--ac-text] sm:text-3xl">
+                    <h1 className="font-heading text-2xl font-bold text-foreground sm:text-3xl">
                       {userdata?.name || "Learner"}
                     </h1>
-                    <span className="inline-flex items-center gap-1 rounded-full border border-teal-500/30 bg-teal-500/10 px-2.5 py-0.5 font-[JetBrains_Mono,monospace] text-[11px] font-bold text-teal-600 dark:text-teal-400">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
                       <Zap className="h-3 w-3" />
                       Lvl {level}
                     </span>
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 text-xs text-[--ac-text-3]">
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Mail className="h-3 w-3" />
                       {userdata?.email}
@@ -662,17 +654,17 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => setIsBorderModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 px-3.5 py-2.5 text-xs font-bold text-sky-600 dark:text-sky-300 transition active:scale-95 shadow-xs"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card hover:bg-accent px-3.5 py-2 text-xs font-medium text-foreground transition cursor-pointer"
                   title="Customize Game Avatar Border"
                 >
-                  <Sparkles className="h-3.5 w-3.5 text-sky-400" />
+                  <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
                   <span>Avatar Border</span>
                 </button>
 
                 {!editing ? (
                   <button
                     onClick={handleEdit}
-                    className="inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-teal-500 to-emerald-500 px-5 py-2.5 text-xs font-bold text-slate-950 shadow-md shadow-teal-500/20 transition hover:opacity-90 active:scale-95"
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary hover:bg-emerald-600 px-5 py-2 text-xs font-semibold text-primary-foreground shadow-xs transition cursor-pointer"
                   >
                     <span>Edit Profile</span>
                   </button>
@@ -681,7 +673,7 @@ export default function ProfilePage() {
                     <button
                       onClick={() => setEditing(false)}
                       disabled={saving}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-4 py-2.5 text-xs font-semibold text-[--ac-text] transition hover:bg-black/10 dark:hover:bg-white/10"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2 text-xs font-medium text-foreground transition hover:bg-accent cursor-pointer"
                     >
                       <X className="h-3.5 w-3.5" />
                       Cancel
@@ -689,7 +681,7 @@ export default function ProfilePage() {
                     <button
                       onClick={handleSave}
                       disabled={saving}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-teal-500 px-5 py-2.5 text-xs font-bold text-slate-950 shadow-md transition hover:bg-teal-400 disabled:opacity-60"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary hover:bg-emerald-600 px-5 py-2 text-xs font-semibold text-primary-foreground shadow-xs transition disabled:opacity-60 cursor-pointer"
                     >
                       {saving ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -704,10 +696,10 @@ export default function ProfilePage() {
             </div>
 
             {/* Bio Section */}
-            <div className="mt-5 border-t border-black/5 dark:border-white/5 pt-4">
+            <div className="mt-5 border-t border-border pt-4">
               {editing ? (
                 <div className="space-y-1.5">
-                  <label className="font-[JetBrains_Mono,monospace] text-[10.5px] font-semibold uppercase tracking-wider text-[--ac-text-3]">
+                  <label className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Bio & Aspirations
                   </label>
                   <textarea
@@ -715,36 +707,36 @@ export default function ProfilePage() {
                     onChange={(e) => setForm({ ...form, bio: e.target.value })}
                     rows={3}
                     placeholder="Introduce yourself, your target placements, and skills..."
-                    className="w-full rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#0c1017] p-3.5 text-xs text-[--ac-text] placeholder:text-[--ac-text-3] focus:border-teal-500/50 focus:outline-hidden focus:ring-2 focus:ring-teal-500/20"
+                    className="w-full rounded-xl border border-border bg-background p-3.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-hidden"
                   />
                 </div>
               ) : (
-                <p className="text-xs leading-relaxed text-[--ac-text-2] sm:text-sm">
+                <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
                   {user?.bio || "No bio added yet. Click 'Edit Profile' to share your goals and target companies."}
                 </p>
               )}
             </div>
 
             {/* XP Progress Bar */}
-            <div className="mt-5 space-y-2 rounded-2xl border border-black/5 dark:border-white/5 bg-black/2 dark:bg-white/2 p-4">
+            <div className="mt-5 space-y-2 rounded-xl border border-border bg-muted/30 p-4">
               <div className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1.5 font-[Space_Grotesk,sans-serif] font-bold text-[--ac-text]">
+                <span className="flex items-center gap-1.5 font-heading font-bold text-foreground">
                   <Trophy className="h-3.5 w-3.5 text-amber-500" />
                   {formatNumber(totalXP)} Total XP
                 </span>
-                <span className="font-[JetBrains_Mono,monospace] text-[11px] text-[--ac-text-3]">
+                <span className="text-[11px] text-muted-foreground">
                   Next Level: {formatNumber(nextLevelThreshold)} XP
                 </span>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                 <div
-                  className="h-full rounded-full bg-linear-to-r from-teal-400 via-purple-500 to-amber-400 transition-all duration-500"
+                  className="h-full rounded-full bg-emerald-500 transition-all duration-500"
                   style={{ width: `${xpProgressPct}%` }}
                 />
               </div>
-              <div className="flex items-center justify-between font-[JetBrains_Mono,monospace] text-[10.5px] text-[--ac-text-3]">
+              <div className="flex items-center justify-between text-[10.5px] text-muted-foreground font-medium">
                 <span>Level {level} Progress</span>
-                <span className="font-bold text-teal-600 dark:text-teal-400">{xpProgressPct}% Complete</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">{xpProgressPct}% Complete</span>
               </div>
             </div>
           </div>
@@ -756,23 +748,23 @@ export default function ProfilePage() {
             <div
               key={s.label}
               className={cn(
-                "flex items-center gap-3 rounded-2xl border p-4 backdrop-blur-md transition-all hover:-translate-y-0.5 shadow-xs",
+                "flex items-center gap-3 rounded-xl border p-4 transition-all hover:border-foreground/20 shadow-xs",
                 s.bg
               )}
             >
               <div
                 className={cn(
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/80 dark:bg-[#10151d]/90 shadow-xs",
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted shadow-xs",
                   s.color
                 )}
               >
                 <s.icon className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <p className="truncate font-[JetBrains_Mono,monospace] text-[10px] font-bold uppercase tracking-wider text-[--ac-text-3]">
+                <p className="truncate text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                   {s.label}
                 </p>
-                <p className="truncate font-[Space_Grotesk,sans-serif] text-base font-extrabold text-[--ac-text] sm:text-lg">
+                <p className="truncate font-heading text-base font-bold text-foreground sm:text-lg">
                   {s.value}
                 </p>
               </div>
@@ -782,27 +774,27 @@ export default function ProfilePage() {
 
         {/* ================= PROFILE COMPLETION PROGRESS ================= */}
         {completeness.score < 100 && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-teal-500/20 bg-linear-to-r from-teal-500/10 via-purple-500/5 to-transparent p-4 sm:p-5 backdrop-blur-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <UserCheck className="h-4 w-4 text-teal-500" />
-                <span className="font-[Space_Grotesk,sans-serif] text-sm font-bold text-[--ac-text]">
+                <UserCheck className="h-4 w-4 text-emerald-500" />
+                <span className="font-heading text-sm font-bold text-foreground">
                   Profile Completeness: {completeness.score}%
                 </span>
               </div>
-              <p className="text-xs text-[--ac-text-3]">
+              <p className="text-xs text-muted-foreground">
                 Tip: {completeness.missing[0] || "Fill in your background details for recruiters."}
               </p>
             </div>
 
             <div className="w-full sm:w-56 space-y-1">
-              <div className="h-2 w-full overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                 <div
-                  className="h-full rounded-full bg-linear-to-r from-teal-400 to-emerald-400 transition-all duration-500"
+                  className="h-full rounded-full bg-emerald-500 transition-all duration-500"
                   style={{ width: `${completeness.score}%` }}
                 />
               </div>
-              <p className="text-right font-[JetBrains_Mono,monospace] text-[10px] text-[--ac-text-3]">
+              <p className="text-right text-[10px] text-muted-foreground font-medium">
                 {100 - completeness.score}% remaining
               </p>
             </div>
@@ -814,78 +806,78 @@ export default function ProfilePage() {
           {/* LEFT COLUMN: Personal Info & Links (4 cols on lg) */}
           <div className="space-y-6 lg:col-span-5">
             {/* About / Personal Info Card */}
-            <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#10151d]/80 p-6 backdrop-blur-md shadow-sm">
+            <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="font-[Space_Grotesk,sans-serif] text-base font-bold text-[--ac-text]">
+                <h2 className="font-heading text-base font-bold text-foreground">
                   Personal Info
                 </h2>
-                <MapPin className="h-4 w-4 text-teal-500" />
+                <MapPin className="h-4 w-4 text-emerald-500" />
               </div>
 
               {editing ? (
                 <div className="space-y-4">
                   <div className="space-y-1">
-                    <label className="font-[JetBrains_Mono,monospace] text-[10.5px] uppercase tracking-wider text-[--ac-text-3]">
+                    <label className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
                       Location / City
                     </label>
                     <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[--ac-text-3]" />
+                      <MapPin className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                       <input
                         type="text"
                         placeholder="e.g. Mumbai, India"
                         value={form.location}
                         onChange={(e) => setForm({ ...form, location: e.target.value })}
-                        className="h-10 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-[#0c1017] pl-9 pr-3 text-xs text-[--ac-text] focus:border-teal-500/50 focus:outline-hidden focus:ring-2 focus:ring-teal-500/20"
+                        className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-hidden"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="font-[JetBrains_Mono,monospace] text-[10.5px] uppercase tracking-wider text-[--ac-text-3]">
+                    <label className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
                       Phone Number
                     </label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[--ac-text-3]" />
+                      <Phone className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                       <input
                         type="text"
                         placeholder="e.g. +91 98765 43210"
                         value={form.phone}
                         onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                        className="h-10 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-[#0c1017] pl-9 pr-3 text-xs text-[--ac-text] focus:border-teal-500/50 focus:outline-hidden focus:ring-2 focus:ring-teal-500/20"
+                        className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-hidden"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="font-[JetBrains_Mono,monospace] text-[10.5px] uppercase tracking-wider text-[--ac-text-3]">
+                    <label className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
                       Date of Birth
                     </label>
                     <div className="relative">
-                      <Cake className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[--ac-text-3]" />
+                      <Cake className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                       <input
                         type="date"
                         value={form.dateOfBirth}
                         onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
-                        className="h-10 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-[#0c1017] pl-9 pr-3 text-xs text-[--ac-text] focus:border-teal-500/50 focus:outline-hidden focus:ring-2 focus:ring-teal-500/20"
+                        className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-xs text-foreground focus:border-primary focus:outline-hidden"
                       />
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-3.5 text-xs text-[--ac-text-2]">
-                  <div className="flex items-center gap-3 rounded-xl border border-black/5 dark:border-white/5 bg-black/2 dark:bg-white/2 p-3">
-                    <MapPin className="h-4 w-4 shrink-0 text-teal-500" />
-                    <span className="truncate">{user?.location || "No location added"}</span>
+                <div className="space-y-3 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 p-3">
+                    <MapPin className="h-4 w-4 shrink-0 text-emerald-500" />
+                    <span className="truncate text-foreground">{user?.location || "No location added"}</span>
                   </div>
 
-                  <div className="flex items-center gap-3 rounded-xl border border-black/5 dark:border-white/5 bg-black/2 dark:bg-white/2 p-3">
-                    <Phone className="h-4 w-4 shrink-0 text-purple-500" />
-                    <span className="truncate">{user?.phone || "No phone added"}</span>
+                  <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 p-3">
+                    <Phone className="h-4 w-4 shrink-0 text-sky-500" />
+                    <span className="truncate text-foreground">{user?.phone || "No phone added"}</span>
                   </div>
 
-                  <div className="flex items-center gap-3 rounded-xl border border-black/5 dark:border-white/5 bg-black/2 dark:bg-white/2 p-3">
+                  <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 p-3">
                     <CalendarDays className="h-4 w-4 shrink-0 text-amber-500" />
-                    <span>
+                    <span className="text-foreground">
                       {user?.dateOfBirth
                         ? new Date(user.dateOfBirth).toLocaleDateString("en-US", {
                             month: "long",
@@ -900,44 +892,44 @@ export default function ProfilePage() {
             </div>
 
             {/* Links & Portfolio Card */}
-            <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#10151d]/80 p-6 backdrop-blur-md shadow-sm">
+            <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="font-[Space_Grotesk,sans-serif] text-base font-bold text-[--ac-text]">
+                <h2 className="font-heading text-base font-bold text-foreground">
                   Professional Links
                 </h2>
-                <LinkIcon className="h-4 w-4 text-purple-500" />
+                <LinkIcon className="h-4 w-4 text-emerald-500" />
               </div>
 
               {editing ? (
                 <div className="space-y-4">
                   <div className="space-y-1">
-                    <label className="font-[JetBrains_Mono,monospace] text-[10.5px] uppercase tracking-wider text-[--ac-text-3]">
+                    <label className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
                       Resume / CV Link
                     </label>
                     <div className="relative">
-                      <FileText className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[--ac-text-3]" />
+                      <FileText className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                       <input
                         type="url"
                         placeholder="https://drive.google.com/..."
                         value={form.resumeUrl}
                         onChange={(e) => setForm({ ...form, resumeUrl: e.target.value })}
-                        className="h-10 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-[#0c1017] pl-9 pr-3 text-xs text-[--ac-text] focus:border-teal-500/50 focus:outline-hidden focus:ring-2 focus:ring-teal-500/20"
+                        className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-hidden"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="font-[JetBrains_Mono,monospace] text-[10.5px] uppercase tracking-wider text-[--ac-text-3]">
+                    <label className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
                       LinkedIn Profile
                     </label>
                     <div className="relative">
-                      <LinkIcon className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[--ac-text-3]" />
+                      <LinkIcon className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                       <input
                         type="url"
                         placeholder="https://linkedin.com/in/username"
                         value={form.linkedinUrl}
                         onChange={(e) => setForm({ ...form, linkedinUrl: e.target.value })}
-                        className="h-10 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-[#0c1017] pl-9 pr-3 text-xs text-[--ac-text] focus:border-teal-500/50 focus:outline-hidden focus:ring-2 focus:ring-teal-500/20"
+                        className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-hidden"
                       />
                     </div>
                   </div>
@@ -949,16 +941,16 @@ export default function ProfilePage() {
                       href={user.resumeUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group flex items-center justify-between rounded-2xl border border-teal-500/30 bg-teal-500/10 p-3.5 text-xs font-semibold text-teal-700 dark:text-teal-300 transition hover:bg-teal-500/15"
+                      className="group flex items-center justify-between rounded-lg border border-border bg-background hover:bg-accent p-3.5 text-xs font-semibold text-foreground transition"
                     >
                       <div className="flex items-center gap-2.5">
-                        <FileText className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                        <FileText className="h-4 w-4 text-emerald-500" />
                         <span>View Resume / CV</span>
                       </div>
                       <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                     </a>
                   ) : (
-                    <div className="rounded-2xl border border-dashed border-black/10 dark:border-white/10 p-3 text-center text-xs text-[--ac-text-3]">
+                    <div className="rounded-lg border border-dashed border-border p-3 text-center text-xs text-muted-foreground">
                       No resume linked yet
                     </div>
                   )}
@@ -968,16 +960,16 @@ export default function ProfilePage() {
                       href={user.linkedinUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group flex items-center justify-between rounded-2xl border border-purple-500/30 bg-purple-500/10 p-3.5 text-xs font-semibold text-purple-700 dark:text-purple-300 transition hover:bg-purple-500/15"
+                      className="group flex items-center justify-between rounded-lg border border-border bg-background hover:bg-accent p-3.5 text-xs font-semibold text-foreground transition"
                     >
                       <div className="flex items-center gap-2.5">
-                        <LinkIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                        <LinkIcon className="h-4 w-4 text-sky-500" />
                         <span>LinkedIn Profile</span>
                       </div>
                       <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                     </a>
                   ) : (
-                    <div className="rounded-2xl border border-dashed border-black/10 dark:border-white/10 p-3 text-center text-xs text-[--ac-text-3]">
+                    <div className="rounded-lg border border-dashed border-border p-3 text-center text-xs text-muted-foreground">
                       No LinkedIn profile linked
                     </div>
                   )}
@@ -988,18 +980,18 @@ export default function ProfilePage() {
 
           {/* RIGHT COLUMN: Education Journey (7 cols on lg) */}
           <div className="lg:col-span-7">
-            <div className="rounded-3xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#10151d]/80 p-6 sm:p-7 backdrop-blur-md shadow-sm">
-              <div className="mb-6 flex items-center justify-between">
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
+              <div className="mb-6 flex items-center justify-between border-b border-border pb-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
                     <GraduationCap className="h-5 w-5" />
                   </div>
                   <div>
-                    <h2 className="font-[Space_Grotesk,sans-serif] text-base font-bold text-[--ac-text]">
+                    <h2 className="text-sm font-semibold tracking-tight text-foreground">
                       Education History
                     </h2>
-                    <p className="text-xs text-[--ac-text-3]">
-                      Academic background and credentials
+                    <p className="text-xs text-muted-foreground">
+                      Academic background and verified credentials
                     </p>
                   </div>
                 </div>
@@ -1007,7 +999,7 @@ export default function ProfilePage() {
                 {editing && (
                   <button
                     onClick={addEducation}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-teal-500/30 bg-teal-500/10 px-3.5 py-1.5 font-[JetBrains_Mono,monospace] text-xs font-bold text-teal-600 dark:text-teal-400 transition hover:bg-teal-500/20"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-500/20"
                   >
                     <Plus className="h-3.5 w-3.5" />
                     <span>Add Entry</span>
@@ -1017,9 +1009,9 @@ export default function ProfilePage() {
 
               {/* Education Content */}
               {editing ? (
-                <div className="space-y-5">
+                <div className="space-y-4">
                   {educationList.length === 0 && (
-                    <div className="rounded-2xl border border-dashed border-black/10 dark:border-white/10 p-8 text-center text-xs text-[--ac-text-3]">
+                    <div className="rounded-xl border border-dashed border-border p-8 text-center text-xs text-muted-foreground">
                       No education entries. Click &ldquo;Add Entry&rdquo; to add your school, college, or degree.
                     </div>
                   )}
@@ -1027,16 +1019,16 @@ export default function ProfilePage() {
                   {educationList.map((entry) => (
                     <div
                       key={entry._key}
-                      className="relative rounded-2xl border border-black/10 dark:border-white/10 bg-black/2 dark:bg-white/2 p-4.5 sm:p-5"
+                      className="relative rounded-xl border border-border bg-background/50 p-4.5"
                     >
                       {/* Header of Entry */}
-                      <div className="mb-4 flex items-center justify-between">
-                        <span className="font-[JetBrains_Mono,monospace] text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
+                      <div className="mb-4 flex items-center justify-between border-b border-border/60 pb-2">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-emerald-500">
                           {entry.level || "New Education Entry"}
                         </span>
                         <button
                           onClick={() => removeEducation(entry._key)}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg text-rose-500 transition hover:bg-rose-500/10"
+                          className="flex h-7 w-7 items-center justify-center rounded-md text-destructive transition hover:bg-destructive/10"
                           title="Delete entry"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -1045,7 +1037,7 @@ export default function ProfilePage() {
 
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-1">
-                          <label className="font-[JetBrains_Mono,monospace] text-[10px] uppercase text-[--ac-text-3]">
+                          <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                             Level
                           </label>
                           <select
@@ -1053,10 +1045,10 @@ export default function ProfilePage() {
                             onChange={(e) =>
                               updateEducation(entry._key, { level: e.target.value as EducationLevel })
                             }
-                            className="h-9 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0c1017] px-2.5 text-xs text-[--ac-text] focus:border-teal-500/50 focus:outline-hidden"
+                            className="h-9 w-full rounded-lg border border-border bg-card px-2.5 text-xs text-foreground focus:border-emerald-500 focus:outline-hidden"
                           >
                             {EDUCATION_LEVELS.map((lvl) => (
-                              <option key={lvl} value={lvl} className="dark:bg-[#10151d]">
+                              <option key={lvl} value={lvl} className="bg-card">
                                 {lvl}
                               </option>
                             ))}
@@ -1064,7 +1056,7 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="space-y-1">
-                          <label className="font-[JetBrains_Mono,monospace] text-[10px] uppercase text-[--ac-text-3]">
+                          <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                             Status
                           </label>
                           <select
@@ -1072,10 +1064,10 @@ export default function ProfilePage() {
                             onChange={(e) =>
                               updateEducation(entry._key, { status: e.target.value as EducationStatus })
                             }
-                            className="h-9 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0c1017] px-2.5 text-xs text-[--ac-text] focus:border-teal-500/50 focus:outline-hidden"
+                            className="h-9 w-full rounded-lg border border-border bg-card px-2.5 text-xs text-foreground focus:border-emerald-500 focus:outline-hidden"
                           >
                             {EDUCATION_STATUSES.map((st) => (
-                              <option key={st} value={st} className="dark:bg-[#10151d]">
+                              <option key={st} value={st} className="bg-card">
                                 {st}
                               </option>
                             ))}
@@ -1084,7 +1076,7 @@ export default function ProfilePage() {
                       </div>
 
                       <div className="mt-3 space-y-1">
-                        <label className="font-[JetBrains_Mono,monospace] text-[10px] uppercase text-[--ac-text-3]">
+                        <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                           Institution / College Name
                         </label>
                         <input
@@ -1092,12 +1084,12 @@ export default function ProfilePage() {
                           value={entry.institutionName}
                           onChange={(e) => updateEducation(entry._key, { institutionName: e.target.value })}
                           placeholder="e.g. Indian Institute of Technology"
-                          className="h-9 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0c1017] px-3 text-xs text-[--ac-text] focus:border-teal-500/50 focus:outline-hidden"
+                          className="h-9 w-full rounded-lg border border-border bg-card px-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-emerald-500 focus:outline-hidden"
                         />
                       </div>
 
                       <div className="mt-3 space-y-1">
-                        <label className="font-[JetBrains_Mono,monospace] text-[10px] uppercase text-[--ac-text-3]">
+                        <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                           University / Board
                         </label>
                         <input
@@ -1105,13 +1097,13 @@ export default function ProfilePage() {
                           value={entry.universityOrBoard}
                           onChange={(e) => updateEducation(entry._key, { universityOrBoard: e.target.value })}
                           placeholder="e.g. CBSE, Mumbai University"
-                          className="h-9 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0c1017] px-3 text-xs text-[--ac-text] focus:border-teal-500/50 focus:outline-hidden"
+                          className="h-9 w-full rounded-lg border border-border bg-card px-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-emerald-500 focus:outline-hidden"
                         />
                       </div>
 
                       <div className="mt-3 grid gap-3 sm:grid-cols-2">
                         <div className="space-y-1">
-                          <label className="font-[JetBrains_Mono,monospace] text-[10px] uppercase text-[--ac-text-3]">
+                          <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                             Degree
                           </label>
                           <input
@@ -1119,12 +1111,12 @@ export default function ProfilePage() {
                             value={entry.degree}
                             onChange={(e) => updateEducation(entry._key, { degree: e.target.value })}
                             placeholder="e.g. B.Tech, B.Sc"
-                            className="h-9 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0c1017] px-3 text-xs text-[--ac-text] focus:border-teal-500/50 focus:outline-hidden"
+                            className="h-9 w-full rounded-lg border border-border bg-card px-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-emerald-500 focus:outline-hidden"
                           />
                         </div>
 
                         <div className="space-y-1">
-                          <label className="font-[JetBrains_Mono,monospace] text-[10px] uppercase text-[--ac-text-3]">
+                          <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                             Specialization / Major
                           </label>
                           <input
@@ -1132,14 +1124,14 @@ export default function ProfilePage() {
                             value={entry.specialization}
                             onChange={(e) => updateEducation(entry._key, { specialization: e.target.value })}
                             placeholder="e.g. Computer Science"
-                            className="h-9 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0c1017] px-3 text-xs text-[--ac-text] focus:border-teal-500/50 focus:outline-hidden"
+                            className="h-9 w-full rounded-lg border border-border bg-card px-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-emerald-500 focus:outline-hidden"
                           />
                         </div>
                       </div>
 
                       <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
                         <div className="space-y-1">
-                          <label className="font-[JetBrains_Mono,monospace] text-[10px] uppercase text-[--ac-text-3]">
+                          <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                             CGPA (0-10)
                           </label>
                           <input
@@ -1150,12 +1142,12 @@ export default function ProfilePage() {
                             value={entry.cgpa}
                             onChange={(e) => updateEducation(entry._key, { cgpa: e.target.value })}
                             placeholder="8.5"
-                            className="h-9 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0c1017] px-3 text-xs text-[--ac-text] focus:border-teal-500/50 focus:outline-hidden"
+                            className="h-9 w-full rounded-lg border border-border bg-card px-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-emerald-500 focus:outline-hidden"
                           />
                         </div>
 
                         <div className="space-y-1">
-                          <label className="font-[JetBrains_Mono,monospace] text-[10px] uppercase text-[--ac-text-3]">
+                          <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                             Percentage
                           </label>
                           <input
@@ -1166,12 +1158,12 @@ export default function ProfilePage() {
                             value={entry.percentage}
                             onChange={(e) => updateEducation(entry._key, { percentage: e.target.value })}
                             placeholder="85%"
-                            className="h-9 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0c1017] px-3 text-xs text-[--ac-text] focus:border-teal-500/50 focus:outline-hidden"
+                            className="h-9 w-full rounded-lg border border-border bg-card px-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-emerald-500 focus:outline-hidden"
                           />
                         </div>
 
                         <div className="space-y-1">
-                          <label className="font-[JetBrains_Mono,monospace] text-[10px] uppercase text-[--ac-text-3]">
+                          <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                             Start Year
                           </label>
                           <input
@@ -1179,12 +1171,12 @@ export default function ProfilePage() {
                             value={entry.startYear}
                             onChange={(e) => updateEducation(entry._key, { startYear: e.target.value })}
                             placeholder="2021"
-                            className="h-9 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0c1017] px-3 text-xs text-[--ac-text] focus:border-teal-500/50 focus:outline-hidden"
+                            className="h-9 w-full rounded-lg border border-border bg-card px-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-emerald-500 focus:outline-hidden"
                           />
                         </div>
 
                         <div className="space-y-1">
-                          <label className="font-[JetBrains_Mono,monospace] text-[10px] uppercase text-[--ac-text-3]">
+                          <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                             {entry.currentlyStudying ? "End Year" : "Passing Year"}
                           </label>
                           <input
@@ -1199,19 +1191,19 @@ export default function ProfilePage() {
                               )
                             }
                             placeholder="2025"
-                            className="h-9 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0c1017] px-3 text-xs text-[--ac-text] focus:border-teal-500/50 focus:outline-hidden"
+                            className="h-9 w-full rounded-lg border border-border bg-card px-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-emerald-500 focus:outline-hidden"
                           />
                         </div>
                       </div>
 
-                      <label className="mt-3 flex cursor-pointer items-center gap-2 text-xs text-[--ac-text-3]">
+                      <label className="mt-3 flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
                         <input
                           type="checkbox"
                           checked={entry.currentlyStudying}
                           onChange={(e) =>
                             updateEducation(entry._key, { currentlyStudying: e.target.checked })
                           }
-                          className="h-4 w-4 rounded-md border-black/20 accent-teal-500"
+                          className="h-4 w-4 rounded-md border-border accent-emerald-500"
                         />
                         Currently studying here
                       </label>
@@ -1219,7 +1211,7 @@ export default function ProfilePage() {
                   ))}
                 </div>
               ) : sortedEducation.length > 0 ? (
-                <div className="relative pl-6 space-y-8 before:absolute before:-left-1 before:top-15 before:bottom-15 before:w-0.5 before:bg-linear-to-b before:from-teal-500 before:via-purple-500 before:to-amber-500">
+                <div className="relative pl-6 space-y-6 before:absolute before:left-2 before:top-3 before:bottom-3 before:w-[2px] before:bg-border">
                   {sortedEducation.map((edu, idx) => {
                     const statusConfig = STATUS_CONFIG[edu.status] || STATUS_CONFIG.Completed
                     const years =
@@ -1233,20 +1225,17 @@ export default function ProfilePage() {
                       <div key={idx} className="relative group">
                         {/* Milestone Indicator Node */}
                         <div
-                          className={cn(
-                            "absolute -left-8.5 top-15 h-3.5 w-3.5 rounded-full ring-4 bg-white dark:bg-[#10151d] transition-transform group-hover:scale-125",
-                            statusConfig.nodeClass
-                          )}
+                          className="absolute -left-6.5 top-3.5 h-3 w-3 rounded-full border-2 border-emerald-500 bg-background transition-transform group-hover:scale-125"
                         />
 
-                        <div className="rounded-2xl border border-black/5 dark:border-white/5 bg-black/2 dark:bg-white/2 p-4 transition-all hover:bg-black/4 dark:hover:bg-white/4">
+                        <div className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-emerald-500/30">
                           <div className="flex flex-wrap items-center justify-between gap-2">
-                            <h3 className="font-[Space_Grotesk,sans-serif] text-sm font-bold text-[--ac-text]">
+                            <h3 className="text-sm font-semibold text-foreground">
                               {edu.institutionName}
                             </h3>
                             <span
                               className={cn(
-                                "rounded-full border px-2.5 py-0.5 font-[JetBrains_Mono,monospace] text-[10px] font-bold uppercase",
+                                "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
                                 statusConfig.badgeClass
                               )}
                             >
@@ -1255,40 +1244,40 @@ export default function ProfilePage() {
                           </div>
 
                           {edu.universityOrBoard && (
-                            <p className="mt-0.5 text-xs text-[--ac-text-3]">
+                            <p className="mt-0.5 text-xs text-muted-foreground">
                               {edu.universityOrBoard}
                             </p>
                           )}
 
                           {(edu.degree || edu.specialization || edu.level) && (
-                            <p className="mt-1.5 text-xs font-semibold text-teal-600 dark:text-teal-400">
+                            <p className="mt-1.5 text-xs font-medium text-emerald-500">
                               {[edu.degree, edu.specialization].filter(Boolean).join(" · ") || edu.level}
                             </p>
                           )}
 
                           {edu.stream && (
-                            <p className="mt-0.5 text-xs text-[--ac-text-3]">{edu.stream}</p>
+                            <p className="mt-0.5 text-xs text-muted-foreground">{edu.stream}</p>
                           )}
 
                           {/* Chips for Year, CGPA, Percentage */}
                           <div className="mt-3 flex flex-wrap items-center gap-2">
                             {years && (
-                              <span className="rounded-md border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-2 py-0.5 font-[JetBrains_Mono,monospace] text-[10.5px] font-semibold text-[--ac-text-2]">
+                              <span className="rounded-md border border-border bg-muted/50 px-2 py-0.5 text-[11px] font-medium text-foreground">
                                 {years}
                               </span>
                             )}
                             {typeof edu.cgpa === "number" && (
-                              <span className="rounded-md border border-teal-500/30 bg-teal-500/10 px-2 py-0.5 font-[JetBrains_Mono,monospace] text-[10.5px] font-bold text-teal-600 dark:text-teal-400">
+                              <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-500">
                                 CGPA {edu.cgpa}
                               </span>
                             )}
                             {typeof edu.percentage === "number" && (
-                              <span className="rounded-md border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 font-[JetBrains_Mono,monospace] text-[10.5px] font-bold text-purple-600 dark:text-purple-400">
+                              <span className="rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[11px] font-semibold text-sky-500">
                                 {edu.percentage}%
                               </span>
                             )}
                             {edu.medium && (
-                              <span className="rounded-md border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 px-2 py-0.5 font-[JetBrains_Mono,monospace] text-[10.5px] font-medium text-[--ac-text-3]">
+                              <span className="rounded-md border border-border bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground">
                                 {edu.medium} Medium
                               </span>
                             )}
@@ -1300,11 +1289,11 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <GraduationCap className="h-10 w-10 text-[--ac-text-3] opacity-30 mb-2" />
-                  <p className="font-[Space_Grotesk,sans-serif] text-sm font-semibold text-[--ac-text-2]">
+                  <GraduationCap className="h-10 w-10 text-muted-foreground/30 mb-2" />
+                  <p className="text-sm font-semibold text-foreground">
                     No education history added yet
                   </p>
-                  <p className="text-xs text-[--ac-text-3] mt-1 max-w-xs">
+                  <p className="text-xs text-muted-foreground mt-1 max-w-xs">
                     Click &ldquo;Edit Profile&rdquo; to showcase your academic degrees, CGPA, and colleges.
                   </p>
                 </div>
@@ -1317,32 +1306,28 @@ export default function ProfilePage() {
       {/* ================= ENHANCED FULLSCREEN PHOTO LIGHTBOX ================= */}
       {isPhotoModalOpen && user?.avatarUrl && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-2xl p-4 sm:p-6 animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 sm:p-6 animate-in fade-in duration-200"
           onClick={() => {
             setIsPhotoModalOpen(false)
             setZoomLevel(1)
             setRotation(0)
           }}
         >
-          {/* Ambient Glows */}
-          <div className="pointer-events-none absolute h-96 w-96 rounded-full bg-teal-500/20 blur-3xl -top-10 -left-10" />
-          <div className="pointer-events-none absolute h-96 w-96 rounded-full bg-purple-500/20 blur-3xl -bottom-10 -right-10" />
-
           {/* Modal Card */}
           <div
-            className="relative flex flex-col items-center w-full max-w-2xl rounded-3xl border border-white/15 bg-[#0b0f16]/95 p-5 sm:p-7 shadow-2xl backdrop-blur-2xl text-white animate-in zoom-in-95 duration-200"
+            className="relative flex flex-col items-center w-full max-w-2xl rounded-2xl border border-white/10 bg-[#060b11] p-5 sm:p-6 shadow-2xl text-white animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Top Bar */}
             <div className="flex w-full items-center justify-between border-b border-white/10 pb-4 mb-4">
               <div className="flex items-center gap-3">
                 <AvatarFrame border={activeBorder} size="sm" shape="rounded">
-                  <div className="flex h-full w-full items-center justify-center bg-teal-500/20 font-[JetBrains_Mono,monospace] font-bold text-teal-300">
+                  <div className="flex h-full w-full items-center justify-center bg-emerald-500/10 font-mono font-bold text-emerald-400">
                     {getInitials(userdata?.name || "User")}
                   </div>
                 </AvatarFrame>
                 <div>
-                  <h3 className="font-[Space_Grotesk,sans-serif] text-base font-bold text-white">
+                  <h3 className="text-sm font-semibold text-white">
                     {userdata?.name || "Profile Photo"}
                   </h3>
                   <p className="font-[JetBrains_Mono,monospace] text-xs text-slate-400">
@@ -1444,11 +1429,10 @@ export default function ProfilePage() {
                       avatarUrl: newAvatarUrl,
                     })
                     setUser(profileRes.data)
-                    setSaved(true)
-                    setTimeout(() => setSaved(false), 3000)
+                    toast.success("Avatar photo updated successfully")
                   } catch (err) {
                     console.error("Avatar update error:", err)
-                    alert("Failed to update profile avatar.")
+                    toast.error("Failed to update profile avatar. Please try again.")
                   } finally {
                     setUploadingImage(false)
                   }

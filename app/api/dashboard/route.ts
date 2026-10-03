@@ -7,11 +7,13 @@ import Result from "@/lib/models/Result"
 import Leaderboard from "@/lib/models/Leaderboard"
 import UserAchievement from "@/lib/models/UserAchievement"
 import Test from "@/lib/models/Test"
+import Category from "@/lib/models/Category"
 
 
 export async function GET(request: NextRequest) {
     try {
         await connectDB()
+        void Category
         const token = request.cookies.get("accessToken")?.value
         if (!token) {
             return NextResponse.json(
@@ -61,7 +63,12 @@ export async function GET(request: NextRequest) {
                 .lean(),
 
             Result.find({ userId, status: "completed" })
-                .select("accuracy totalMarks marksObtained status createdAt")
+                .select("accuracy totalMarks marksObtained status createdAt timeSpentSeconds attemptedQuestions totalQuestions testName testId")
+                .populate({
+                    path: "testId",
+                    select: "title categoryId",
+                    populate: { path: "categoryId", select: "name slug" },
+                })
                 .lean(),
 
             Test.find({ isPublished: true })
@@ -143,7 +150,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Add rank based on sorted leaderboard
-        const leaderboardWithRank = leaderboard.map((entry: any, index: number) => ({
+        const leaderboardWithRank = leaderboard.map((entry, index) => ({
             ...entry,
             rank: index + 1,
         }))

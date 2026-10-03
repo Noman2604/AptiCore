@@ -5,6 +5,7 @@ import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes"
 
 function ThemeProvider({
   children,
+  disableTransitionOnChange = false,
   ...props
 }: React.ComponentProps<typeof NextThemesProvider>) {
   return (
@@ -12,7 +13,7 @@ function ThemeProvider({
       attribute="class"
       defaultTheme="system"
       enableSystem
-      disableTransitionOnChange
+      disableTransitionOnChange={disableTransitionOnChange}
       {...props}
     >
       <ThemeHotkey />

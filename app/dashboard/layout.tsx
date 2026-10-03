@@ -8,7 +8,7 @@ import { LogOut, User, FileText, Play, Bell } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { AppSidebar } from "@/components/dashboardSidebar"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
-import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler"
+import ThemeToggle from "@/components/ThemeToggle"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { ThemeProvider, useTheme } from "next-themes"
+import { toast } from "sonner"
 import { getInitials } from "@/lib/utils"
 import { AvatarFrame, resolveAvatarBorder } from "@/components/ui/game-avatar"
 
@@ -49,34 +50,8 @@ type SidebarUser = {
 }
 
 function ThemedToggler() {
-  const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return (
-      <div className="flex h-9 w-9 items-center justify-center">
-        <div className="h-4 w-4 rounded-full border border-[#8a96a8]" />
-      </div>
-    )
-  }
-
-  const currentTheme = theme === "dark" ? "dark" : "light"
-
-  const toggleTheme = () => {
-    setTheme(currentTheme === "dark" ? "light" : "dark")
-  }
-
   return (
-    <AnimatedThemeToggler
-      theme={currentTheme}
-      onThemeChange={toggleTheme}
-      variant="circle"
-      className="flex h-9 w-9 items-center justify-center rounded-full text-[--ac-text-2] transition-colors hover:bg-[--ac-hover] hover:text-[--ac-text] cursor-pointer outline-none"
-    />
+    <ThemeToggle className="h-9 w-9 rounded-full" />
   )
 }
 
@@ -126,9 +101,11 @@ export default function DashboardLayout({
     try {
       setLoggingOut(true)
       await axios.post("/api/auth/logout")
+      toast.success("Logged out successfully")
       router.push("/auth/login")
     } catch (error) {
       console.error("Logout error:", error)
+      toast.error("Failed to log out. Please try again.")
     } finally {
       setLoggingOut(false)
       setLogoutConfirmOpen(false)
@@ -164,10 +141,10 @@ export default function DashboardLayout({
 
         <main className="flex min-h-svh w-full flex-col">
           {/* Top Navbar Header */}
-          <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-black/10 dark:border-white/10 bg-slate-100 dark:bg-[#0a0e14] px-3 sm:px-4">
+          <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-border bg-background/95 backdrop-blur-md px-3 sm:px-6">
             {/* Left: Sidebar toggle + Mobile Logo */}
             <div className="flex items-center gap-2.5">
-              <SidebarTrigger className="h-8 w-8 text-[--ac-text-2] hover:bg-[--ac-hover] hover:text-[--ac-text] transition cursor-pointer" />
+              <SidebarTrigger className="h-8 w-8 text-muted-foreground hover:bg-accent hover:text-foreground transition cursor-pointer rounded-md" />
               
               {/* Mobile / Tablet Logo */}
               <Link href="/dashboard" className="flex items-center gap-2 lg:hidden">
@@ -178,7 +155,7 @@ export default function DashboardLayout({
                   height={28}
                   className="h-7 w-7 rounded-full object-cover"
                 />
-                <span className="font-[Space_Grotesk,sans-serif] text-[15px] font-bold text-[--ac-text]">
+                <span className="font-heading text-[15px] font-bold tracking-tight text-foreground">
                   AptiCore
                 </span>
               </Link>
@@ -192,9 +169,9 @@ export default function DashboardLayout({
                   <button
                     type="button"
                     title="Notifications"
-                    className="relative flex h-9 w-9 items-center justify-center  text-[--ac-text-2] transition-colors hover:bg-[--ac-hover] hover:text-[--ac-text] outline-none cursor-pointer"
+                    className="relative flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground outline-none cursor-pointer border border-border/40"
                   >
-                    <Bell className="h-4.5 w-4.5" />
+                    <Bell className="h-4 w-4" />
                   </button>
                 </PopoverTrigger>
               </Popover>
@@ -207,7 +184,7 @@ export default function DashboardLayout({
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    className="flex items-center gap-2.5 rounded-sm border-black/10 dark:border-white/15 bg-transparent py-1 pl-1 pr-3 sm:pr-4 transition outline-none hover:bg-[--ac-hover] cursor-pointer select-none"
+                    className="flex items-center gap-2.5 rounded-md border border-border/40 bg-card py-1 pl-1 pr-3 sm:pr-3.5 transition outline-none hover:border-border cursor-pointer select-none"
                   >
                     {/* Avatar with Game Border */}
                     <AvatarFrame
@@ -224,18 +201,21 @@ export default function DashboardLayout({
                           className="object-cover"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-[#6ee7c9] to-[#8b7cf6] text-xs font-bold text-[#08110d]">
+                        <div className="flex h-full w-full items-center justify-center bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                           {getInitials(currentUser?.name || "User")}
                         </div>
                       )}
                     </AvatarFrame>
+                    <span className="hidden sm:inline-block text-xs font-medium text-foreground max-w-[100px] truncate">
+                      {currentUser?.name?.split(" ")[0] || "Profile"}
+                    </span>
                   </button>
                 </DropdownMenuTrigger>
 
                 <DropdownMenuContent
                   align="end"
                   sideOffset={8}
-                  className="w-60 rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#10151d] p-1.5 shadow-xl text-[--ac-text]"
+                  className="w-60 rounded-xl border border-border bg-card p-1.5 shadow-xl text-card-foreground"
                 >
                   <DropdownMenuLabel className="px-3 py-2.5">
                     <div className="flex items-center gap-3">
@@ -253,41 +233,41 @@ export default function DashboardLayout({
                             className="object-cover"
                           />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-[#6ee7c9] to-[#8b7cf6] text-xs font-bold text-[#08110d]">
+                          <div className="flex h-full w-full items-center justify-center bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                             {getInitials(currentUser?.name || "User")}
                           </div>
                         )}
                       </AvatarFrame>
                       <div className="min-w-0">
-                        <p className="truncate text-[13px] font-semibold text-[--ac-text]">
+                        <p className="truncate text-[13px] font-semibold text-foreground">
                           {currentUser?.name || "User"}
                         </p>
-                        <p className="truncate text-[11px] font-normal text-[--ac-text-3]">
+                        <p className="truncate text-[11px] font-normal text-muted-foreground">
                           {currentUser?.email || ""}
                         </p>
                       </div>
                     </div>
                   </DropdownMenuLabel>
 
-                 <DropdownMenuSeparator className="bg-black/10 dark:bg-white/10" />
+                  <DropdownMenuSeparator className="bg-border" />
 
                   <DropdownMenuItem
                     onClick={() => router.push("/dashboard/profile")}
-                    className="cursor-pointer gap-2.5 rounded-lg px-3 py-2 text-xs font-medium hover:bg-[--ac-hover]"
+                    className="cursor-pointer gap-2.5 rounded-lg px-3 py-2 text-xs font-medium hover:bg-accent text-foreground"
                   >
-                    <User className="h-4 w-4 text-[--ac-teal]" />
+                    <User className="h-4 w-4 text-emerald-500" />
                     Profile
                   </DropdownMenuItem>
 
                   <DropdownMenuItem
                     onClick={() => router.push("/dashboard/history")}
-                    className="cursor-pointer gap-2.5 rounded-lg px-3 py-2 text-xs font-medium hover:bg-[--ac-hover]"
+                    className="cursor-pointer gap-2.5 rounded-lg px-3 py-2 text-xs font-medium hover:bg-accent text-foreground"
                   >
-                    <FileText className="h-4 w-4 text-[--ac-teal]" />
+                    <FileText className="h-4 w-4 text-emerald-500" />
                     History
                   </DropdownMenuItem>
 
-                  <DropdownMenuSeparator className="bg-black/10 dark:bg-white/10" />
+                  <DropdownMenuSeparator className="bg-border" />
 
                   <DropdownMenuItem
                     onClick={() => setLogoutConfirmOpen(true)}

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import axios from "axios"
+import { toast as sonnerToast } from "sonner"
 import {
   TOTAL_SECONDS_KEY,
   isQuestionAnswered,
@@ -55,11 +56,22 @@ export default function TestRunner({
   const toastTimer = useRef<number | null>(null)
   const lastWarnedStrike = useRef<number>(0)
 
-  const showToast = useCallback((message: string) => {
-    setToast(message)
-    if (toastTimer.current) window.clearTimeout(toastTimer.current)
-    toastTimer.current = window.setTimeout(() => setToast(null), 1800)
-  }, [])
+  const showToast = useCallback(
+    (
+      message: string,
+      type: "success" | "error" | "warning" | "info" = "info"
+    ) => {
+      setToast(message)
+      if (toastTimer.current) window.clearTimeout(toastTimer.current)
+      toastTimer.current = window.setTimeout(() => setToast(null), 1800)
+
+      if (type === "success") sonnerToast.success(message)
+      else if (type === "error") sonnerToast.error(message)
+      else if (type === "warning") sonnerToast.warning(message)
+      else sonnerToast.info(message)
+    },
+    []
+  )
 
   // Fetch existing bookmarks for the current user
   useEffect(() => {
@@ -249,7 +261,7 @@ export default function TestRunner({
     setSubmitted(true)
     setShowSubmitModal(false)
     setIsPaletteOpen(false)
-    showToast("Test submitted successfully ✓")
+    showToast("Test submitted successfully ✓", "success")
   }, [buildSubmitPayload, onSubmit, showToast, submitted])
 
   const requestSubmit = useCallback(() => {
@@ -314,18 +326,20 @@ export default function TestRunner({
     lastWarnedStrike.current = tabSwitches
 
     if (tabSwitches === 1) {
-      setWarningMessage(
+      const msg =
         "Tab switching is not allowed. Further violations will result in automatic submission."
-      )
+      setWarningMessage(msg)
       setShowWarningModal(true)
+      sonnerToast.warning(msg)
     } else if (tabSwitches === 2) {
-      setWarningMessage(
+      const msg =
         "FINAL WARNING: If you switch tabs one more time, your test will be automatically submitted."
-      )
+      setWarningMessage(msg)
       setShowWarningModal(true)
+      sonnerToast.warning(msg)
     } else if (tabSwitches >= 3) {
       finalizeSubmit()
-      showToast("Test automatically submitted due to repeated tab switching.")
+      showToast("Test automatically submitted due to repeated tab switching.", "error")
     }
   }, [tabSwitches, submitted, finalizeSubmit, showToast])
 
@@ -370,7 +384,7 @@ export default function TestRunner({
         await axios.delete(`/api/bookmarks?questionId=${questionId}`, {
           withCredentials: true,
         })
-        showToast("Bookmark removed")
+        showToast("Bookmark removed", "info")
       } else {
         await axios.post(
           "/api/bookmarks",
@@ -380,7 +394,7 @@ export default function TestRunner({
           },
           { withCredentials: true }
         )
-        showToast("Question added to bookmarks ★")
+        showToast("Question added to bookmarks ★", "success")
       }
     } catch (error) {
       console.error("Bookmark sync error:", error)
@@ -391,7 +405,7 @@ export default function TestRunner({
         else reverted.delete(questionId)
         return reverted
       })
-      showToast("Failed to update bookmark")
+      showToast("Failed to update bookmark", "error")
     }
   }
 

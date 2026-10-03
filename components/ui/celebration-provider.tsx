@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react"
 import { toast } from "sonner"
-import { Confetti, type ConfettiRef } from "@/components/ui/confetti"
+import { Confetti, type ConfettiRef } from "@/components/magicui/confetti"
 
 type CelebrationDetail = {
   perfectScore?: boolean

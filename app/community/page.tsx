@@ -202,7 +202,7 @@ export default function CommunityPage() {
   }, [])
 
   return (
-    <div className="dark min-h-screen bg-[hsl(var(--background))]">
+    <div className="min-h-screen bg-background text-foreground">
       <Navbar />
       <main className="mx-auto max-w-6xl px-4 pt-32 pb-20 sm:px-6 lg:px-8">
         <div className="mb-16 text-center">

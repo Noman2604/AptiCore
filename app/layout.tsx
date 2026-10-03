@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next"
 import "./globals.css"
-import { ThemeProvider } from "next-themes"
+import { ThemeProvider } from "@/components/theme-provider"
 import NetworkStatus from "@/components/NetworkStatus"
 import CelebrationProvider from "@/components/ui/celebration-provider"
 import { Toaster } from "@/components/ui/sonner"
@@ -69,7 +69,10 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#0a0e14",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0e14" },
+  ],
   width: "device-width",
   initialScale: 1,
 }
@@ -94,11 +97,11 @@ export default function RootLayout({
         />
       </head>
 
-      <body className="min-h-screen bg-[--ac-bg] text-[--ac-text] antialiased">
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+      <body className="min-h-screen w-full max-w-full bg-background text-foreground antialiased selection:bg-primary/10 selection:text-primary">
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <NetworkStatus>
             <CelebrationProvider>
-              <div id="root">{children}</div>
+              <div id="root" className="w-full max-w-full overflow-x-hidden">{children}</div>
               <Toaster richColors position="top-right" />
               <CookieBanner />
               <Analytics />
