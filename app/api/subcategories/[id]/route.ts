@@ -39,6 +39,18 @@ export async function PUT(
     runValidators: true,
   })
 
+  const { logActivity } = await import("@/lib/audit")
+  await logActivity({
+    req: request,
+    action: "category.subcategory_update",
+    module: "category",
+    status: "success",
+    targetType: "subcategory",
+    targetId: id,
+    targetLabel: updated?.name,
+    details: body,
+  })
+
   return NextResponse.json({
     success: true,
     data: updated,
@@ -53,7 +65,18 @@ export async function DELETE(
 
   const { id } = await params
 
-  await Subcategory.findByIdAndDelete(id)
+  const deleted = await Subcategory.findByIdAndDelete(id)
+
+  const { logActivity } = await import("@/lib/audit")
+  await logActivity({
+    req: request,
+    action: "category.subcategory_delete",
+    module: "category",
+    status: "success",
+    targetType: "subcategory",
+    targetId: id,
+    targetLabel: deleted?.name,
+  })
 
   return NextResponse.json({
     success: true,

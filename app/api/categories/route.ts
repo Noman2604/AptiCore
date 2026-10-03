@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import connectDB from "@/lib/db"
 import Category from "@/lib/models/Category"
 import Subcategory from "@/lib/models/Subcategory"
+import Question from "@/lib/models/Question"
 
 // GET Categories
 export async function GET(request: NextRequest) {
@@ -17,9 +18,18 @@ export async function GET(request: NextRequest) {
       displayOrder: 1,
       name: 1,
     })
+    const questionCounts = await Question.aggregate([
+      { $match: { isActive: true } },
+      { $group: { _id: "$categoryId", count: { $sum: 1 } } },
+    ])
+    const questionCountByCategory = new Map<string, number>()
+    questionCounts.forEach(({ _id, count }) => {
+      questionCountByCategory.set(String(_id), count)
+    })
 
     const categoriesWithSubs = categories.map((cat) => ({
       ...cat.toObject(),
+      questionCount: questionCountByCategory.get(cat._id.toString()) ?? 0,
       subcategories: subcategories.filter(
         (sub) => sub.categoryId.toString() === cat._id.toString()
       ),
@@ -91,6 +101,18 @@ export async function POST(request: NextRequest) {
       colorCode,
       displayOrder: displayOrder ?? 0,
       isActive: isActive ?? true,
+    })
+
+    const { logActivity } = await import("@/lib/audit")
+    await logActivity({
+      req: request,
+      action: "category.create",
+      module: "category",
+      status: "success",
+      targetType: "category",
+      targetId: category._id.toString(),
+      targetLabel: category.name,
+      details: { name, slug },
     })
 
     return NextResponse.json(

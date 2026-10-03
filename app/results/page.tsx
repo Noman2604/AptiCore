@@ -47,12 +47,14 @@ interface ResultData {
   timeSpentSeconds: number
   answers: ResultAnswer[]
   submittedAt?: string
+  testName?: string
   testId?: {
     title?: string
     totalQuestions?: number
     totalMarks?: number
     durationMinutes?: number
     categoryId?: { slug?: string; name?: string }
+    subcategory?: { slug?: string; name?: string }
   }
 }
 
@@ -189,7 +191,15 @@ export default function SubcategoryResultsPage() {
     { key: "review", label: "Flagged", color: "#8b7cf6" },
   ]
 
-  const backHref = `/dashboard/tests/${params?.slug || ""}`
+  const categorySlug =
+    result?.testId?.categoryId?.slug ||
+    (result as any)?.categoryId?.slug ||
+    params?.slug ||
+    ""
+
+  const backHref = categorySlug
+    ? `/dashboard/tests?category=${encodeURIComponent(categorySlug)}`
+    : "/dashboard/tests"
 
   const handleBack = () => {
     if (typeof window !== "undefined") {
@@ -335,7 +345,7 @@ export default function SubcategoryResultsPage() {
         </div>
         <div className="min-w-0 text-right">
           <div className="truncate font-[Space_Grotesk,sans-serif] text-[13px] font-semibold sm:text-sm">
-            {result.testId?.title || "Practice Session"}
+            {result.testName || result.testId?.title || "Practice Test"}
           </div>
           <div className="font-[JetBrains_Mono,monospace] text-[10.5px] text-[#5b6577] sm:text-[11px]">
             Submitted{" "}
@@ -353,7 +363,7 @@ export default function SubcategoryResultsPage() {
               Practice results
             </p>
             <h1 className="mt-0.5 font-[Space_Grotesk,sans-serif] text-xl font-bold sm:text-2xl">
-              {result.testId?.title || "Practice Session"}
+              {result.testName || result.testId?.title || "Practice Test"}
             </h1>
           </div>
           <button

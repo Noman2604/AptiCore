@@ -47,7 +47,10 @@ type AdminResult = {
   testId: {
     _id: string
     title: string
+    category?: string
+    subcategory?: string
   } | null
+  testName?: string
   accuracy?: number
 }
 
@@ -119,9 +122,18 @@ export default function AdminResultsPage() {
     return results.filter((r) => {
       const name = r.userId?.name?.toLowerCase() ?? ""
       const email = r.userId?.email?.toLowerCase() ?? ""
-      const title = r.testId?.title?.toLowerCase() ?? ""
+      const title = (r.testName || r.testId?.title)?.toLowerCase() ?? ""
+      const category = r.testId?.category?.toLowerCase() ?? ""
+      const subcategory = r.testId?.subcategory?.toLowerCase() ?? ""
       const status = r.status?.toLowerCase() ?? ""
-      return name.includes(q) || email.includes(q) || title.includes(q) || status.includes(q)
+      return (
+        name.includes(q) ||
+        email.includes(q) ||
+        title.includes(q) ||
+        category.includes(q) ||
+        subcategory.includes(q) ||
+        status.includes(q)
+      )
     })
   }, [results, searchQuery])
 
@@ -152,6 +164,8 @@ export default function AdminResultsPage() {
         "userName",
         "userEmail",
         "testTitle",
+        "category",
+        "subcategory",
         "status",
         "startedAt",
         "submittedAt",
@@ -167,7 +181,9 @@ export default function AdminResultsPage() {
           r._id,
           r.userId?.name ?? "",
           r.userId?.email ?? "",
-          r.testId?.title ?? "",
+          r.testName || r.testId?.title || "",
+          r.testId?.category ?? "",
+          r.testId?.subcategory ?? "",
           r.status,
           r.startedAt ? new Date(r.startedAt).toISOString() : "",
           r.submittedAt ? new Date(r.submittedAt).toISOString() : "",
@@ -303,7 +319,19 @@ export default function AdminResultsPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {r.testId?.title ?? "Unknown test"}
+                          <div className="font-medium">
+                            {r.testName || r.testId?.title || "Unknown test"}
+                          </div>
+                          {r.testId?.category && r.testId?.subcategory && (
+                            <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                              <span className="inline-flex items-center rounded-sm bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                                {r.testId.category}
+                              </span>
+                              <span className="text-[11px] text-muted-foreground">
+                                • {r.testId.subcategory}
+                              </span>
+                            </div>
+                          )}
                           <div className="mt-1 text-xs text-muted-foreground">#{r._id.slice(-6)}</div>
                         </TableCell>
                         <TableCell>

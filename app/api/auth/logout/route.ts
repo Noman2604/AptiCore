@@ -1,11 +1,13 @@
 import { connectDB } from "@/lib/db"
 import { NextResponse, NextRequest } from "next/server"
+import { logActivity } from "@/lib/audit"
+import { getAuthUser } from "@/lib/auth-guard"
 
 connectDB()
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get("accessToken")?.value
+    const user = getAuthUser(request)
 
     const response = NextResponse.json({
       message: "Logout successful.",
@@ -18,6 +20,17 @@ export async function POST(request: NextRequest) {
       expires: new Date(0),
       path: "/",
     })
+    
+    if (user) {
+      await logActivity({
+        req: request,
+        actorId: user.userId,
+        actorRole: user.role as any,
+        action: "auth.logout",
+        module: "auth",
+        status: "success",
+      })
+    }
 
     return response
   } catch (error) {

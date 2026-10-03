@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import connectDB from "@/lib/db"
 import Bookmark from "@/lib/models/Bookmark"
 import { verifyAccessToken } from "@/lib/jwt"
+import { logActivity } from "@/lib/audit"
 
 // PUT /api/bookmarks/[id] - Update bookmark notes
 export async function PUT(
@@ -46,6 +47,18 @@ export async function PUT(
         { status: 404 }
       )
     }
+
+    await logActivity({
+      req: request,
+      actorId: decoded.userId,
+      actorRole: decoded.role || "user",
+      action: "bookmark.update",
+      module: "bookmark",
+      status: "success",
+      targetType: "bookmark",
+      targetId: id,
+      details: { notes },
+    })
 
     return NextResponse.json({
       success: true,
@@ -96,6 +109,17 @@ export async function DELETE(
         { status: 404 }
       )
     }
+
+    await logActivity({
+      req: request,
+      actorId: decoded.userId,
+      actorRole: decoded.role || "user",
+      action: "bookmark.delete",
+      module: "bookmark",
+      status: "success",
+      targetType: "bookmark",
+      targetId: id,
+    })
 
     return NextResponse.json({
       success: true,

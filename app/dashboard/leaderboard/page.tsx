@@ -23,6 +23,7 @@ import {
 import { cn, formatNumber, getInitials } from "@/lib/utils"
 import { AvatarFrame, resolveAvatarBorder } from "@/components/ui/game-avatar"
 import Image from "next/image"
+import { toast } from "sonner"
 
 type LeaderboardEntry = {
   rank: number
@@ -79,8 +80,13 @@ export default function LeaderboardPage() {
           setMe({ id: json.data.id, name: json.data.name })
         }
       }
+
+      if (isRefresh) {
+        toast.success("Leaderboard updated")
+      }
     } catch (error) {
       console.error("Failed to load leaderboard", error)
+      toast.error("Failed to load leaderboard. Please try again.")
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -183,25 +189,20 @@ export default function LeaderboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[--ac-bg] pb-28 text-[--ac-text] transition-colors duration-300">
+    <div className="min-h-screen bg-background pb-28 text-foreground transition-colors duration-300">
       <div className="mx-auto max-w-7xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
         {/* ================= HERO HEADER ================= */}
-        <div className="relative overflow-hidden rounded-3xl border border-black/10 bg-linear-to-br from-teal-500/10 via-purple-500/5 to-amber-500/10 p-6 shadow-sm backdrop-blur-md sm:p-8 dark:border-white/10">
-          {/* Ambient Glows */}
-          <div className="pointer-events-none absolute -top-16 -right-16 h-64 w-64 rounded-full bg-amber-400/15 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-20 left-1/4 h-64 w-64 rounded-full bg-teal-400/15 blur-3xl" />
-          <div className="pointer-events-none absolute top-1/2 right-1/3 h-48 w-48 rounded-full bg-purple-500/10 blur-3xl" />
-
-          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="max-w-2xl space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1 text-xs font-semibold text-amber-600 dark:text-amber-300">
-                <Trophy className="h-3.5 w-3.5" />
-                <span>GLOBAL LEAGUE · SEASON 1</span>
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-xs sm:p-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl space-y-2.5">
+              <div className="section-eyebrow">
+                <span className="section-eyebrow-dot" />
+                <span>Global League · Season 1</span>
               </div>
-              <h1 className="font-[Space_Grotesk,sans-serif] text-3xl font-extrabold tracking-tight text-[--ac-text] sm:text-4xl">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                 AptiCore Leaderboard
               </h1>
-              <p className="text-sm leading-relaxed text-[--ac-text-3]">
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                 Compete with top learners across colleges, maintain daily
                 practice streaks, and earn prestige by mastering timed aptitude
                 challenges.
@@ -210,29 +211,29 @@ export default function LeaderboardPage() {
 
             {/* Quick Stat Pill Cards */}
             <div className="grid grid-cols-3 gap-2.5 sm:gap-3 lg:w-96">
-              <div className="flex flex-col rounded-2xl border border-black/10 bg-white/70 p-3 shadow-xs backdrop-blur-sm dark:border-white/10 dark:bg-[#10151d]/70">
-                <span className="flex items-center gap-1 text-[11px] font-semibold text-[--ac-text-3]">
-                  <Users className="h-3 w-3 text-teal-500" /> Learners
+              <div className="flex flex-col rounded-xl border border-border bg-muted/40 p-3">
+                <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                  <Users className="h-3 w-3 text-emerald-500" /> Learners
                 </span>
-                <span className="mt-1 font-[JetBrains_Mono,monospace] text-base font-bold text-[--ac-text]">
+                <span className="mt-1 font-mono text-base font-bold text-foreground">
                   {stats.total}
                 </span>
               </div>
 
-              <div className="flex flex-col rounded-2xl border border-black/10 bg-white/70 p-3 shadow-xs backdrop-blur-sm dark:border-white/10 dark:bg-[#10151d]/70">
-                <span className="flex items-center gap-1 text-[11px] font-semibold text-[--ac-text-3]">
-                  <Flame className="h-3 w-3 text-orange-500" /> Top Streak
+              <div className="flex flex-col rounded-xl border border-border bg-muted/40 p-3">
+                <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                  <Flame className="h-3 w-3 text-amber-500" /> Top Streak
                 </span>
-                <span className="mt-1 font-[JetBrains_Mono,monospace] text-base font-bold text-orange-500">
+                <span className="mt-1 font-mono text-base font-bold text-amber-500">
                   {stats.maxStreak}d
                 </span>
               </div>
 
-              <div className="flex flex-col rounded-2xl border border-black/10 bg-white/70 p-3 shadow-xs backdrop-blur-sm dark:border-white/10 dark:bg-[#10151d]/70">
-                <span className="flex items-center gap-1 text-[11px] font-semibold text-[--ac-text-3]">
-                  <Target className="h-3 w-3 text-purple-500" /> Avg Acc
+              <div className="flex flex-col rounded-xl border border-border bg-muted/40 p-3">
+                <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                  <Target className="h-3 w-3 text-sky-500" /> Avg Acc
                 </span>
-                <span className="mt-1 font-[JetBrains_Mono,monospace] text-base font-bold text-purple-600 dark:text-purple-400">
+                <span className="mt-1 font-mono text-base font-bold text-sky-500">
                   {stats.avgAccuracy}%
                 </span>
               </div>

@@ -35,6 +35,18 @@ export async function POST(request: NextRequest) {
 
     const subcategory = await Subcategory.create(body)
 
+    const { logActivity } = await import("@/lib/audit")
+    await logActivity({
+      req: request,
+      action: "category.subcategory_create",
+      module: "category",
+      status: "success",
+      targetType: "subcategory",
+      targetId: subcategory._id.toString(),
+      targetLabel: subcategory.name,
+      details: { name: subcategory.name, slug: subcategory.slug },
+    })
+
     return NextResponse.json(
       {
         success: true,

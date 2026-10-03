@@ -17,6 +17,8 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
+import ThemeToggle from "@/components/ThemeToggle"
+import { toast } from "sonner"
 
 interface NavItemProps {
   label: string
@@ -35,7 +37,7 @@ function NavItem({ label, icon, href, active, onNavigate }: NavItemProps) {
         "mt-1 flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-medium transition",
         active
           ? "border-[rgba(139,124,246,0.3)] bg-[rgba(107,95,199,0.1)] text-[#8b7cf6]"
-          : "border-transparent text-[#8a96a8] hover:border-[#212a37] hover:bg-[#141b25] hover:text-[#e7ecf3]"
+          : "border-transparent text-[--ac-text-2] hover:bg-[--ac-hover] hover:text-[--ac-text]"
       )}
     >
       <span className="shrink-0">{icon}</span>
@@ -56,7 +58,7 @@ function Section({
 }) {
   return (
     <div className="space-y-1">
-      <div className="px-3 font-[JetBrains_Mono,monospace] text-[10px] font-semibold tracking-[0.2em] text-[#5b6577] uppercase">
+      <div className="px-3 font-[JetBrains_Mono,monospace] text-[10px] font-semibold tracking-[0.2em] text-[--ac-text-3] uppercase">
         {title}
       </div>
       <div>{children}</div>
@@ -76,10 +78,10 @@ function SidebarContent({
   const isActive = (path: string) => pathname === path
 
   return (
-    <div className="flex h-full flex-col bg-[#0a0e14]">
+    <div className="flex h-full flex-col">
       {/* Brand */}
-      <div className="flex items-center gap-2.5 border-b border-[#212a37] px-4 py-5">
-        <div className="">
+      <div className="flex items-center gap-2.5 border-b border-[--ac-border] px-4 py-5">
+        <div>
           <Image
             loading="lazy"
             src="/logo.png"
@@ -90,7 +92,7 @@ function SidebarContent({
           />
         </div>
         <div>
-          <div className="font-[Space_Grotesk,sans-serif] text-[15px] font-bold text-[#e7ecf3]">
+          <div className="font-[Space_Grotesk,sans-serif] text-[15px] font-bold text-[--ac-text]">
             AptiCore
           </div>
           <div className="font-[JetBrains_Mono,monospace] text-[10px] tracking-[0.15em] text-[#8b7cf6]">
@@ -163,11 +165,15 @@ function SidebarContent({
         </Section>
       </nav>
 
-      {/* Logout */}
-      <div className="border-t border-[#212a37] p-3">
+      {/* Footer controls */}
+      <div className="border-t border-[--ac-border] p-3 flex flex-col gap-2">
+        <div className="flex items-center justify-between px-3 py-1 text-xs text-[--ac-text-2]">
+          <span>Theme</span>
+          <ThemeToggle className="h-8 w-8" />
+        </div>
         <button
           onClick={onRequestLogout}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-medium text-[#f2555a]/75 transition hover:bg-[rgba(242,85,90,0.1)] hover:text-[#f2555a]"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13.5px] font-medium text-[#f2555a]/85 transition hover:bg-[rgba(242,85,90,0.1)] hover:text-[#f2555a]"
         >
           <LogOut size={18} />
           Logout
@@ -188,7 +194,11 @@ export default function Sidebar() {
     try {
       setLoggingOut(true)
       await fetch("/api/auth/logout", { method: "POST" })
+      toast.success("Logged out successfully")
       router.push("/auth/login")
+    } catch (error) {
+      console.error("Logout error:", error)
+      toast.error("Failed to log out. Please try again.")
     } finally {
       setLoggingOut(false)
       setLogoutConfirmOpen(false)
@@ -198,7 +208,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden h-screen w-64 flex-col border-r border-[#212a37] bg-[#0a0e14] lg:flex">
+      <aside className="hidden h-screen w-64 flex-col border-r border-[--ac-border] bg-[--ac-bg] lg:flex">
         <SidebarContent
           pathname={pathname}
           onRequestLogout={() => setLogoutConfirmOpen(true)}
@@ -206,9 +216,9 @@ export default function Sidebar() {
       </aside>
 
       {/* Mobile top bar */}
-      <div className="fixed top-0 right-0 left-0 z-50 flex items-center justify-between border-b border-[#212a37] bg-[#0a0e14] px-4 py-3.5 lg:hidden">
+      <div className="fixed top-0 right-0 left-0 z-50 flex items-center justify-between border-b border-[--ac-border] bg-[--ac-bg] px-4 py-3.5 lg:hidden">
         <Link href="/super-admin" className="flex items-center gap-2">
-          <div className="">
+          <div>
             <Image
               loading="lazy"
               src="/logo.png"
@@ -218,18 +228,21 @@ export default function Sidebar() {
               className="h-10 w-10 rounded-full object-cover sm:h-10 sm:w-10"
             />
           </div>
-          <span className="font-[Space_Grotesk,sans-serif] text-[14px] font-bold text-[#e7ecf3]">
+          <span className="font-[Space_Grotesk,sans-serif] text-[14px] font-bold text-[--ac-text]">
             AptiCore <span className="text-[#8b7cf6]">SA</span>
           </span>
         </Link>
 
-        <button
-          onClick={() => setMobileOpen((v) => !v)}
-          className="rounded-lg border border-[#212a37] p-2 text-[#e7ecf3] transition hover:bg-[#141b25]"
-          aria-label={mobileOpen ? "Close menu" : "Open menu"}
-        >
-          {mobileOpen ? <X size={18} /> : <Menu size={18} />}
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <button
+            onClick={() => setMobileOpen((v) => !v)}
+            className="rounded-lg border border-[--ac-border] p-2 text-[--ac-text] transition hover:bg-[--ac-hover]"
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          >
+            {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile drawer */}
@@ -239,7 +252,7 @@ export default function Sidebar() {
             className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm lg:hidden"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="fixed top-0 left-0 z-50 h-screen w-72 overflow-y-auto border-r border-[#212a37] bg-[#0a0e14] shadow-2xl lg:hidden">
+          <aside className="fixed top-0 left-0 z-50 h-screen w-72 overflow-y-auto border-r border-[--ac-border] bg-[--ac-bg] shadow-2xl lg:hidden">
             <SidebarContent
               pathname={pathname}
               onNavigate={() => setMobileOpen(false)}
@@ -257,19 +270,19 @@ export default function Sidebar() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-120 sm:max-w-90 rounded-t-xl border-[#212a37] bg-[#10151d] p-5 sm:rounded-2xl"
+            className="w-full max-w-120 sm:max-w-90 rounded-t-xl border border-[--ac-border] bg-[--ac-bg-elevated] p-5 sm:rounded-2xl"
           >
-            <h3 className="font-[Space_Grotesk,sans-serif] text-lg font-bold text-[#e7ecf3]">
+            <h3 className="font-[Space_Grotesk,sans-serif] text-lg font-bold text-[--ac-text]">
               Sign out?
             </h3>
-            <p className="mt-1.5 text-[13px] leading-6 text-[#8a96a8]">
+            <p className="mt-1.5 text-[13px] leading-6 text-[--ac-text-2]">
               Are you sure you want to sign out of the super admin console?
             </p>
             <div className="mt-5 flex gap-2.5">
               <button
                 onClick={() => setLogoutConfirmOpen(false)}
                 disabled={loggingOut}
-                className="flex-1 rounded-lg border border-[#212a37] bg-transparent py-2.5 text-[13.5px] font-semibold text-[#8a96a8] transition hover:border-[#3a4a5e] hover:text-[#e7ecf3] disabled:opacity-50"
+                className="flex-1 rounded-lg border border-[--ac-border] bg-transparent py-2.5 text-[13.5px] font-semibold text-[--ac-text-2] transition hover:border-[--ac-border-2] hover:text-[--ac-text] disabled:opacity-50"
               >
                 Cancel
               </button>

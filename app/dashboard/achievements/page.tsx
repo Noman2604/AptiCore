@@ -21,6 +21,7 @@ import {
   Trophy,
   Zap,
 } from "lucide-react"
+import { toast } from "sonner"
 
 type AchievementRarity = "common" | "rare" | "epic" | "legendary"
 type AchievementCriteria =
@@ -214,12 +215,13 @@ export default function AchievementsPage() {
           setAchievements(mergedAchievements)
         }
       } catch (loadError) {
+        const msg =
+          loadError instanceof Error
+            ? loadError.message
+            : "Failed to load achievements"
         if (isMounted) {
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Failed to load achievements"
-          )
+          setError(msg)
+          toast.error(msg)
         }
       } finally {
         if (isMounted) {
@@ -277,16 +279,24 @@ export default function AchievementsPage() {
     const shareText = `🏆 I unlocked the "${achievement.name}" milestone on AptiCore (+${achievement.pointsReward} XP)!`
 
     if (navigator.share) {
-      await navigator
-        .share({ title: "AptiCore Milestone", text: shareText })
-        .catch(() => undefined)
+      try {
+        await navigator.share({ title: "AptiCore Milestone", text: shareText })
+        toast.success("Achievement shared successfully!")
+      } catch {
+        // User cancelled share dialog
+      }
       return
     }
 
     if (navigator.clipboard) {
-      await navigator.clipboard.writeText(shareText)
-      setCopiedId(achievement._id)
-      setTimeout(() => setCopiedId(null), 2000)
+      try {
+        await navigator.clipboard.writeText(shareText)
+        setCopiedId(achievement._id)
+        toast.success("Achievement copied to clipboard!")
+        setTimeout(() => setCopiedId(null), 2000)
+      } catch {
+        toast.error("Failed to copy achievement")
+      }
     }
   }
 

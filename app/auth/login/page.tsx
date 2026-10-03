@@ -1,4 +1,5 @@
 "use client"
+
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -16,7 +17,8 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import api from "@/lib/api"
-import Image from "next/image"
+import AuthNavbar from "@/components/auth/AuthNavbar"
+import { toast } from "sonner"
 
 const highlights = [
   { icon: Trophy, text: "2,840+ mock tests" },
@@ -32,15 +34,19 @@ export default function LoginPage() {
   const [success, setSuccess] = useState("")
   const [form, setForm] = useState({ email: "", password: "", remember: false })
   const [mounted, setMounted] = useState(false)
+  const [unverifiedEmail, setUnverifiedEmail] = useState("")
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  const [unverifiedEmail, setUnverifiedEmail] = useState("")
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!form.email.trim() || !form.password) {
+      toast.error("Please enter both email and password.")
+      return
+    }
 
     setError("")
     setSuccess("")
@@ -49,16 +55,16 @@ export default function LoginPage() {
 
     try {
       const { data } = await api.post("/auth/login", {
-        email: form.email,
+        email: form.email.trim(),
         password: form.password,
       })
 
+      const role = data?.data?.user?.role
+      const userName = data?.data?.user?.name
+      toast.success(userName ? `Welcome back, ${userName}!` : "Signed in successfully!")
       setSuccess("Login successful! Redirecting...")
 
       setTimeout(() => {
-        const role = data.data.user.role
-        console.log("User role:", role) // Log the role for debugging
-
         if (role === "admin" || role === "super_admin") {
           router.push("/admin")
         } else {
@@ -73,6 +79,9 @@ export default function LoginPage() {
 
       if (err?.response?.data?.requiresVerification) {
         setUnverifiedEmail(err.response.data.email || form.email)
+        toast.warning("Please verify your email address to continue.")
+      } else {
+        toast.error(message)
       }
     } finally {
       setIsLoading(false)
@@ -82,268 +91,223 @@ export default function LoginPage() {
   if (!mounted) return null
 
   return (
-    <div className="flex min-h-screen bg-[#0a0e14] font-[Inter,sans-serif] text-[#e7ecf3]">
-      {/* ── Left panel ─────────────────────────────────────────── */}
-      <div className="relative hidden w-[52%] flex-col justify-between overflow-hidden bg-linear-to-br from-[#080b10] via-[#0a0e14] to-[#0c1119] p-14 lg:flex">
-        {/* Background elements */}
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage:
-              "radial-gradient(rgba(110,231,201,0.08) 1px,transparent 1px)",
-            backgroundSize: "32px 32px",
-          }}
-        />
-        <div className="absolute top-0 right-0 h-150 w-150 translate-x-1/2 -translate-y-1/2 rounded-full bg-[#6ee7c9]/6 blur-3xl" />
-        <div className="absolute bottom-0 left-0 h-100 w-100 -translate-x-1/2 translate-y-1/2 rounded-full bg-[#8b7cf6]/8 blur-3xl" />
+    <div className="flex min-h-screen flex-col bg-background text-foreground transition-colors duration-200">
+      {/* ── Top Navigation Bar ──────────────────────────────────── */}
+      <AuthNavbar />
 
-        {/* Logo */}
-        <Link href="/" className="relative flex w-fit items-center gap-2.5">
-          <div className="">
-            <Image
-              loading="lazy"
-              src="/logo.png"
-              alt="AptiCore Logo"
-              width={32}
-              height={32}
-              className="h-10 w-10 rounded-full object-cover sm:h-10 sm:w-10"
-            />
-          </div>
-          <span className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text font-[Space_Grotesk,sans-serif] text-2xl font-bold text-transparent">
-            AptiCore
-          </span>
-        </Link>
+      <div className="flex flex-1">
+        {/* ── Left pitch panel (Desktop lg and up) ───────────────── */}
+        <div className="relative hidden w-[48%] lg:flex flex-col justify-between overflow-hidden border-r border-border/60 bg-linear-to-br from-slate-50 via-emerald-50/20 to-indigo-50/25 p-12 xl:p-14 pt-24 xl:pt-28 dark:from-[#080b10] dark:via-[#0a0e14] dark:to-[#0c1119]">
+          {/* Decorative background grid & radial glow */}
+          <div
+            className="pointer-events-none absolute inset-0 opacity-40 dark:opacity-20"
+            style={{
+              backgroundImage:
+                "radial-gradient(currentColor 1px, transparent 1px)",
+              backgroundSize: "28px 28px",
+            }}
+          />
+          <div className="pointer-events-none absolute top-0 right-0 h-96 w-96 translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/10 blur-3xl dark:bg-[#6ee7c9]/10" />
+          <div className="pointer-events-none absolute bottom-0 left-0 h-96 w-96 -translate-x-1/2 translate-y-1/2 rounded-full bg-indigo-500/10 blur-3xl dark:bg-[#8b7cf6]/10" />
 
-        {/* Main pitch */}
-        <div className="relative">
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-[rgba(110,231,201,0.3)] bg-[rgba(110,231,201,0.1)] px-3 py-1.5 font-[JetBrains_Mono,monospace] text-xs font-medium text-[#6ee7c9]">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#3ecf8e]" />
-            4,200 students active right now
+          {/* Active students badge */}
+          <div className="relative">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1.5 font-[Space_Grotesk,sans-serif] text-xs font-semibold text-emerald-600 dark:text-[#6ee7c9]">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              4,200+ students practicing right now
+            </div>
           </div>
 
-          <h1 className="mb-5 font-[Space_Grotesk,sans-serif] text-5xl leading-[1.08] font-extrabold text-white xl:text-6xl">
-            Your placement
-            <br />
-            starts{" "}
-            <span className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text text-transparent">
-              here.
-            </span>
-          </h1>
+          {/* Main pitch copy */}
+          <div className="relative my-auto py-8">
+            <h1 className="mb-4 font-[Space_Grotesk,sans-serif] text-4xl xl:text-5xl font-extrabold tracking-tight text-foreground leading-[1.12]">
+              Your placement
+              <br />
+              starts{" "}
+              <span className="bg-linear-to-r from-emerald-600 to-indigo-600 bg-clip-text text-transparent dark:from-[#6ee7c9] dark:to-[#8b7cf6]">
+                here.
+              </span>
+            </h1>
 
-          <p className="mb-10 max-w-md text-lg leading-relaxed text-white/60">
-            Practice with real company questions, climb the leaderboard, and
-            track your growth — all in one place.
-          </p>
+            <p className="mb-8 max-w-md text-base leading-relaxed text-muted-foreground">
+              Practice with real company recruitment exams, compete on the live
+              campus leaderboard, and master concepts with step-by-step analytics.
+            </p>
 
-          {/* Highlight chips */}
-          <div className="mb-12 flex flex-wrap gap-3">
-            {highlights.map((h) => (
-              <div
-                key={h.text}
-                className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70"
-              >
-                <h.icon className="h-4 w-4 text-[#6ee7c9]" />
-                {h.text}
-              </div>
-            ))}
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4">
-            {[
-              ["128K+", "Students"],
-              ["85+", "Companies"],
-              ["4.9★", "Rating"],
-            ].map(([v, l]) => (
-              <div
-                key={l}
-                className="rounded-2xl border border-white/8 bg-white/5 p-4"
-              >
-                <div className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text font-[Space_Grotesk,sans-serif] text-2xl font-bold text-transparent">
-                  {v}
+            {/* Highlights chips */}
+            <div className="mb-10 flex flex-wrap gap-2.5">
+              {highlights.map((h) => (
+                <div
+                  key={h.text}
+                  className="flex items-center gap-2 rounded-full border border-border/80 bg-surface/80 px-3.5 py-1.5 text-xs font-medium text-foreground/80 shadow-2xs backdrop-blur-xs dark:border-white/10 dark:bg-white/5 dark:text-white/80"
+                >
+                  <h.icon className="h-3.5 w-3.5 text-emerald-600 dark:text-[#6ee7c9]" />
+                  <span>{h.text}</span>
                 </div>
-                <div className="mt-0.5 text-xs text-white/50">{l}</div>
-              </div>
-            ))}
+              ))}
+            </div>
+
+            {/* Stats row */}
+            <div className="grid grid-cols-3 gap-3.5">
+              {[
+                ["128K+", "Students"],
+                ["85+", "Top Companies"],
+                ["4.9 / 5", "Student Rating"],
+              ].map(([val, label]) => (
+                <div
+                  key={label}
+                  className="rounded-2xl border border-border/80 bg-surface/90 p-4 shadow-2xs backdrop-blur-md dark:border-white/8 dark:bg-white/5"
+                >
+                  <div className="bg-linear-to-r from-emerald-600 to-indigo-600 bg-clip-text font-[Space_Grotesk,sans-serif] text-2xl font-bold text-transparent dark:from-[#6ee7c9] dark:to-[#8b7cf6]">
+                    {val}
+                  </div>
+                  <div className="mt-0.5 text-xs text-muted-foreground font-medium">
+                    {label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Bottom security assurance */}
+          <div className="relative text-xs text-muted-foreground/80">
+            Enterprise-grade secure authentication • Fast &amp; Ad-free testing
           </div>
         </div>
-      </div>
 
-      {/* ── Right panel (form) ──────────────────────────────────── */}
-      <div className="relative flex flex-1 items-center justify-center overflow-hidden p-8">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(110,231,201,0.04)_0%,transparent_70%)]" />
-
-        <div className="relative w-full max-w-105">
-          {/* Mobile logo */}
-          <Link href="/" className="mb-8 flex items-center gap-2 lg:hidden">
-           <div className="">
-            <Image
-              loading="lazy"
-              src="/logo.png"
-              alt="AptiCore Logo"
-              width={32}
-              height={32}
-              className="h-10 w-10 rounded-full object-cover sm:h-10 sm:w-10"
-            />
-          </div>
-            <span className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text font-[Space_Grotesk,sans-serif] text-xl font-bold text-transparent">
-              ApticCore
-            </span>
-          </Link>
-
-          <div className="mb-8">
-            <h2 className="mb-1.5 font-[Space_Grotesk,sans-serif] text-[2rem] font-bold tracking-tight">
-              Welcome back
-            </h2>
-            <p className="text-sm text-[#8a96a8]">
-              Sign in to continue your preparation journey
-            </p>
-          </div>
-
-          {/* Alerts */}
-          {error && (
-            <div className="mb-4 rounded-xl border border-[rgba(242,85,90,0.3)] bg-[rgba(242,85,90,0.1)] p-3.5 text-sm text-[#f2555a]">
-              <div className="flex items-start gap-2.5">
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>{error}</span>
+        {/* ── Right form panel ────────────────────────────────────── */}
+        <div className="flex flex-1 items-center justify-center overflow-y-auto p-6 sm:p-10 lg:p-12 pt-20 sm:pt-24 lg:pt-24">
+          <div className="w-full max-w-md py-4">
+            {/* Header */}
+            <div className="mb-6">
+              <h2 className="mb-1.5 font-[Space_Grotesk,sans-serif] text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                Welcome back
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Sign in to continue your aptitude preparation journey
+              </p>
+            </div>
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Email */}
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Email address
+                </label>
+                <div className="group relative">
+                  <Mail className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-emerald-500" />
+                  <input
+                    type="email"
+                    required
+                    autoComplete="email"
+                    placeholder="you@university.edu"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    className={cn(
+                      "h-11 w-full rounded-xl border border-input bg-surface pr-4 pl-10 text-sm text-foreground transition-all outline-none placeholder:text-muted-foreground/60 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15",
+                      error && "border-red-500/50 focus:border-red-500 focus:ring-red-500/15"
+                    )}
+                  />
+                </div>
               </div>
-              {unverifiedEmail && (
-                <div className="mt-3 flex justify-end border-t border-[rgba(242,85,90,0.25)] pt-2.5">
+
+              {/* Password */}
+              <div>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Password
+                  </label>
                   <Link
-                    href={`/auth/verify-email?email=${encodeURIComponent(
-                      unverifiedEmail
-                    )}`}
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#6ee7c9] hover:underline"
+                    href="/auth/forgot-password"
+                    className="text-xs font-medium text-emerald-600 dark:text-[#6ee7c9] transition-colors hover:underline"
                   >
-                    Verify Email Now <ArrowRight className="h-3.5 w-3.5" />
+                    Forgot password?
                   </Link>
                 </div>
-              )}
-            </div>
-          )}
-          {success && (
-            <div className="mb-4 flex items-center gap-2.5 rounded-xl border border-[rgba(62,207,142,0.3)] bg-[rgba(62,207,142,0.1)] p-3.5 text-sm text-[#3ecf8e]">
-              <CheckCircle2 className="h-4 w-4 shrink-0" />
-              <span>{success}</span>
-            </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
-            <div>
-              <label className="mb-1.5 block text-sm font-medium">
-                Email address
-              </label>
-              <div className="group relative">
-                <Mail className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-[#5b6577] transition-colors group-focus-within:text-[#6ee7c9]" />
-                <input
-                  type="email"
-                  required
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className={cn(
-                    "h-11 w-full rounded-xl border border-[#212a37] bg-[#10151d] pr-4 pl-10 text-sm text-[#e7ecf3] transition-all outline-none placeholder:text-[#5b6577] focus:border-[#6ee7c9] focus:ring-2 focus:ring-[#6ee7c9]/15",
-                    error && "border-red-500/50 bg-red-500/5 focus:border-red-500 focus:ring-red-500/15"
-                  )}
-                />
+                <div className="group relative">
+                  <Lock className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-emerald-500" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={(e) =>
+                      setForm({ ...form, password: e.target.value })
+                    }
+                    className={cn(
+                      "h-11 w-full rounded-xl border border-input bg-surface pr-10 pl-10 text-sm text-foreground transition-all outline-none placeholder:text-muted-foreground/60 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15",
+                      error && "border-red-500/50 focus:border-red-500 focus:ring-red-500/15"
+                    )}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute top-1/2 right-3 -translate-y-1/2 p-1 text-muted-foreground transition-colors hover:text-foreground"
+                    title={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {/* Password */}
-            <div>
-              <div className="mb-1.5 flex items-center justify-between">
-                <label className="text-sm font-medium">Password</label>
-                <Link
-                  href="/auth/forgot-password"
-                  className="text-xs text-[#6ee7c9] transition-colors hover:text-[#8ef2d6]"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-              <div className="group relative">
-                <Lock className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-[#5b6577] transition-colors group-focus-within:text-[#6ee7c9]" />
+              {/* Remember checkbox */}
+              <label className="flex cursor-pointer items-center gap-2.5 select-none pt-1">
                 <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  value={form.password}
+                  type="checkbox"
+                  checked={form.remember}
                   onChange={(e) =>
-                    setForm({ ...form, password: e.target.value })
+                    setForm({ ...form, remember: e.target.checked })
                   }
-                  className={cn(
-                    "h-11 w-full rounded-xl border border-[#212a37] bg-[#10151d] pr-10 pl-10 text-sm text-[#e7ecf3] transition-all outline-none placeholder:text-[#5b6577] focus:border-[#6ee7c9] focus:ring-2 focus:ring-[#6ee7c9]/15",
-                    error && "border-red-500/50 bg-red-500/5 focus:border-red-500 focus:ring-red-500/15"
-                  )}
+                  className="h-4 w-4 rounded-md border-input text-emerald-600 focus:ring-emerald-500"
                 />
+                <span className="text-xs sm:text-sm text-muted-foreground">
+                  Keep me signed in on this device
+                </span>
+              </label>
+
+              {/* Submit Button */}
+              <div className="pt-2">
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute top-1/2 right-3.5 -translate-y-1/2 p-0.5 text-[#5b6577] transition-colors hover:text-[#e7ecf3]"
+                  type="submit"
+                  disabled={isLoading}
+                  className={cn(
+                    "flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-98",
+                    isLoading
+                      ? "cursor-not-allowed bg-emerald-500/50 text-white"
+                      : "bg-linear-to-r from-emerald-600 to-indigo-600 text-white shadow-md shadow-emerald-500/20 hover:opacity-95 dark:from-[#6ee7c9] dark:to-[#8b7cf6] dark:text-[#06120d] dark:font-bold"
+                  )}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
+                  {isLoading ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      <span>Signing in...</span>
+                    </>
                   ) : (
-                    <Eye className="h-4 w-4" />
+                    <>
+                      <span>Sign in to AptiCore</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </>
                   )}
                 </button>
               </div>
-            </div>
+            </form>
 
-            {/* Remember */}
-            <label className="flex cursor-pointer items-center gap-2.5 select-none">
-              <div
-                className={cn(
-                  "flex h-4.5 w-4.5 items-center justify-center rounded-lg border-2 transition-all",
-                  form.remember
-                    ? "border-[#6ee7c9] bg-[#6ee7c9]"
-                    : "border-[#212a37] hover:border-[#6ee7c9]/50"
-                )}
-                onClick={() => setForm({ ...form, remember: !form.remember })}
+            {/* Switcher to register */}
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+              Don&apos;t have an account?{" "}
+              <Link
+                href="/auth/register"
+                className="font-semibold text-emerald-600 dark:text-[#6ee7c9] transition-colors hover:underline"
               >
-                {form.remember && (
-                  <CheckCircle2 className="h-3 w-3 text-[#06120d]" />
-                )}
-              </div>
-              <span className="text-sm text-[#8a96a8]">Keep me signed in</span>
-            </label>
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={cn(
-                "flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-bold transition-all duration-200",
-                isLoading
-                  ? "cursor-not-allowed bg-[#6ee7c9]/30 text-[#06120d]/60"
-                  : "bg-linear-to-br from-[#6ee7c9] to-[#57c9a8] text-[#06120d] shadow-lg shadow-[#6ee7c9]/20 hover:-translate-y-0.5 hover:brightness-105"
-              )}
-            >
-              {isLoading ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#06120d]/30 border-t-[#06120d]" />
-                  Signing in...
-                </>
-              ) : (
-                <>
-                  Sign in <ArrowRight className="h-4 w-4" />
-                </>
-              )}
-            </button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-[#8a96a8]">
-            No account?{" "}
-            <Link
-              href="/auth/register"
-              className="font-semibold text-[#6ee7c9] transition-colors hover:text-[#8ef2d6]"
-            >
-              Create one free →
-            </Link>
-          </p>
+                Create one free →
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

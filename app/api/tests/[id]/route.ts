@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import connectDB from "@/lib/db"
 import Test from "@/lib/models/Test"
 import { verifyAccessToken } from "@/lib/jwt"
+import { logActivity, diff } from "@/lib/audit"
+import { getAuthUser } from "@/lib/auth-guard"
 
 // GET /api/tests/[id] - Get single test with questions
 export async function GET(
@@ -44,18 +46,10 @@ export async function PUT(
   try {
     await connectDB()
 
-    const accessToken = request.cookies.get("accessToken")?.value
-    if (!accessToken) {
+    const user = getAuthUser(request)
+    if (!user) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
-      )
-    }
-
-    const decoded = verifyAccessToken(accessToken)
-    if (!decoded) {
-      return NextResponse.json(
-        { success: false, error: "Invalid token" },
         { status: 401 }
       )
     }
@@ -68,6 +62,9 @@ export async function PUT(
     delete updates.createdBy
 
     const { id } = await params
+    
+    const oldTest = await Test.findById(id).lean()
+    
     const test = await Test.findByIdAndUpdate(id, updates, {
       returnDocument: 'after',
       runValidators: true,
@@ -79,6 +76,21 @@ export async function PUT(
         { status: 404 }
       )
     }
+    
+    if (oldTest) {
+      await logActivity({
+        req: request,
+        actorId: user.userId,
+        actorRole: user.role as any,
+        action: "update",
+        module: "test",
+        targetType: "Test",
+        targetId: test._id.toString(),
+        targetLabel: (test.title || "").substring(0, 50),
+        status: "success",
+        details: diff(oldTest, test.toObject())
+      })
+    }
 
     return NextResponse.json({
       success: true,
@@ -86,6 +98,21 @@ export async function PUT(
     })
   } catch (error) {
     console.error("Update test error:", error)
+    
+    const user = getAuthUser(request)
+    if (user) {
+      await logActivity({
+        req: request,
+        actorId: user.userId,
+        actorRole: user.role as any,
+        action: "update",
+        module: "test",
+        targetType: "Test",
+        status: "failure",
+        details: { error: error instanceof Error ? error.message : "Failed to update test" }
+      })
+    }
+    
     return NextResponse.json(
       { success: false, error: "Failed to update test" },
       { status: 500 }
@@ -101,18 +128,10 @@ export async function DELETE(
   try {
     await connectDB()
 
-    const accessToken = request.cookies.get("accessToken")?.value
-    if (!accessToken) {
+    const user = getAuthUser(request)
+    if (!user) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
-      )
-    }
-
-    const decoded = verifyAccessToken(accessToken)
-    if (!decoded) {
-      return NextResponse.json(
-        { success: false, error: "Invalid token" },
         { status: 401 }
       )
     }
@@ -126,6 +145,19 @@ export async function DELETE(
         { status: 404 }
       )
     }
+    
+    await logActivity({
+      req: request,
+      actorId: user.userId,
+      actorRole: user.role as any,
+      action: "delete",
+      module: "test",
+      targetType: "Test",
+      targetId: test._id.toString(),
+      targetLabel: (test.title || "").substring(0, 50),
+      status: "success",
+      details: { deleted: true }
+    })
 
     return NextResponse.json({
       success: true,
@@ -133,6 +165,21 @@ export async function DELETE(
     })
   } catch (error) {
     console.error("Delete test error:", error)
+    
+    const user = getAuthUser(request)
+    if (user) {
+      await logActivity({
+        req: request,
+        actorId: user.userId,
+        actorRole: user.role as any,
+        action: "delete",
+        module: "test",
+        targetType: "Test",
+        status: "failure",
+        details: { error: error instanceof Error ? error.message : "Failed to delete test" }
+      })
+    }
+    
     return NextResponse.json(
       { success: false, error: "Failed to delete test" },
       { status: 500 }

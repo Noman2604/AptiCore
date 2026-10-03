@@ -26,6 +26,7 @@ import {
   Zap,
 } from "lucide-react"
 import axios from "axios"
+import { toast } from "sonner"
 import { TestAttemptCard } from "@/components/history/TestAttemptCard"
 
 interface ResultHistoryItem {
@@ -123,8 +124,8 @@ const SOURCE_LABELS: Record<
   correct_answer: {
     label: "Correct Answer",
     icon: CheckCircle2,
-    color: "#6ee7c9",
-    bg: "rgba(110,231,201,0.1)",
+    color: "#10b981",
+    bg: "rgba(16,185,129,0.1)",
   },
   streak: {
     label: "Streak Bonus",
@@ -239,7 +240,9 @@ export default function HistoryPage() {
         setFeedbackHistory(history.feedback || [])
       } catch (err) {
         console.error("Failed to load history:", err)
-        setError(err instanceof Error ? err.message : "Failed to load history")
+        const msg = err instanceof Error ? err.message : "Failed to load history"
+        setError(msg)
+        toast.error(msg)
       } finally {
         setLoading(false)
       }
@@ -317,23 +320,20 @@ export default function HistoryPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-[--ac-bg] text-[--ac-text] transition-colors duration-300">
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
       <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
         {/* ================= HERO BANNER ================= */}
-        <div className="relative overflow-hidden rounded-2xl border border-black/10 bg-linear-to-br from-teal-500/10 via-purple-500/5 to-amber-500/10 p-6 shadow-sm backdrop-blur-md sm:p-8 dark:border-white/10">
-          <div className="pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full bg-teal-400/15 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-20 left-1/3 h-64 w-64 rounded-full bg-purple-500/15 blur-3xl" />
-
-          <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="max-w-2xl space-y-2.5">
-              <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3.5 py-1 text-xs font-semibold text-teal-600 dark:text-teal-300">
-                <Activity className="h-3.5 w-3.5" />
-                <span>Performance Ledger</span>
+        <div className="rounded-xl border border-border bg-card p-6 sm:p-8 shadow-xs">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl space-y-2">
+              <div className="section-eyebrow">
+                <span className="section-eyebrow-dot" />
+                <span>02 / PERFORMANCE LEDGER</span>
               </div>
-              <h1 className="font-[Space_Grotesk,sans-serif] text-3xl font-bold tracking-tight text-[--ac-text] sm:text-4xl">
+              <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
                 Activity & Test History
               </h1>
-              <p className="text-sm leading-relaxed text-[--ac-text-3]">
+              <p className="text-sm leading-relaxed text-muted-foreground">
                 Inspect your complete evaluation audit log, question precision
                 breakdowns, accumulated XP points, and unlocked milestones.
               </p>
@@ -341,12 +341,12 @@ export default function HistoryPage() {
 
             <div className="flex flex-wrap items-center gap-3">
               <Link href="/dashboard/tests">
-                <button className="cursor-pointer rounded-lg bg-teal-500 px-4 py-2 text-xs font-bold text-black shadow-sm transition hover:bg-teal-400">
+                <button className="cursor-pointer rounded-lg bg-primary hover:bg-emerald-600 px-4 py-2 text-xs font-semibold text-primary-foreground shadow-xs transition">
                   Take Practice Test →
                 </button>
               </Link>
               <Link href="/dashboard/analytics">
-                <button className="cursor-pointer rounded-lg border border-black/10 bg-white px-4 py-2 text-xs font-semibold text-[--ac-text] transition hover:border-black/25 dark:border-white/10 dark:bg-[#10151d] dark:hover:border-white/25">
+                <button className="cursor-pointer rounded-lg border border-border bg-background hover:bg-accent px-4 py-2 text-xs font-semibold text-foreground transition">
                   Analytics Hub
                 </button>
               </Link>
@@ -357,80 +357,80 @@ export default function HistoryPage() {
         {/* ================= 4 KEY KPI METRICS ================= */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {/* Card 1: Completed Tests */}
-          <div className="rounded-xl border border-black/10 bg-white p-4.5 shadow-sm transition hover:border-teal-500/40 dark:border-white/10 dark:bg-[#10151d]">
+          <div className="rounded-xl border border-border bg-card p-4.5 shadow-xs transition hover:border-foreground/20">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[--ac-text-3]">
+              <span className="text-xs font-medium text-muted-foreground">
                 Total Tests Evaluated
               </span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                 <BookOpen className="h-4 w-4" />
               </div>
             </div>
-            <div className="mt-3 font-[Space_Grotesk,sans-serif] text-2xl font-bold text-[--ac-text] sm:text-3xl">
+            <div className="mt-3 font-heading text-2xl font-bold text-foreground sm:text-3xl">
               {results.length}
             </div>
-            <p className="mt-1 text-[11px] text-[--ac-text-3]">
+            <p className="mt-1 text-[11px] text-muted-foreground">
               Full syllabus tests submitted
             </p>
           </div>
 
           {/* Card 2: Average Accuracy */}
-          <div className="rounded-xl border border-black/10 bg-white p-4.5 shadow-sm transition hover:border-emerald-500/40 dark:border-white/10 dark:bg-[#10151d]">
+          <div className="rounded-xl border border-border bg-card p-4.5 shadow-xs transition hover:border-foreground/20">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[--ac-text-3]">
+              <span className="text-xs font-medium text-muted-foreground">
                 Lifetime Accuracy
               </span>
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                 <Target className="h-4 w-4" />
               </div>
             </div>
-            <div className="mt-3 font-[Space_Grotesk,sans-serif] text-2xl font-bold text-emerald-600 sm:text-3xl dark:text-emerald-400">
+            <div className="mt-3 font-heading text-2xl font-bold text-emerald-600 dark:text-emerald-400 sm:text-3xl">
               {averageAccuracy}%
             </div>
-            <p className="mt-1 text-[11px] text-[--ac-text-3]">
+            <p className="mt-1 text-[11px] text-muted-foreground">
               Across all completed sessions
             </p>
           </div>
 
           {/* Card 3: Total XP */}
-          <div className="rounded-xl border border-black/10 bg-white p-4.5 shadow-sm transition hover:border-purple-500/40 dark:border-white/10 dark:bg-[#10151d]">
+          <div className="rounded-xl border border-border bg-card p-4.5 shadow-xs transition hover:border-foreground/20">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[--ac-text-3]">
+              <span className="text-xs font-medium text-muted-foreground">
                 Total XP Earned
               </span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-300">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
                 <Zap className="h-4 w-4" />
               </div>
             </div>
-            <div className="mt-3 font-[Space_Grotesk,sans-serif] text-2xl font-bold text-purple-600 sm:text-3xl dark:text-purple-300">
+            <div className="mt-3 font-heading text-2xl font-bold text-amber-600 dark:text-amber-400 sm:text-3xl">
               +{totalXPEarned.toLocaleString()}
             </div>
-            <p className="mt-1 text-[11px] text-[--ac-text-3]">
+            <p className="mt-1 text-[11px] text-muted-foreground">
               From tests, streaks, and bonuses
             </p>
           </div>
 
           {/* Card 4: Milestones */}
-          <div className="rounded-xl border border-black/10 bg-white p-4.5 shadow-sm transition hover:border-amber-500/40 dark:border-white/10 dark:bg-[#10151d]">
+          <div className="rounded-xl border border-border bg-card p-4.5 shadow-xs transition hover:border-foreground/20">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-[--ac-text-3]">
+              <span className="text-xs font-medium text-muted-foreground">
                 Badges Unlocked
               </span>
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
                 <Award className="h-4 w-4" />
               </div>
             </div>
-            <div className="mt-3 font-[Space_Grotesk,sans-serif] text-2xl font-bold text-amber-600 sm:text-3xl dark:text-amber-400">
+            <div className="mt-3 font-heading text-2xl font-bold text-foreground sm:text-3xl">
               {achievements.length}
             </div>
-            <p className="mt-1 text-[11px] text-[--ac-text-3]">
+            <p className="mt-1 text-[11px] text-muted-foreground">
               Recognized placement achievements
             </p>
           </div>
         </div>
 
         {/* ================= SECTION TABS ================= */}
-        <div className="grid grid-cols-2 gap-2 rounded-xl border border-black/10 bg-white p-1.5 shadow-sm sm:grid-cols-4 dark:border-white/10 dark:bg-[#10151d]">
+        <div className="grid grid-cols-2 gap-2 rounded-xl border border-border bg-card p-1.5 shadow-xs sm:grid-cols-4">
           {sections.map((s) => {
             const active = section === s.key
             return (
@@ -438,19 +438,19 @@ export default function HistoryPage() {
                 key={s.key}
                 type="button"
                 onClick={() => setSection(s.key)}
-                className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all ${
+                className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all cursor-pointer ${
                   active
-                    ? "border border-teal-500/30 bg-teal-500/15 text-teal-600 shadow-xs dark:text-teal-300"
-                    : "border border-transparent text-[--ac-text-3] hover:bg-slate-100 hover:text-[--ac-text] dark:hover:bg-white/5"
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "border border-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
                 }`}
               >
                 <s.icon className="h-4 w-4 shrink-0" />
                 <span>{s.label}</span>
                 <span
-                  className={`py-0.2 rounded-full px-1.5 text-[10px] font-bold ${
+                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
                     active
-                      ? "bg-teal-500/25 text-teal-700 dark:text-teal-200"
-                      : "bg-slate-200 text-[--ac-text-3] dark:bg-white/10"
+                      ? "bg-primary-foreground/20 text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
                   }`}
                 >
                   {s.count}
@@ -461,19 +461,19 @@ export default function HistoryPage() {
         </div>
 
         {/* ================= CONTENT PANEL ================= */}
-        <div className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm sm:p-7 dark:border-white/10 dark:bg-[#10151d]">
+        <div className="rounded-xl border border-border bg-card p-5 shadow-xs sm:p-7">
           {loading ? (
             <div className="space-y-3 py-4">
               {Array.from({ length: 4 }).map((_, idx) => (
                 <div
                   key={idx}
-                  className="flex animate-pulse items-center justify-between rounded-xl border border-black/5 p-4 dark:border-white/5"
+                  className="flex animate-pulse items-center justify-between rounded-xl border border-border p-4"
                 >
                   <div className="space-y-2">
-                    <div className="h-4 w-48 rounded bg-slate-200 dark:bg-white/10" />
-                    <div className="h-3 w-32 rounded bg-slate-200 dark:bg-white/10" />
+                    <div className="h-4 w-48 rounded bg-muted" />
+                    <div className="h-3 w-32 rounded bg-muted" />
                   </div>
-                  <div className="h-8 w-24 rounded-lg bg-slate-200 dark:bg-white/10" />
+                  <div className="h-8 w-24 rounded-lg bg-muted" />
                 </div>
               ))}
             </div>
@@ -489,31 +489,31 @@ export default function HistoryPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="font-[Space_Grotesk,sans-serif] text-base font-bold text-[--ac-text] sm:text-lg">
+                      <h2 className="font-heading text-base font-bold text-foreground sm:text-lg">
                         Completed Test Sessions
                       </h2>
-                      <p className="text-xs text-[--ac-text-3]">
+                      <p className="text-xs text-muted-foreground">
                         Detailed record of your aptitude test evaluations
                       </p>
                     </div>
-                    <span className="text-xs text-[--ac-text-3]">
+                    <span className="text-xs text-muted-foreground">
                       Showing {paginatedTests.length} of {results.length}{" "}
                       attempts
                     </span>
                   </div>
 
                   {paginatedTests.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-black/10 p-12 text-center dark:border-white/10">
-                      <FileText className="mx-auto mb-3 h-10 w-10 text-[--ac-text-3]" />
-                      <h3 className="font-semibold text-[--ac-text]">
+                    <div className="rounded-xl border border-dashed border-border p-12 text-center">
+                      <FileText className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+                      <h3 className="font-semibold text-foreground">
                         No test attempts recorded yet
                       </h3>
-                      <p className="mt-1 text-xs text-[--ac-text-3]">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         Attempt your first timed aptitude mock test to track
                         your performance trajectory.
                       </p>
                       <Link href="/dashboard/tests">
-                        <button className="mt-4 cursor-pointer rounded-lg bg-teal-500 px-4 py-2 text-xs font-bold text-black transition hover:bg-teal-400">
+                        <button className="mt-4 cursor-pointer rounded-lg bg-primary hover:bg-emerald-600 px-4 py-2 text-xs font-semibold text-primary-foreground transition">
                           Browse Practice Tests
                         </button>
                       </Link>
@@ -528,15 +528,15 @@ export default function HistoryPage() {
 
                   {/* Pagination */}
                   {totalTestPages > 1 && (
-                    <div className="flex items-center justify-between border-t border-black/5 pt-4 dark:border-white/5">
-                      <span className="text-xs text-[--ac-text-3]">
+                    <div className="flex items-center justify-between border-t border-border pt-4">
+                      <span className="text-xs text-muted-foreground">
                         Page {testPage} of {totalTestPages}
                       </span>
                       <div className="flex items-center gap-1.5">
                         <button
                           disabled={testPage === 1}
                           onClick={() => setTestPage((p) => Math.max(1, p - 1))}
-                          className="rounded-md border border-black/10 p-1.5 text-xs disabled:opacity-40 dark:border-white/10"
+                          className="rounded-md border border-border p-1.5 text-xs text-foreground hover:bg-accent disabled:opacity-30 cursor-pointer"
                         >
                           <ChevronLeft className="h-4 w-4" />
                         </button>
@@ -545,7 +545,7 @@ export default function HistoryPage() {
                           onClick={() =>
                             setTestPage((p) => Math.min(totalTestPages, p + 1))
                           }
-                          className="rounded-md border border-black/10 p-1.5 text-xs disabled:opacity-40 dark:border-white/10"
+                          className="rounded-md border border-border p-1.5 text-xs text-foreground hover:bg-accent disabled:opacity-30 cursor-pointer"
                         >
                           <ChevronRight className="h-4 w-4" />
                         </button>
@@ -560,26 +560,26 @@ export default function HistoryPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="font-[Space_Grotesk,sans-serif] text-base font-bold text-[--ac-text] sm:text-lg">
+                      <h2 className="font-heading text-base font-bold text-foreground sm:text-lg">
                         XP Reward Velocity
                       </h2>
-                      <p className="text-xs text-[--ac-text-3]">
+                      <p className="text-xs text-muted-foreground">
                         Chronological stream of experience points gained across
                         activities
                       </p>
                     </div>
-                    <span className="text-xs font-bold text-purple-600 dark:text-purple-300">
+                    <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
                       +{totalXPEarned.toLocaleString()} Lifetime XP
                     </span>
                   </div>
 
                   {paginatedXP.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-black/10 p-12 text-center dark:border-white/10">
-                      <Zap className="mx-auto mb-3 h-10 w-10 text-[--ac-text-3]" />
-                      <h3 className="font-semibold text-[--ac-text]">
+                    <div className="rounded-xl border border-dashed border-border p-12 text-center">
+                      <Zap className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+                      <h3 className="font-semibold text-foreground">
                         No XP events recorded
                       </h3>
-                      <p className="mt-1 text-xs text-[--ac-text-3]">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         Answer test questions and complete practice sessions to
                         earn XP.
                       </p>
@@ -598,7 +598,7 @@ export default function HistoryPage() {
                         return (
                           <div
                             key={item._id}
-                            className="flex items-center justify-between rounded-xl border border-black/5 bg-slate-50/70 p-3.5 transition hover:border-black/15 dark:border-white/5 dark:bg-white/2 dark:hover:border-white/15"
+                            className="flex items-center justify-between rounded-xl border border-border bg-card p-3.5 transition hover:border-foreground/20"
                           >
                             <div className="flex items-center gap-3">
                               <div
@@ -608,19 +608,19 @@ export default function HistoryPage() {
                                   color: meta.color,
                                 }}
                               >
-                                <Icon className="h-4.5 w-4.5" />
+                                <Icon className="h-4 w-4" />
                               </div>
                               <div>
-                                <p className="text-xs font-bold text-[--ac-text] capitalize sm:text-sm">
+                                <p className="text-xs font-semibold text-foreground capitalize sm:text-sm">
                                   {meta.label}
                                 </p>
-                                <p className="text-[11px] text-[--ac-text-3]">
+                                <p className="text-[11px] text-muted-foreground">
                                   {formatDate(item.createdAt)}
                                 </p>
                               </div>
                             </div>
 
-                            <span className="font-[JetBrains_Mono,monospace] text-sm font-bold text-purple-600 dark:text-purple-300">
+                            <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
                               +{item.xpPoints} XP
                             </span>
                           </div>
@@ -631,15 +631,15 @@ export default function HistoryPage() {
 
                   {/* Pagination */}
                   {totalXpPages > 1 && (
-                    <div className="flex items-center justify-between border-t border-black/5 pt-4 dark:border-white/5">
-                      <span className="text-xs text-[--ac-text-3]">
+                    <div className="flex items-center justify-between border-t border-border pt-4">
+                      <span className="text-xs text-muted-foreground">
                         Page {xpPage} of {totalXpPages}
                       </span>
                       <div className="flex items-center gap-1.5">
                         <button
                           disabled={xpPage === 1}
                           onClick={() => setXpPage((p) => Math.max(1, p - 1))}
-                          className="rounded-md border border-black/10 p-1.5 text-xs disabled:opacity-40 dark:border-white/10"
+                          className="rounded-md border border-border p-1.5 text-xs text-foreground hover:bg-accent disabled:opacity-30 cursor-pointer"
                         >
                           <ChevronLeft className="h-4 w-4" />
                         </button>
@@ -648,7 +648,7 @@ export default function HistoryPage() {
                           onClick={() =>
                             setXpPage((p) => Math.min(totalXpPages, p + 1))
                           }
-                          className="rounded-md border border-black/10 p-1.5 text-xs disabled:opacity-40 dark:border-white/10"
+                          className="rounded-md border border-border p-1.5 text-xs text-foreground hover:bg-accent disabled:opacity-30 cursor-pointer"
                         >
                           <ChevronRight className="h-4 w-4" />
                         </button>
@@ -663,33 +663,33 @@ export default function HistoryPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="font-[Space_Grotesk,sans-serif] text-base font-bold text-[--ac-text] sm:text-lg">
+                      <h2 className="font-heading text-base font-bold text-foreground sm:text-lg">
                         Unlocked Milestones & Badges
                       </h2>
-                      <p className="text-xs text-[--ac-text-3]">
+                      <p className="text-xs text-muted-foreground">
                         Honors you have achieved during your preparation
                       </p>
                     </div>
                     <Link
                       href="/dashboard/achievements"
-                      className="flex items-center gap-1 text-xs font-semibold text-teal-600 hover:underline dark:text-teal-300"
+                      className="flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:underline dark:text-emerald-400"
                     >
                       All Badges <ExternalLink className="h-3 w-3" />
                     </Link>
                   </div>
 
                   {paginatedAchievements.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-black/10 p-12 text-center dark:border-white/10">
-                      <Award className="mx-auto mb-3 h-10 w-10 text-[--ac-text-3]" />
-                      <h3 className="font-semibold text-[--ac-text]">
+                    <div className="rounded-xl border border-dashed border-border p-12 text-center">
+                      <Award className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+                      <h3 className="font-semibold text-foreground">
                         No achievements unlocked yet
                       </h3>
-                      <p className="mt-1 text-xs text-[--ac-text-3]">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         Complete mock tests and build streaks to unlock
                         achievements.
                       </p>
                       <Link href="/dashboard/achievements">
-                        <button className="mt-4 cursor-pointer rounded-lg bg-teal-500 px-4 py-2 text-xs font-bold text-black transition hover:bg-teal-400">
+                        <button className="mt-4 cursor-pointer rounded-lg bg-primary hover:bg-emerald-600 px-4 py-2 text-xs font-semibold text-primary-foreground transition">
                           View Available Badges
                         </button>
                       </Link>
@@ -699,23 +699,23 @@ export default function HistoryPage() {
                       {paginatedAchievements.map((item) => (
                         <div
                           key={item._id}
-                          className="flex items-center justify-between rounded-xl border border-black/5 bg-slate-50/70 p-4 transition hover:border-black/15 dark:border-white/5 dark:bg-white/2 dark:hover:border-white/15"
+                          className="flex items-center justify-between rounded-xl border border-border bg-card p-4 transition hover:border-foreground/20"
                         >
                           <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-500">
                               <Trophy className="h-5 w-5" />
                             </div>
                             <div>
-                              <h4 className="text-xs font-bold text-[--ac-text] sm:text-sm">
+                              <h4 className="text-xs font-bold text-foreground sm:text-sm">
                                 {item.achievementId?.name || "Milestone"}
                               </h4>
-                              <p className="text-[11px] text-[--ac-text-3]">
+                              <p className="text-[11px] text-muted-foreground">
                                 {formatDate(item.unlockedAt)}
                               </p>
                             </div>
                           </div>
 
-                          <span className="rounded-full border border-purple-500/20 bg-purple-500/10 px-2.5 py-0.5 font-[JetBrains_Mono,monospace] text-xs font-bold text-purple-600 dark:text-purple-300">
+                          <span className="rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-semibold text-foreground">
                             +{item.achievementId?.pointsReward || 0} XP
                           </span>
                         </div>
@@ -725,8 +725,8 @@ export default function HistoryPage() {
 
                   {/* Pagination */}
                   {totalAchievementPages > 1 && (
-                    <div className="flex items-center justify-between border-t border-black/5 pt-4 dark:border-white/5">
-                      <span className="text-xs text-[--ac-text-3]">
+                    <div className="flex items-center justify-between border-t border-border pt-4">
+                      <span className="text-xs text-muted-foreground">
                         Page {achievementPage} of {totalAchievementPages}
                       </span>
                       <div className="flex items-center gap-1.5">
@@ -735,7 +735,7 @@ export default function HistoryPage() {
                           onClick={() =>
                             setAchievementPage((p) => Math.max(1, p - 1))
                           }
-                          className="rounded-md border border-black/10 p-1.5 text-xs disabled:opacity-40 dark:border-white/10"
+                          className="rounded-md border border-border p-1.5 text-xs text-foreground hover:bg-accent disabled:opacity-30 cursor-pointer"
                         >
                           <ChevronLeft className="h-4 w-4" />
                         </button>
@@ -746,7 +746,7 @@ export default function HistoryPage() {
                               Math.min(totalAchievementPages, p + 1)
                             )
                           }
-                          className="rounded-md border border-black/10 p-1.5 text-xs disabled:opacity-40 dark:border-white/10"
+                          className="rounded-md border border-border p-1.5 text-xs text-foreground hover:bg-accent disabled:opacity-30 cursor-pointer"
                         >
                           <ChevronRight className="h-4 w-4" />
                         </button>
@@ -761,10 +761,10 @@ export default function HistoryPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="font-[Space_Grotesk,sans-serif] text-base font-bold text-[--ac-text] sm:text-lg">
+                      <h2 className="font-heading text-base font-bold text-foreground sm:text-lg">
                         Submitted Feedback & Reports
                       </h2>
-                      <p className="text-xs text-[--ac-text-3]">
+                      <p className="text-xs text-muted-foreground">
                         Status of questions reported and platform improvement
                         suggestions
                       </p>
@@ -772,12 +772,12 @@ export default function HistoryPage() {
                   </div>
 
                   {paginatedFeedback.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-black/10 p-12 text-center dark:border-white/10">
-                      <MessageSquareText className="mx-auto mb-3 h-10 w-10 text-[--ac-text-3]" />
-                      <h3 className="font-semibold text-[--ac-text]">
+                    <div className="rounded-xl border border-dashed border-border p-12 text-center">
+                      <MessageSquareText className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+                      <h3 className="font-semibold text-foreground">
                         No feedback entries found
                       </h3>
-                      <p className="mt-1 text-xs text-[--ac-text-3]">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         You haven't submitted any question queries or platform
                         feedback yet.
                       </p>
@@ -792,12 +792,12 @@ export default function HistoryPage() {
                         return (
                           <div
                             key={item._id}
-                            className="rounded-xl border border-black/5 bg-slate-50/70 p-4 transition hover:border-black/15 dark:border-white/5 dark:bg-white/2 dark:hover:border-white/15"
+                            className="rounded-xl border border-border bg-card p-4 transition hover:border-foreground/20"
                           >
                             <div className="flex items-start justify-between gap-4">
                               <div className="space-y-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs font-bold text-[--ac-text] capitalize">
+                                  <span className="text-xs font-bold text-foreground capitalize">
                                     {item.title || `${item.targetType} inquiry`}
                                   </span>
                                   <span
@@ -811,12 +811,12 @@ export default function HistoryPage() {
                                     {style.label}
                                   </span>
                                 </div>
-                                <p className="text-xs leading-relaxed text-[--ac-text-3]">
+                                <p className="text-xs leading-relaxed text-muted-foreground">
                                   {item.content}
                                 </p>
                               </div>
 
-                              <span className="shrink-0 text-[11px] text-[--ac-text-3]">
+                              <span className="shrink-0 text-[11px] text-muted-foreground">
                                 {formatDate(item.createdAt)}
                               </span>
                             </div>
@@ -828,8 +828,8 @@ export default function HistoryPage() {
 
                   {/* Pagination */}
                   {totalFeedbackPages > 1 && (
-                    <div className="flex items-center justify-between border-t border-black/5 pt-4 dark:border-white/5">
-                      <span className="text-xs text-[--ac-text-3]">
+                    <div className="flex items-center justify-between border-t border-border pt-4">
+                      <span className="text-xs text-muted-foreground">
                         Page {feedbackPage} of {totalFeedbackPages}
                       </span>
                       <div className="flex items-center gap-1.5">
@@ -838,7 +838,7 @@ export default function HistoryPage() {
                           onClick={() =>
                             setFeedbackPage((p) => Math.max(1, p - 1))
                           }
-                          className="rounded-md border border-black/10 p-1.5 text-xs disabled:opacity-40 dark:border-white/10"
+                          className="rounded-md border border-border p-1.5 text-xs text-foreground hover:bg-accent disabled:opacity-30 cursor-pointer"
                         >
                           <ChevronLeft className="h-4 w-4" />
                         </button>
@@ -849,7 +849,7 @@ export default function HistoryPage() {
                               Math.min(totalFeedbackPages, p + 1)
                             )
                           }
-                          className="rounded-md border border-black/10 p-1.5 text-xs disabled:opacity-40 dark:border-white/10"
+                          className="rounded-md border border-border p-1.5 text-xs text-foreground hover:bg-accent disabled:opacity-30 cursor-pointer"
                         >
                           <ChevronRight className="h-4 w-4" />
                         </button>

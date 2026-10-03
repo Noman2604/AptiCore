@@ -113,73 +113,73 @@ export default function ContestPage() {
   const ended = contests.filter((c) => c.status === "ended")
 
   return (
-    <div className="dark min-h-screen bg-[hsl(var(--background))]">
+    <div className="min-h-screen bg-background text-foreground">
       <Navbar />
       <main className="mx-auto max-w-5xl px-4 pt-28 pb-20 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-12 text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-4 py-1.5 text-xs font-medium text-amber-400">
-            <Trophy className="h-3.5 w-3.5" /> Compete & Win XP
+          <div className="section-eyebrow mx-auto mb-3">
+            <span className="section-eyebrow-dot" />
+            <span>Weekly Campus Benchmarks</span>
           </div>
-          <h1 className="font-display mb-3 text-4xl font-bold">
-            Weekly Contests
+          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            Live Aptitude Contests
           </h1>
-          <p className="mx-auto max-w-xl text-[hsl(var(--muted-foreground))]">
-            Compete globally in timed aptitude contests. Top scorers earn
-            massive XP, badges, and leaderboard glory.
+          <p className="mx-auto mt-2 max-w-xl text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            Compete nationwide in timed aptitude challenges under real assessment pressure. Top scorers earn milestone XP and recruitment visibility.
           </p>
         </div>
 
         {/* Live contests */}
         {live.length > 0 && (
           <div className="mb-10">
-            <h2 className="font-display mb-4 flex items-center gap-2 text-lg font-bold">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+            <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold tracking-tight text-foreground uppercase">
+              <span className="status-ping" />
               Live Now
             </h2>
             {live.map((c) => (
               <div
                 key={c.id}
-                className="relative mb-4 overflow-hidden rounded-2xl border border-sky-500/30 bg-gradient-to-br from-sky-900/40 to-purple-900/40 p-6"
+                className="relative mb-4 overflow-hidden rounded-xl border border-emerald-500/30 bg-card p-6 shadow-xs"
               >
-                <div className="grid-bg absolute inset-0 opacity-20" />
                 <div className="relative flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                   <div>
                     <div className="mb-2 flex items-center gap-2">
-                      <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/15 px-2.5 py-1 text-xs font-medium text-emerald-400">
-                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />{" "}
+                      <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-500">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                         LIVE
                       </span>
-                      <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                      <span className="text-xs text-muted-foreground">
                         {c.category} · {c.difficulty}
                       </span>
                     </div>
-                    <h3 className="font-display mb-1 text-xl font-bold text-white">
+                    <h3 className="text-lg font-bold text-foreground">
                       {c.title}
                     </h3>
-                    <p className="mb-3 text-sm text-white/60">
+                    <p className="mb-3 text-xs text-muted-foreground">
                       {c.description}
                     </p>
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-white/70">
+                    <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1.5">
-                        <Users className="h-4 w-4" />
+                        <Users className="h-3.5 w-3.5 text-emerald-500" />
                         {formatNumber(c.participants)} joined
                       </span>
-                      <span className="flex items-center gap-1.5">
-                        <Zap className="h-4 w-4 text-amber-400" />
+                      <span className="flex items-center gap-1.5 font-medium text-foreground">
+                        <Zap className="h-3.5 w-3.5 text-amber-500" />
                         {c.prize}
                       </span>
                       <div className="flex items-center gap-1.5">
-                        <Timer className="h-4 w-4 text-red-400" />
+                        <Timer className="h-3.5 w-3.5 text-rose-500" />
                         <Countdown seconds={c.endsIn!} />
                       </div>
                     </div>
                   </div>
                   <Link
                     href={`/test/${c.id}`}
-                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-6 py-3 text-sm font-bold whitespace-nowrap text-white shadow-lg shadow-sky-500/30 transition-all hover:opacity-90"
+                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 text-xs font-semibold text-white shadow-xs transition hover:bg-emerald-600 active:scale-98"
                   >
-                    <Play className="h-4 w-4 fill-current" /> Join Contest
+                    <Play className="h-3.5 w-3.5 fill-current" />
+                    <span>Join Contest</span>
                   </Link>
                 </div>
               </div>
@@ -189,39 +189,39 @@ export default function ContestPage() {
 
         {/* Upcoming */}
         <div className="mb-10">
-          <h2 className="font-display mb-4 flex items-center gap-2 text-lg font-bold">
-            <Calendar className="h-4 w-4 text-sky-400" /> Upcoming
+          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold tracking-tight text-foreground uppercase">
+            <Calendar className="h-4 w-4 text-sky-500" /> Upcoming Contests
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {upcoming.map((c) => (
               <div
                 key={c.id}
-                className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5 transition-all hover:border-sky-500/30"
+                className="rounded-xl border border-border bg-card p-5 shadow-xs transition hover:border-emerald-500/30"
               >
                 <div className="mb-3 flex items-center gap-2">
-                  <span className="rounded-full border border-sky-500/20 bg-sky-500/10 px-2.5 py-1 text-xs font-medium text-sky-400">
+                  <span className="rounded-full border border-sky-500/20 bg-sky-500/10 px-2.5 py-0.5 text-xs font-semibold text-sky-500">
                     Upcoming
                   </span>
-                  <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                  <span className="text-xs text-muted-foreground">
                     {c.category}
                   </span>
                 </div>
-                <h3 className="font-display mb-2 font-semibold">{c.title}</h3>
-                <p className="mb-4 text-xs text-[hsl(var(--muted-foreground))]">
+                <h3 className="text-sm font-semibold text-foreground">{c.title}</h3>
+                <p className="mt-1 mb-4 text-xs text-muted-foreground">
                   {c.description}
                 </p>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between border-t border-border pt-3">
                   <div>
-                    <div className="mb-1 text-xs text-[hsl(var(--muted-foreground))]">
+                    <div className="mb-1 text-[11px] text-muted-foreground">
                       Starts in
                     </div>
                     <Countdown seconds={c.startsIn!} />
                   </div>
                   <div className="text-right">
-                    <div className="mb-1 text-xs text-[hsl(var(--muted-foreground))]">
+                    <div className="mb-1 text-[11px] text-muted-foreground">
                       Prize
                     </div>
-                    <div className="text-sm font-bold text-amber-400">
+                    <div className="font-mono text-xs font-bold text-amber-500">
                       {c.prize}
                     </div>
                   </div>
@@ -233,9 +233,11 @@ export default function ContestPage() {
 
         {/* Past results */}
         <div>
-          <h2 className="font-display mb-4 text-lg font-bold">Past Contests</h2>
-          <div className="overflow-hidden rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]">
-            <div className="grid grid-cols-5 gap-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--surface-hover))] px-5 py-3 text-xs font-semibold tracking-wider text-[hsl(var(--muted-foreground))] uppercase">
+          <h2 className="mb-4 text-sm font-semibold tracking-tight text-foreground uppercase">
+            Past Contest Ledger
+          </h2>
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+            <div className="grid grid-cols-5 gap-2 border-b border-border bg-muted/40 px-5 py-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
               <div className="col-span-2">Contest</div>
               <div className="text-right">Participants</div>
               <div className="text-right">Your Score</div>
@@ -244,21 +246,21 @@ export default function ContestPage() {
             {ended.map((c) => (
               <div
                 key={c.id}
-                className="grid grid-cols-5 items-center gap-2 border-b border-[hsl(var(--border))] px-5 py-4 transition-colors last:border-0 hover:bg-[hsl(var(--surface-hover))]"
+                className="grid grid-cols-5 items-center gap-2 border-b border-border px-5 py-3.5 transition-colors last:border-0 hover:bg-muted/30"
               >
                 <div className="col-span-2">
-                  <div className="text-sm font-medium">{c.title}</div>
-                  <div className="text-xs text-[hsl(var(--muted-foreground))]">
+                  <div className="text-xs font-semibold text-foreground">{c.title}</div>
+                  <div className="text-[11px] text-muted-foreground">
                     {c.category} · {c.difficulty}
                   </div>
                 </div>
-                <div className="text-right text-sm text-[hsl(var(--muted-foreground))]">
+                <div className="text-right text-xs text-muted-foreground">
                   {formatNumber(c.participants!)}
                 </div>
-                <div className="text-right text-sm font-semibold text-emerald-400">
+                <div className="text-right font-mono text-xs font-semibold text-emerald-500">
                   {c.myScore}%
                 </div>
-                <div className="font-display gradient-text text-right text-sm font-bold">
+                <div className="text-right font-mono text-xs font-bold text-foreground">
                   #{c.myRank}
                 </div>
               </div>

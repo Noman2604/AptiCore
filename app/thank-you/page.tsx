@@ -9,7 +9,6 @@ import {
   BookOpen,
   Trophy,
   LayoutDashboard,
-  Sparkles,
   Zap,
 } from "lucide-react"
 
@@ -25,38 +24,35 @@ export const metadata: Metadata = {
 
 export default function ThankYouPage() {
   return (
-    <div className="min-h-screen bg-[#0a0e14] font-[Inter,sans-serif] text-[#e7ecf3]">
+    <div className="min-h-screen bg-background text-foreground">
       <Navbar />
 
       <main className="relative mx-auto max-w-4xl px-4 pt-32 pb-24 sm:px-6 lg:px-8">
-        {/* Glow background accent */}
-        <div className="pointer-events-none absolute top-20 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-[#6ee7c9]/10 blur-3xl" />
-
         <div className="relative mx-auto max-w-2xl text-center">
-          {/* Animated badge */}
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl border border-[#6ee7c9]/30 bg-[#6ee7c9]/10 shadow-[0_0_40px_rgba(110,231,201,0.25)] animate-bounce-slow">
-            <CheckCircle2 className="h-10 w-10 text-[#6ee7c9]" />
+          {/* Status badge */}
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-500 shadow-xs">
+            <CheckCircle2 className="h-8 w-8" />
           </div>
 
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#6ee7c9]/30 bg-[#6ee7c9]/10 px-4 py-1.5 font-[JetBrains_Mono,monospace] text-xs font-medium text-[#6ee7c9]">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Request Received</span>
+          <div className="section-eyebrow mx-auto mb-4">
+            <span className="section-eyebrow-dot" />
+            <span>Submission Confirmed</span>
           </div>
 
-          <h1 className="font-[Space_Grotesk,sans-serif] text-4xl font-extrabold sm:text-5xl">
-            Thank You for <span className="bg-linear-to-r from-[#6ee7c9] to-[#8b7cf6] bg-clip-text text-transparent">Connecting</span>!
+          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            Thank you for connecting with us
           </h1>
 
-          <p className="mt-4 text-base leading-relaxed text-[#8a96a8] sm:text-lg">
-            We have received your submission. A member of our placement team will
-            get back to you within 24 hours. In the meantime, start preparing for
-            your dream company!
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
+            We have received your inquiry. A member of our placement assessment team will
+            get back to you within 24 hours. In the meantime, start preparing with our
+            curated question banks.
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/tests"
-              className="flex items-center gap-2 rounded-xl bg-linear-to-r from-[#6ee7c9] to-[#57c9a8] px-6 py-3.5 text-sm font-bold text-[#06120d] shadow-[0_0_20px_rgba(110,231,201,0.25)] transition-all hover:brightness-105"
+              className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 text-xs font-semibold text-white shadow-xs transition hover:bg-emerald-600 active:scale-98"
             >
               <Zap className="h-4 w-4" />
               <span>Explore Practice Tests</span>
@@ -64,7 +60,7 @@ export default function ThankYouPage() {
             </Link>
             <Link
               href="/"
-              className="flex items-center gap-2 rounded-xl border border-[#212a37] bg-[#10151d] px-6 py-3.5 text-sm font-semibold text-[#e7ecf3] transition-colors hover:border-[#3a4a5e] hover:bg-[#141b25]"
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-5 py-2.5 text-xs font-medium text-foreground transition hover:bg-muted"
             >
               <Home className="h-4 w-4" />
               <span>Return Home</span>
@@ -73,60 +69,64 @@ export default function ThankYouPage() {
         </div>
 
         {/* What to explore next */}
-        <div className="mt-20">
-          <h2 className="mb-6 text-center font-[Space_Grotesk,sans-serif] text-xl font-bold text-[#e7ecf3]">
-            While You Wait, Level Up Your Prep
-          </h2>
+        <div className="mt-20 border-t border-border pt-12">
+          <div className="mb-8 text-center">
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">
+              Continue Your Campus Placement Journey
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Choose a track to build assessment-grade accuracy and speed
+            </p>
+          </div>
 
-          <div className="grid gap-5 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-3">
             {[
               {
                 icon: BookOpen,
-                title: "Topic Modules",
+                title: "Curriculum Modules",
                 desc: "Sharpen quant, logical reasoning, and coding MCQs topic-wise.",
                 href: "/categories",
-                color: "#6ee7c9",
+                badge: "Track 01",
               },
               {
                 icon: Trophy,
-                title: "Live Contests",
-                desc: "Compete with peers under real exam timer pressure.",
+                title: "Live Mocks",
+                desc: "Compete with peers under real company exam timer pressure.",
                 href: "/contest",
-                color: "#f5a623",
+                badge: "Track 02",
               },
               {
                 icon: LayoutDashboard,
-                title: "Your Dashboard",
-                desc: "Track streaks, accuracy rates, and AI recommendations.",
+                title: "Learner Console",
+                desc: "Track streaks, accuracy rates, and AI performance diagnosis.",
                 href: "/dashboard",
-                color: "#8b7cf6",
+                badge: "Track 03",
               },
             ].map((item) => (
               <Link
                 key={item.title}
                 href={item.href}
-                className="group relative flex flex-col justify-between rounded-2xl border border-[#212a37] bg-[#10151d] p-6 transition-all hover:-translate-y-1 hover:border-[#3a4a5e] hover:shadow-xl"
+                className="group relative flex flex-col justify-between rounded-xl border border-border bg-card p-5 shadow-xs transition-colors hover:border-emerald-500/40"
               >
                 <div>
-                  <div
-                    className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl"
-                    style={{
-                      backgroundColor: `${item.color}15`,
-                      color: item.color,
-                    }}
-                  >
-                    <item.icon className="h-5 w-5" />
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-muted/40 text-foreground">
+                      <item.icon className="h-5 w-5 text-emerald-500" />
+                    </div>
+                    <span className="font-mono text-[10px] font-semibold uppercase text-muted-foreground">
+                      {item.badge}
+                    </span>
                   </div>
-                  <h3 className="font-[Space_Grotesk,sans-serif] text-base font-semibold text-[#e7ecf3] group-hover:text-[#6ee7c9] transition-colors">
+                  <h3 className="text-sm font-semibold tracking-tight text-foreground transition-colors group-hover:text-emerald-500">
                     {item.title}
                   </h3>
-                  <p className="mt-2 text-xs leading-relaxed text-[#8a96a8]">
+                  <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
                     {item.desc}
                   </p>
                 </div>
-                <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-[#6ee7c9]">
-                  <span>Explore</span>
-                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                <div className="mt-4 flex items-center gap-1 text-xs font-medium text-emerald-500">
+                  <span>Explore module</span>
+                  <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
                 </div>
               </Link>
             ))}

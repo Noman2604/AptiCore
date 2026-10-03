@@ -3,6 +3,8 @@ import mongoose from "mongoose"
 import connectDB from "@/lib/db"
 import Question from "@/lib/models/Question"
 import { verifyAccessToken } from "@/lib/jwt"
+import { logActivity, diff } from "@/lib/audit"
+import { getAuthUser } from "@/lib/auth-guard"
 
 // GET /api/questions/[id]
 export async function GET(
@@ -75,31 +77,18 @@ export async function PATCH(
       )
     }
 
-    const accessToken = request.cookies.get("accessToken")?.value
-
-    if (!accessToken) {
+    const user = getAuthUser(request)
+    if (!user) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized",
-        },
-        { status: 401 }
-      )
-    }
-
-    const decoded = verifyAccessToken(accessToken)
-
-    if (!decoded) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid token",
-        },
+        { success: false, error: "Unauthorized" },
         { status: 401 }
       )
     }
 
     const body = await request.json()
+
+    // Fetch the old question first for diffing
+    const oldQuestion = await Question.findById(id).lean()
 
     const question = await Question.findByIdAndUpdate(id, body, {
       returnDocument: "after",
@@ -117,6 +106,21 @@ export async function PATCH(
         { status: 404 }
       )
     }
+    
+    if (oldQuestion) {
+      await logActivity({
+        req: request,
+        actorId: user.userId,
+        actorRole: user.role as any,
+        action: "update",
+        module: "question",
+        targetType: "Question",
+        targetId: question._id.toString(),
+        targetLabel: (question.questionText || "").substring(0, 50),
+        status: "success",
+        details: diff(oldQuestion, question.toObject())
+      })
+    }
 
     return NextResponse.json({
       success: true,
@@ -124,6 +128,20 @@ export async function PATCH(
     })
   } catch (error) {
     console.error("Update question error:", error)
+    
+    const user = getAuthUser(request)
+    if (user) {
+      await logActivity({
+        req: request,
+        actorId: user.userId,
+        actorRole: user.role as any,
+        action: "update",
+        module: "question",
+        targetType: "Question",
+        status: "failure",
+        details: { error: error instanceof Error ? error.message : "Failed to update question" }
+      })
+    }
 
     return NextResponse.json(
       {
@@ -155,26 +173,10 @@ export async function DELETE(
       )
     }
 
-    const accessToken = request.cookies.get("accessToken")?.value
-
-    if (!accessToken) {
+    const user = getAuthUser(request)
+    if (!user) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Unauthorized",
-        },
-        { status: 401 }
-      )
-    }
-
-    const decoded = verifyAccessToken(accessToken)
-
-    if (!decoded) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid token",
-        },
+        { success: false, error: "Unauthorized" },
         { status: 401 }
       )
     }
@@ -199,12 +201,43 @@ export async function DELETE(
       )
     }
 
+    await logActivity({
+      req: request,
+      actorId: user.userId,
+      actorRole: user.role as any,
+      action: "delete",
+      module: "question",
+      targetType: "Question",
+      targetId: question._id.toString(),
+      targetLabel: (question.questionText || "").substring(0, 50),
+      status: "success",
+      details: {
+        after: {
+          isActive: false
+        }
+      }
+    })
+
     return NextResponse.json({
       success: true,
       message: "Question deleted successfully",
     })
   } catch (error) {
     console.error("Delete question error:", error)
+    
+    const user = getAuthUser(request)
+    if (user) {
+      await logActivity({
+        req: request,
+        actorId: user.userId,
+        actorRole: user.role as any,
+        action: "delete",
+        module: "question",
+        targetType: "Question",
+        status: "failure",
+        details: { error: error instanceof Error ? error.message : "Failed to delete question" }
+      })
+    }
 
     return NextResponse.json(
       {

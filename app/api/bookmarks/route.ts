@@ -3,6 +3,7 @@ import connectDB from "@/lib/db"
 import Bookmark from "@/lib/models/Bookmark"
 import Question from "@/lib/models/Question"
 import { verifyAccessToken } from "@/lib/jwt"
+import { logActivity } from "@/lib/audit"
 
 // GET /api/bookmarks - List user's bookmarked questions
 export async function GET(request: NextRequest) {
@@ -104,6 +105,17 @@ export async function POST(request: NextRequest) {
     if (existing) {
       if (body.toggle) {
         await Bookmark.findByIdAndDelete(existing._id)
+        await logActivity({
+          req: request,
+          actorId: decoded.userId,
+          actorRole: decoded.role || "user",
+          action: "bookmark.delete",
+          module: "bookmark",
+          status: "success",
+          targetType: "question",
+          targetId: questionId,
+          targetLabel: question.questionText ? question.questionText.slice(0, 60) + "..." : "Question",
+        })
         return NextResponse.json({
           success: true,
           bookmarked: false,
@@ -127,6 +139,19 @@ export async function POST(request: NextRequest) {
     await bookmark.populate({
       path: "questionId",
       select: "questionText options correctAnswer explanation difficultyLevel",
+    })
+
+    await logActivity({
+      req: request,
+      actorId: decoded.userId,
+      actorRole: decoded.role || "user",
+      action: "bookmark.create",
+      module: "bookmark",
+      status: "success",
+      targetType: "question",
+      targetId: questionId,
+      targetLabel: question.questionText ? question.questionText.slice(0, 60) + "..." : "Question",
+      details: { notes },
     })
 
     return NextResponse.json({
@@ -187,6 +212,17 @@ export async function DELETE(request: NextRequest) {
     await Bookmark.findOneAndDelete({
       userId: decoded.userId,
       questionId,
+    })
+
+    await logActivity({
+      req: request,
+      actorId: decoded.userId,
+      actorRole: decoded.role || "user",
+      action: "bookmark.delete",
+      module: "bookmark",
+      status: "success",
+      targetType: "question",
+      targetId: questionId,
     })
 
     return NextResponse.json({
