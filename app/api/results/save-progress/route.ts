@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { attemptId, categoryId, subcategoryId, progress, startedAt } = body
+    const { attemptId, categoryId, subcategoryId, progress, startedAt, testName } = body
 
     if (!attemptId) {
       return NextResponse.json({ success: false, error: "attemptId is required" }, { status: 400 })
@@ -38,6 +38,21 @@ export async function POST(request: NextRequest) {
       if (sub) effectiveCategoryId = sub.categoryId
     }
 
+    let resolvedTestName =
+      testName && !testName.toLowerCase().startsWith("practice session")
+        ? testName
+        : ""
+
+    if (!resolvedTestName && effectiveSubcategoryId) {
+      const sub = await Subcategory.findById(effectiveSubcategoryId).select("name categoryId")
+      if (sub) {
+        const Category = (await import("@/lib/models/Category")).default
+        const cat = await Category.findById(sub.categoryId || effectiveCategoryId).select("name")
+        const cleanCat = cat?.name?.replace(/\s+Test$/i, "") || "Aptitude"
+        resolvedTestName = `${cleanCat} — ${sub.name} Test`
+      }
+    }
+
     const updateData = {
       userId: decoded.userId,
       attemptId,
@@ -46,7 +61,7 @@ export async function POST(request: NextRequest) {
       totalQuestions: progress?.totalQuestions || 0,
       attemptedQuestions: progress?.attemptedQuestions || 0,
       totalMarks: progress?.totalMarks || 0,
-      testName: "Practice Session",
+      testName: resolvedTestName || "Practice Test",
       answers: progress?.answers || [],
     }
 

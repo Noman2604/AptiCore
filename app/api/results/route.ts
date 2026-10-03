@@ -11,6 +11,8 @@ import "@/lib/models/Category"
 import Subcategory from "@/lib/models/Subcategory"
 import XPHistory from "@/lib/models/XPHistory"
 import { verifyAccessToken } from "@/lib/jwt"
+import Category from "@/lib/models/Category"
+import { logActivity } from "@/lib/audit"
 
 // GET /api/results - List user's test results
 export async function GET(request: NextRequest) {
@@ -180,9 +182,25 @@ export async function POST(request: NextRequest) {
         providedSubcategoryId = subOne._id
       }
 
+      let resolvedTitle =
+        testName && !testName.toLowerCase().startsWith("practice session")
+          ? testName
+          : ""
+
+      if (!resolvedTitle) {
+        const cat = await Category.findById(effectiveCategoryId).select("name")
+        const sub = providedSubcategoryId
+          ? await Subcategory.findById(providedSubcategoryId).select("name")
+          : null
+        const cleanCat = cat?.name?.replace(/\s+Test$/i, "") || "Aptitude"
+        resolvedTitle = sub?.name
+          ? `${cleanCat} — ${sub.name} Test`
+          : `${cleanCat} Practice Test`
+      }
+
       const tempTest: any = await (Test as any).create({
-        title: "Practice session ",
-        description: "Mixed practice session",
+        title: resolvedTitle,
+        description: `${resolvedTitle} practice session`,
         categoryId: effectiveCategoryId,
         subcategory: providedSubcategoryId,
         sessionType: sessionType === "mixed" ? "mixed" : "subcategory",
@@ -206,11 +224,16 @@ export async function POST(request: NextRequest) {
           ? Math.round((correctAnswers / totalQuestions) * 100)
           : 0
 
+    const finalTestName =
+      testName && !testName.toLowerCase().startsWith("practice session")
+        ? testName
+        : test?.title || "Practice Test"
+
     const resultData = {
       userId: decoded.userId,
       testId: effectiveTestId,
       totalQuestions,
-      testName: testName || test?.title || "Practice Session",
+      testName: finalTestName,
       attemptedQuestions: attemptedQuestions || 0,
       correctAnswers: correctAnswers || 0,
       skippedQuestions: skippedQuestions || 0,
@@ -238,6 +261,31 @@ export async function POST(request: NextRequest) {
 
     // Update user XP, level, and streak for this completion event
     const xpEarned = Math.round((correctAnswers || 0) * 10)
+
+    await logActivity({
+      req: request,
+      actorId: decoded.userId,
+      actorRole: decoded.role || "user",
+      action: "test.submit",
+      module: "result",
+      status: "success",
+      targetType: "result",
+      targetId: result._id.toString(),
+      targetLabel: finalTestName,
+      details: {
+        testId: effectiveTestId ? effectiveTestId.toString() : null,
+        testName: finalTestName,
+        totalQuestions,
+        attemptedQuestions,
+        correctAnswers,
+        accuracy,
+        marksObtained,
+        totalMarks,
+        timeSpentSeconds,
+        xpEarned,
+      },
+    })
+
     const now = new Date()
     const todayStr = now.toISOString().split("T")[0]
 

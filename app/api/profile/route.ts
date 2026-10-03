@@ -135,6 +135,19 @@ export async function PATCH(request: NextRequest) {
 
     console.log("Updated profile:", profile)
 
+    const { logActivity } = await import("@/lib/audit")
+    await logActivity({
+      req: request,
+      actorId: userId,
+      actorRole: "user",
+      action: "user.profile_update",
+      module: "user",
+      status: "success",
+      targetType: "user_profile",
+      targetId: String(profile._id),
+      details: profilePayload(body),
+    })
+
     return NextResponse.json(
       {
         success: true,

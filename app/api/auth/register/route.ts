@@ -1,13 +1,14 @@
 // app/api/auth/register/route.ts
 
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import User from "@/lib/models/user"
 import { connectDB } from "@/lib/db"
 import UserProfile, { IUserProfileDocument } from "@/lib/models/UserProfile"
 import { generateVerificationData } from "@/lib/tokens"
 import { sendVerificationEmail } from "@/lib/mail"
+import { logActivity } from "@/lib/audit"
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     await connectDB()
 
@@ -78,6 +79,25 @@ export async function POST(req: Request) {
       // We still proceed so the user is created and can click "Resend Code"
     }
 
+    await logActivity({
+      req,
+      actorId: user._id,
+      actorRole: user.role,
+      actorName: user.name,
+      actorEmail: user.email,
+      action: "auth.register",
+      module: "auth",
+      status: "success",
+      targetType: "user",
+      targetId: user._id.toString(),
+      targetLabel: user.email,
+      details: {
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    })
+
     return NextResponse.json({
       success: true,
       requiresVerification: true,
@@ -89,6 +109,18 @@ export async function POST(req: Request) {
     })
   } catch (error) {
     console.error("Registration error:", error)
+
+    await logActivity({
+      req,
+      actorRole: "guest",
+      action: "auth.register",
+      module: "auth",
+      status: "failure",
+      targetType: "user",
+      details: {
+        error: error instanceof Error ? error.message : "Registration failed",
+      },
+    })
 
     return NextResponse.json(
       {

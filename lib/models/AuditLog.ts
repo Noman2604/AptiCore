@@ -1,50 +1,74 @@
 import mongoose, { Schema, Model, Document, Types } from "mongoose"
 
 export interface IAuditLogDocument extends Document {
-  adminId: Types.ObjectId
-  actionType: "create" | "update" | "delete" | "ban" | "suspend"
-  targetType: "user" | "question" | "test" | "category"
-  targetId?: Types.ObjectId
-  changes?: Record<string, unknown>
+  actorId?: Types.ObjectId
+  actorRole: "user" | "admin" | "super_admin" | "system" | "guest"
+  actorName?: string
+  actorEmail?: string
+  action: string
+  module: "auth" | "test" | "result" | "question" | "category" | "user" | "settings" | "feedback" | "report" | "achievement" | "bookmark" | "system"
+  status: "success" | "failure"
+  targetType?: string
+  targetId?: string
+  targetLabel?: string
+  details?: Record<string, any>
   ipAddress?: string
+  userAgent?: string
   createdAt: Date
 }
 
-type ActionType = "create" | "update" | "delete" | "ban" | "suspend"
-type TargetType = "user" | "question" | "test" | "category"
-
 const AuditLogSchema = new Schema<IAuditLogDocument>(
   {
-    adminId: {
+    actorId: {
       type: Schema.Types.ObjectId,
       ref: "User",
+    },
+    actorRole: {
+      type: String,
+      enum: ["user", "admin", "super_admin", "system", "guest"],
       required: true,
     },
-    actionType: {
+    actorName: { type: String },
+    actorEmail: { type: String },
+    action: { type: String, required: true },
+    module: {
       type: String,
-      enum: ["create", "update", "delete", "ban", "suspend"] as ActionType[],
+      enum: [
+        "auth",
+        "test",
+        "result",
+        "question",
+        "category",
+        "user",
+        "settings",
+        "feedback",
+        "report",
+        "achievement",
+        "bookmark",
+        "system",
+      ],
       required: true,
     },
-    targetType: {
+    status: {
       type: String,
-      enum: ["user", "question", "test", "category"] as TargetType[],
+      enum: ["success", "failure"],
       required: true,
     },
-    targetId: {
-      type: Schema.Types.ObjectId,
-    },
-    changes: {
-      type: Schema.Types.Mixed,
-    },
-    ipAddress: {
-      type: String,
-    },
+    targetType: { type: String },
+    targetId: { type: String },
+    targetLabel: { type: String },
+    details: { type: Schema.Types.Mixed },
+    ipAddress: { type: String },
+    userAgent: { type: String },
   },
   {
     timestamps: true,
   }
 )
 
+AuditLogSchema.index({ createdAt: -1 })
+AuditLogSchema.index({ actorId: 1, createdAt: -1 })
+AuditLogSchema.index({ module: 1, action: 1 })
 
 const AuditLog: Model<IAuditLogDocument> =
   (mongoose.models.AuditLog as Model<IAuditLogDocument>) ||

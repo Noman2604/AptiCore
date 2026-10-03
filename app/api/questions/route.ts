@@ -4,6 +4,8 @@ import Question from "@/lib/models/Question"
 import Category from "@/lib/models/Category"
 import Subcategory from "@/lib/models/Subcategory"
 import { verifyAccessToken } from "@/lib/jwt"
+import { logActivity } from "@/lib/audit"
+import { getAuthUser } from "@/lib/auth-guard"
 
 // GET /api/questions - List questions with filters
 export async function GET(request: NextRequest) {
@@ -94,18 +96,10 @@ export async function POST(request: NextRequest) {
   try {
     await connectDB()
 
-    const accessToken = request.cookies.get("accessToken")?.value
-    if (!accessToken) {
+    const user = getAuthUser(request)
+    if (!user) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
-      )
-    }
-
-    const decoded = verifyAccessToken(accessToken)
-    if (!decoded) {
-      return NextResponse.json(
-        { success: false, error: "Invalid token" },
         { status: 401 }
       )
     }
@@ -144,7 +138,7 @@ export async function POST(request: NextRequest) {
       marks: marks || 1,
       negativeMarks: negativeMarks || 0.25,
       timeLimitSeconds: timeLimitSeconds || 60,
-      createdBy: decoded.userId,
+      createdBy: user.userId,
       isActive: true,
     })
 
@@ -153,12 +147,47 @@ export async function POST(request: NextRequest) {
       await question.populate("subcategoryId", "name slug")
     }
 
+    await logActivity({
+      req: request,
+      actorId: user.userId,
+      actorRole: user.role as any,
+      action: "create",
+      module: "question",
+      targetType: "Question",
+      targetId: question._id.toString(),
+      targetLabel: (questionText || "").substring(0, 50),
+      status: "success",
+      details: {
+        after: {
+          categoryId,
+          subcategoryId,
+          questionType,
+          difficultyLevel,
+        }
+      }
+    })
+
     return NextResponse.json({
       success: true,
       data: question,
     })
   } catch (error) {
     console.error("Create question error:", error)
+    
+    const user = getAuthUser(request)
+    if (user) {
+      await logActivity({
+        req: request,
+        actorId: user.userId,
+        actorRole: user.role as any,
+        action: "create",
+        module: "question",
+        targetType: "Question",
+        status: "failure",
+        details: { error: error instanceof Error ? error.message : "Failed to create question" }
+      })
+    }
+    
     return NextResponse.json(
       { success: false, error: "Failed to create question" },
       { status: 500 }

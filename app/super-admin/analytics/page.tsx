@@ -38,7 +38,13 @@ import {
 type AdminResult = {
   _id: string
   userId?: { _id: string; name?: string; email?: string } | null
-  testId?: { _id: string; title?: string } | null
+  testId?: {
+    _id: string
+    title?: string
+    category?: string
+    subcategory?: string
+  } | null
+  testName?: string
   accuracy?: number
   status: "completed" | "abandoned" | "in_progress"
   startedAt?: string
@@ -214,11 +220,15 @@ export default function SuperAdminAnalyticsPage() {
     return results.filter((r) => {
       const name = r.userId?.name ?? ""
       const email = r.userId?.email ?? ""
-      const title = r.testId?.title ?? ""
+      const title = r.testName || r.testId?.title || ""
+      const category = r.testId?.category ?? ""
+      const subcategory = r.testId?.subcategory ?? ""
       return (
         name.toLowerCase().includes(q) ||
         email.toLowerCase().includes(q) ||
         title.toLowerCase().includes(q) ||
+        category.toLowerCase().includes(q) ||
+        subcategory.toLowerCase().includes(q) ||
         r._id.toLowerCase().includes(q)
       )
     })
@@ -230,6 +240,8 @@ export default function SuperAdminAnalyticsPage() {
       "userName",
       "userEmail",
       "testTitle",
+      "category",
+      "subcategory",
       "status",
       "accuracy",
       "startedAt",
@@ -241,7 +253,9 @@ export default function SuperAdminAnalyticsPage() {
       r._id,
       r.userId?.name ?? "",
       r.userId?.email ?? "",
-      r.testId?.title ?? "",
+      r.testName || r.testId?.title || "",
+      r.testId?.category ?? "",
+      r.testId?.subcategory ?? "",
       r.status,
       typeof r.accuracy === "number" ? r.accuracy : "",
       r.startedAt ?? "",
@@ -467,10 +481,22 @@ export default function SuperAdminAnalyticsPage() {
                             {r.userId?.email ?? "—"}
                           </div>
                         </TableCell>
-                        <TableCell className="min-w-55">
-                          <div className="font-medium">{r.testId?.title ?? "—"}</div>
-                          <div className="text-xs text-muted-foreground truncate max-w-64">
-                            {r._id}
+                        <TableCell className="min-w-60">
+                          <div className="font-medium text-foreground">
+                            {r.testName || r.testId?.title || "Practice Test"}
+                          </div>
+                          {r.testId?.category && r.testId?.subcategory && (
+                            <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                              <span className="inline-flex items-center rounded-sm bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                                {r.testId.category}
+                              </span>
+                              <span className="text-[11px] text-muted-foreground">
+                                • {r.testId.subcategory}
+                              </span>
+                            </div>
+                          )}
+                          <div className="mt-0.5 text-[11px] text-muted-foreground/60 truncate max-w-64">
+                            ID: {r._id}
                           </div>
                         </TableCell>
                         <TableCell>

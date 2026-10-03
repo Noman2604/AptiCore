@@ -103,6 +103,18 @@ export async function POST(request: NextRequest) {
       isActive: isActive ?? true,
     })
 
+    const { logActivity } = await import("@/lib/audit")
+    await logActivity({
+      req: request,
+      action: "category.create",
+      module: "category",
+      status: "success",
+      targetType: "category",
+      targetId: category._id.toString(),
+      targetLabel: category.name,
+      details: { name, slug },
+    })
+
     return NextResponse.json(
       {
         success: true,

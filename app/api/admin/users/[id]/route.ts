@@ -1,23 +1,18 @@
 import { NextRequest, NextResponse } from "next/server"
 
 import connectDB from "@/lib/db"
-import { verifyAccessToken } from "@/lib/jwt"
+import { getAuthUser } from "@/lib/auth-guard"
+import { logActivity, diff } from "@/lib/audit"
 import User from "@/lib/models/user"
 import UserProfile from "@/lib/models/UserProfile"
-
-function isAdmin(request: NextRequest) {
-  const accessToken = request.cookies.get("accessToken")?.value
-  const decoded = accessToken ? verifyAccessToken(accessToken) : null
-
-  return decoded?.role === "admin" || decoded?.role === "super_admin"
-}
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    if (!isAdmin(request)) {
+    const currentUser = getAuthUser(request)
+    if (!currentUser || (currentUser.role !== "admin" && currentUser.role !== "super_admin")) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
@@ -36,6 +31,8 @@ export async function PUT(
     if (role !== undefined) updates.role = role
     if (isActive !== undefined) updates.isActive = isActive
 
+    const oldUser = await User.findById(id).lean()
+    
     const user = await User.findByIdAndUpdate(id, updates, {
       returnDocument: 'after',
       runValidators: true,
@@ -69,6 +66,21 @@ export async function PUT(
         { returnDocument: 'after', upsert: true, runValidators: true }
       ).lean()
     }
+    
+    if (oldUser) {
+      await logActivity({
+        req: request,
+        actorId: currentUser.userId,
+        actorRole: currentUser.role as any,
+        action: "update",
+        module: "user",
+        targetType: "User",
+        targetId: user._id.toString(),
+        targetLabel: user.name || user.email,
+        status: "success",
+        details: diff(oldUser as Record<string, any>, user as Record<string, any>)
+      })
+    }
 
     return NextResponse.json({
       success: true,
@@ -80,6 +92,20 @@ export async function PUT(
     })
   } catch (error) {
     console.error("Update admin user error:", error)
+    
+    const currentUser = getAuthUser(request)
+    if (currentUser) {
+      await logActivity({
+        req: request,
+        actorId: currentUser.userId,
+        actorRole: currentUser.role as any,
+        action: "update",
+        module: "user",
+        targetType: "User",
+        status: "failure",
+        details: { error: error instanceof Error ? error.message : "Failed to update user" }
+      })
+    }
 
     return NextResponse.json(
       { success: false, error: "Failed to update user" },
@@ -93,7 +119,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    if (!isAdmin(request)) {
+    const currentUser = getAuthUser(request)
+    if (!currentUser || (currentUser.role !== "admin" && currentUser.role !== "super_admin")) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
@@ -115,6 +142,23 @@ export async function DELETE(
         { status: 404 }
       )
     }
+    
+    await logActivity({
+      req: request,
+      actorId: currentUser.userId,
+      actorRole: currentUser.role as any,
+      action: "delete",
+      module: "user",
+      targetType: "User",
+      targetId: user._id.toString(),
+      targetLabel: user.name || user.email,
+      status: "success",
+      details: {
+        after: {
+          isActive: false
+        }
+      }
+    })
 
     return NextResponse.json({
       success: true,
@@ -122,6 +166,20 @@ export async function DELETE(
     })
   } catch (error) {
     console.error("Delete admin user error:", error)
+    
+    const currentUser = getAuthUser(request)
+    if (currentUser) {
+      await logActivity({
+        req: request,
+        actorId: currentUser.userId,
+        actorRole: currentUser.role as any,
+        action: "delete",
+        module: "user",
+        targetType: "User",
+        status: "failure",
+        details: { error: error instanceof Error ? error.message : "Failed to delete user" }
+      })
+    }
 
     return NextResponse.json(
       { success: false, error: "Failed to delete user" },

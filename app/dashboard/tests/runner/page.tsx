@@ -112,6 +112,32 @@ function RunnerContent() {
     void loadQuestions()
   }, [categorySlug, subcategorySlug, rawCategory])
 
+  const test = useMemo(() => {
+    let title = "Practice Test Session"
+    if (category?.name && subcategory?.name) {
+      const cleanCat = category.name.replace(/\s+Test$/i, "")
+      title = `${cleanCat} — ${subcategory.name} Test`
+    } else if (subcategory?.name) {
+      title = `${subcategory.name} — Mock Test`
+    } else if (category?.name) {
+      title = `${category.name} — Practice Test`
+    }
+
+    return {
+      title,
+      description:
+        subcategory?.description ||
+        category?.description ||
+        "Practice test session with real-time timer and negative marking simulation.",
+      totalQuestions: questions.length,
+      totalMarks: questions.reduce(
+        (sum, question) => sum + (question.marks || 4),
+        0
+      ),
+      durationMinutes: Math.ceil((questions.length || 10) * 1.5) || 10,
+    }
+  }, [category, subcategory, questions])
+
   // Auto-save test progress periodically
   useEffect(() => {
     if (
@@ -133,6 +159,7 @@ function RunnerContent() {
             attemptId: currentAttemptId,
             categoryId: category._id,
             subcategoryId: subcategory?._id || null,
+            testName: test.title,
             testStatus: "in-progress",
             progress: currentProgress,
             startedAt: testStartedAt,
@@ -152,6 +179,7 @@ function RunnerContent() {
     currentAttemptId,
     hasUnsavedProgress,
     currentProgress,
+    test.title,
   ])
 
   // Warn user before leaving mid-test
@@ -185,6 +213,7 @@ function RunnerContent() {
             attemptId: currentAttemptId,
             categoryId: category._id,
             subcategoryId: subcategory?._id || null,
+            testName: test.title,
             testStatus: "abandoned",
             startedAt: testStartedAt,
             attemptedQuestions: currentProgress?.attemptedQuestions || 0,
@@ -194,28 +223,7 @@ function RunnerContent() {
         )
       }
     }
-  }, [testStatus, testStartedAt, category, subcategory, currentProgress, currentAttemptId])
-
-  const test = useMemo(
-    () => ({
-      title: subcategory?.name
-        ? `${subcategory.name} — Mock Test`
-        : category?.name
-        ? `${category.name} — Practice Session`
-        : "Practice Test Session",
-      description:
-        subcategory?.description ||
-        category?.description ||
-        "Practice test session with real-time timer and negative marking simulation.",
-      totalQuestions: questions.length,
-      totalMarks: questions.reduce(
-        (sum, question) => sum + (question.marks || 4),
-        0
-      ),
-      durationMinutes: Math.ceil((questions.length || 10) * 1.5) || 10,
-    }),
-    [category, subcategory, questions]
-  )
+  }, [testStatus, testStartedAt, category, subcategory, currentProgress, currentAttemptId, test.title])
 
   const handleSubmit = async (payload: {
     answers: any[]

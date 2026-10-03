@@ -4,6 +4,8 @@ import connectDB from "@/lib/db"
 import { verifyAccessToken } from "@/lib/jwt"
 import Result from "@/lib/models/Result"
 import "@/lib/models/Test"
+import "@/lib/models/Category"
+import "@/lib/models/Subcategory"
 
 function isAdmin(request: NextRequest) {
   const accessToken = request.cookies.get("accessToken")?.value
@@ -36,32 +38,74 @@ export async function GET(request: NextRequest) {
     const total = await Result.countDocuments(query)
     const results = await Result.find(query)
       .populate("userId", "name email")
-      .populate("testId", "title totalQuestions totalMarks durationMinutes")
+      .populate({
+        path: "testId",
+        select: "title totalQuestions totalMarks durationMinutes categoryId subcategory",
+        populate: [
+          { path: "categoryId", select: "name" },
+          { path: "subcategory", select: "name" },
+        ],
+      })
       .sort({ createdAt: -1 })
       .skip(offset)
       .limit(limit)
       .lean()
 
-    const data = results.map((result) => ({
-      ...result,
-      _id: result._id.toString(),
-      userId: result.userId
-        ? {
-            _id: (result.userId as any)._id.toString(),
-            name: (result.userId as any).name,
-            email: (result.userId as any).email,
-          }
-        : null,
-      testId: result.testId
-        ? {
-            _id: (result.testId as any)._id.toString(),
-            title: (result.testId as any).title,
-          }
-        : null,
-      startedAt: result.startedAt?.toISOString(),
-      submittedAt: result.submittedAt?.toISOString(),
-      createdAt: result.createdAt?.toISOString(),
-    }))
+    const data = results.map((result) => {
+      const populatedTest = result.testId as any
+      const catName = populatedTest?.categoryId?.name
+      const subName = populatedTest?.subcategory?.name
+
+      let formattedTitle = ""
+      if (catName && subName) {
+        const cleanCat = catName.replace(/\s+Test$/i, "")
+        formattedTitle = `${cleanCat} — ${subName} Test`
+      } else if (subName) {
+        formattedTitle = `${subName} Test`
+      } else if (catName) {
+        formattedTitle = `${catName} Practice Test`
+      }
+
+      const rawTestName = result.testName?.trim()
+      const isGenericName =
+        !rawTestName ||
+        rawTestName.toLowerCase() === "practice session" ||
+        rawTestName.toLowerCase() === "practice session "
+
+      const resolvedTitle =
+        formattedTitle ||
+        (!isGenericName ? rawTestName : null) ||
+        (populatedTest?.title && !populatedTest.title.toLowerCase().startsWith("practice session")
+          ? populatedTest.title
+          : null) ||
+        rawTestName ||
+        populatedTest?.title ||
+        "Practice Test"
+
+      return {
+        ...result,
+        _id: result._id.toString(),
+        userId: result.userId
+          ? {
+              _id: (result.userId as any)._id.toString(),
+              name: (result.userId as any).name,
+              email: (result.userId as any).email,
+            }
+          : null,
+        testId: populatedTest
+          ? {
+              _id: populatedTest._id.toString(),
+              title: resolvedTitle,
+              category: catName || null,
+              subcategory: subName || null,
+            }
+          : null,
+        testName: resolvedTitle,
+        startedAt: result.startedAt?.toISOString(),
+        submittedAt: result.submittedAt?.toISOString(),
+        createdAt: result.createdAt?.toISOString(),
+      }
+    })
 
     return NextResponse.json({
       success: true,

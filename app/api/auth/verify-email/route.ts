@@ -1,12 +1,13 @@
 // app/api/auth/verify-email/route.ts
 
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import User from "@/lib/models/user"
 import { connectDB } from "@/lib/db"
 import { generateAccessToken } from "@/lib/jwt"
 import { hashToken } from "@/lib/tokens"
+import { logActivity } from "@/lib/audit"
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     await connectDB()
 
@@ -118,6 +119,20 @@ export async function POST(req: Request) {
     user.verificationToken = undefined
     user.verificationExpires = undefined
     await user.save()
+
+    await logActivity({
+      req,
+      actorId: user._id,
+      actorRole: user.role,
+      actorName: user.name,
+      actorEmail: user.email,
+      action: "auth.verify_email",
+      module: "auth",
+      status: "success",
+      targetType: "user",
+      targetId: user._id.toString(),
+      targetLabel: user.email,
+    })
 
     // Log the user in automatically
     const accessToken = generateAccessToken({

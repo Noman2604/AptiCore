@@ -3,6 +3,8 @@ import connectDB from "@/lib/db"
 import Result from "@/lib/models/Result"
 import { verifyAccessToken } from "@/lib/jwt"
 import "@/lib/models/Question" 
+import "@/lib/models/Category"
+import "@/lib/models/Subcategory"
 
 // GET /api/results/[id] - Get single result with answers
 export async function GET(
@@ -35,8 +37,11 @@ export async function GET(
     })
       .populate({
         path: "testId",
-        select: "title totalQuestions totalMarks durationMinutes categoryId",
-        populate: { path: "categoryId", select: "name slug" },
+        select: "title totalQuestions totalMarks durationMinutes categoryId subcategory",
+        populate: [
+          { path: "categoryId", select: "name slug" },
+          { path: "subcategory", select: "name slug" },
+        ],
       })
       .populate(
         "answers.questionId",

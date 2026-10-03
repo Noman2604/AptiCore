@@ -18,7 +18,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { attemptId, startedAt, attemptedQuestions } = body
+    const {
+      attemptId,
+      startedAt,
+      attemptedQuestions,
+      testName,
+      categoryId,
+      subcategoryId,
+    } = body
 
     if (!attemptId) {
       return NextResponse.json({ success: false, error: "attemptId is required" }, { status: 400 })
@@ -30,12 +37,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, message: "Cleaned up unattempted session" })
     }
 
+    let resolvedTestName =
+      testName && !testName.toLowerCase().startsWith("practice session")
+        ? testName
+        : ""
+
+    if (!resolvedTestName && subcategoryId) {
+      const Subcategory = (await import("@/lib/models/Subcategory")).default
+      const sub = await Subcategory.findById(subcategoryId).select("name categoryId")
+      if (sub) {
+        const Category = (await import("@/lib/models/Category")).default
+        const cat = await Category.findById(sub.categoryId || categoryId).select("name")
+        const cleanCat = cat?.name?.replace(/\s+Test$/i, "") || "Aptitude"
+        resolvedTestName = `${cleanCat} — ${sub.name} Test`
+      }
+    }
+
     const updateData = {
       userId: decoded.userId,
       attemptId,
       status: "abandoned",
       startedAt: startedAt || new Date(),
-      testName: "Practice Session",
+      testName: resolvedTestName || "Practice Test",
       totalQuestions: 0,
       totalMarks: 0,
       attemptedQuestions,
@@ -46,6 +69,24 @@ export async function POST(request: NextRequest) {
       { $set: updateData },
       { upsert: true, returnDocument: "after" }
     )
+
+    const { logActivity } = await import("@/lib/audit")
+    await logActivity({
+      req: request,
+      actorId: decoded.userId,
+      actorRole: decoded.role || "user",
+      action: "test.abandon",
+      module: "result",
+      status: "failure",
+      targetType: "result",
+      targetId: attemptId,
+      targetLabel: resolvedTestName || "Practice Test",
+      details: {
+        attemptId,
+        testName: resolvedTestName || "Practice Test",
+        attemptedQuestions,
+      },
+    })
 
     return NextResponse.json({ success: true, message: "Test marked as abandoned" })
   } catch (error) {

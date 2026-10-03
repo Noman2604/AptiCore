@@ -4,6 +4,8 @@ import mongoose from "mongoose"
 import Test from "@/lib/models/Test"
 import Category from "@/lib/models/Category"
 import { verifyAccessToken } from "@/lib/jwt"
+import { logActivity } from "@/lib/audit"
+import { getAuthUser } from "@/lib/auth-guard"
 
 // GET /api/tests - List tests with filters
 export async function GET(request: NextRequest) {
@@ -71,18 +73,10 @@ export async function POST(request: NextRequest) {
   try {
     await connectDB()
 
-    const accessToken = request.cookies.get("accessToken")?.value
-    if (!accessToken) {
+    const user = getAuthUser(request)
+    if (!user) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
-      )
-    }
-
-    const decoded = verifyAccessToken(accessToken)
-    if (!decoded) {
-      return NextResponse.json(
-        { success: false, error: "Invalid token" },
         { status: 401 }
       )
     }
@@ -123,13 +117,35 @@ export async function POST(request: NextRequest) {
       durationMinutes,
       difficultyLevel: difficultyLevel || "medium",
       isPublished: false,
-      createdBy: decoded.userId,
+      createdBy: user.userId,
     })
 
     await test.populate([
       { path: "categoryId", select: "name slug" },
       { path: "subcategory", select: "name slug" },
     ])
+    
+    await logActivity({
+      req: request,
+      actorId: user.userId,
+      actorRole: user.role as any,
+      action: "create",
+      module: "test",
+      targetType: "Test",
+      targetId: test._id.toString(),
+      targetLabel: (title || "").substring(0, 50),
+      status: "success",
+      details: {
+        after: {
+          categoryId,
+          subcategoryId,
+          totalQuestions,
+          totalMarks,
+          durationMinutes,
+          difficultyLevel,
+        }
+      }
+    })
 
     return NextResponse.json({
       success: true,
@@ -137,6 +153,21 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("Create test error:", error)
+    
+    const user = getAuthUser(request)
+    if (user) {
+      await logActivity({
+        req: request,
+        actorId: user.userId,
+        actorRole: user.role as any,
+        action: "create",
+        module: "test",
+        targetType: "Test",
+        status: "failure",
+        details: { error: error instanceof Error ? error.message : "Failed to create test" }
+      })
+    }
+    
     return NextResponse.json(
       { success: false, error: "Failed to create test" },
       { status: 500 }
