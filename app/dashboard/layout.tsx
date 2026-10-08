@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import axios from "axios"
 import Image from "next/image"
 import Link from "next/link"
-import { LogOut, User, FileText, Play, Bell } from "lucide-react"
+import { LogOut, User, FileText } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { AppSidebar } from "@/components/dashboardSidebar"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
@@ -18,11 +18,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -31,10 +26,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { ThemeProvider, useTheme } from "next-themes"
+import { ThemeProvider } from "next-themes"
 import { toast } from "sonner"
 import { getInitials } from "@/lib/utils"
 import { AvatarFrame, resolveAvatarBorder } from "@/components/ui/game-avatar"
+import NotificationBell from "@/components/notifications/NotificationBell"
 
 type SidebarUser = {
   name: string
@@ -61,41 +57,56 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const [currentUser, setCurrentUser] = useState<SidebarUser | null>(null)
-  const [loadingUser, setLoadingUser] = useState(true)
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   const router = useRouter()
 
-  const fetchUser = async () => {
-    try {
-      setLoadingUser(true)
+  useEffect(() => {
+    let isMounted = true
 
-      const [profileRes, authRes] = await Promise.all([
-        axios.get("/api/profile", { withCredentials: true }),
-        axios.get("/api/auth/me", { withCredentials: true }),
-      ])
+    const loadUser = async () => {
+      try {
+        const [profileRes, authRes] = await Promise.all([
+          axios.get("/api/profile", { withCredentials: true }),
+          axios.get("/api/auth/me", { withCredentials: true }),
+        ])
 
-      const profileData = profileRes?.data?.data || {}
-      const authData = authRes?.data?.data || {}
+        if (!isMounted) return
 
-      setCurrentUser({
-        name: authData.name || "",
-        email: authData.email || "",
-        role: authData.role || "",
-        avatar: profileData.avatarUrl,
-        avatarBorder: profileData.avatarBorder || "basic",
-        xp: profileData.totalXP,
-        totalXP: profileData.totalXP,
-        level: profileData.level,
-        streak: profileData.currentStreak,
-        currentStreak: profileData.currentStreak,
-      })
-    } catch (error) {
-      console.error("Failed to fetch user:", error)
-    } finally {
-      setLoadingUser(false)
+        const profileData = profileRes?.data?.data || {}
+        const authData = authRes?.data?.data || {}
+
+        setCurrentUser({
+          name: authData.name || "",
+          email: authData.email || "",
+          role: authData.role || "",
+          avatar: profileData.avatarUrl,
+          avatarBorder: profileData.avatarBorder || "basic",
+          xp: profileData.totalXP,
+          totalXP: profileData.totalXP,
+          level: profileData.level,
+          streak: profileData.currentStreak,
+          currentStreak: profileData.currentStreak,
+        })
+      } catch (error) {
+        console.error("Failed to fetch user:", error)
+      }
     }
-  }
+
+    void loadUser()
+
+    const handleBorderUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<string>
+      if (customEvent.detail) {
+        setCurrentUser((prev) => (prev ? { ...prev, avatarBorder: customEvent.detail } : prev))
+      }
+    }
+    window.addEventListener("apticore_avatar_border_changed", handleBorderUpdate)
+    return () => {
+      isMounted = false
+      window.removeEventListener("apticore_avatar_border_changed", handleBorderUpdate)
+    }
+  }, [])
 
   const handleLogout = async () => {
     try {
@@ -111,19 +122,6 @@ export default function DashboardLayout({
       setLogoutConfirmOpen(false)
     }
   }
-
-  useEffect(() => {
-    fetchUser()
-
-    const handleBorderUpdate = (e: Event) => {
-      const customEvent = e as CustomEvent<string>
-      if (customEvent.detail) {
-        setCurrentUser((prev) => (prev ? { ...prev, avatarBorder: customEvent.detail } : prev))
-      }
-    }
-    window.addEventListener("apticore_avatar_border_changed", handleBorderUpdate)
-    return () => window.removeEventListener("apticore_avatar_border_changed", handleBorderUpdate)
-  }, [])
 
   const userRole = currentUser?.role
     ? currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)
@@ -164,17 +162,7 @@ export default function DashboardLayout({
             {/* Right: Start Test, Notification, Theme, Profile */}
             <div className="flex items-center gap-2 sm:gap-3">
               {/* Notification Bell */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    title="Notifications"
-                    className="relative flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground outline-none cursor-pointer border border-border/40"
-                  >
-                    <Bell className="h-4 w-4" />
-                  </button>
-                </PopoverTrigger>
-              </Popover>
+              <NotificationBell />
 
               {/* Theme Toggler */}
               <ThemedToggler />
@@ -245,6 +233,9 @@ export default function DashboardLayout({
                         <p className="truncate text-[11px] font-normal text-muted-foreground">
                           {currentUser?.email || ""}
                         </p>
+                        <span className="inline-block mt-1 text-[10px] font-medium text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                          {userRole}
+                        </span>
                       </div>
                     </div>
                   </DropdownMenuLabel>

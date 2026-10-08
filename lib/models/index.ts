@@ -40,3 +40,8 @@ export {
   type IAccessPolicyDocument,
 } from "./AccessPolicy"
 export { default as Feedback, type IFeedbackDocument } from "./Feedback"
+export {
+  default as Notification,
+  type INotificationDocument,
+  type NotificationType,
+} from "./Notification"

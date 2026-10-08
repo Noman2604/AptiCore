@@ -116,16 +116,6 @@ export default function Navbar() {
           </div>
 
           <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4 dark:border-[#212a37]">
-            <div className="flex items-center justify-between px-2 py-1">
-              <span className="text-xs font-medium text-muted-foreground">
-                Appearance
-              </span>
-              <ThemeToggle
-                showLabel
-                className="h-8 w-8 rounded-md border border-border bg-card dark:border-[#212a37] dark:bg-[#10151d]"
-              />
-            </div>
-
             <div className="flex gap-2 pt-2">
               <Link
                 href="/auth/login"

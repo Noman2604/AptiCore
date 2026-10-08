@@ -3,8 +3,8 @@ import mongoose from "mongoose"
 import connectDB from "@/lib/db"
 import Achievement from "@/lib/models/Achievement"
 import Leaderboard from "@/lib/models/Leaderboard"
-import Result from "@/lib/models/Result"
-import Test from "@/lib/models/Test"
+import Result, { type IResultDocument } from "@/lib/models/Result"
+import Test, { type ITestDocument } from "@/lib/models/Test"
 import UserAchievement from "@/lib/models/UserAchievement"
 import UserProfile from "@/lib/models/UserProfile"
 import "@/lib/models/Category"
@@ -13,6 +13,7 @@ import XPHistory from "@/lib/models/XPHistory"
 import { verifyAccessToken } from "@/lib/jwt"
 import Category from "@/lib/models/Category"
 import { logActivity } from "@/lib/audit"
+import { createNotification } from "@/lib/notifications"
 
 // GET /api/results - List user's test results
 export async function GET(request: NextRequest) {
@@ -124,12 +125,13 @@ export async function POST(request: NextRequest) {
     // We allow skipped questions or unanswered questions because running out of time or skipping is normal.
 
     // Accept `subcategory` as a fallback key from clients that send it
-    let providedSubcategoryId = subcategoryId ?? (body as any).subcategory
+    const bodyRecord = body as Record<string, unknown>
+    let providedSubcategoryId = subcategoryId ?? (bodyRecord.subcategory as string | undefined)
     let effectiveCategoryId =
-      categoryId ?? (body as any).categoryId ?? (body as any).category
+      categoryId ?? (bodyRecord.categoryId as string | undefined) ?? (bodyRecord.category as string | undefined)
 
-    let effectiveTestId: any = testId
-    let test: any = null
+    let effectiveTestId: string | mongoose.Types.ObjectId | null = testId || null
+    let test: ITestDocument | null = null
 
     if (effectiveTestId) {
       test = await Test.findById(effectiveTestId)
@@ -198,7 +200,7 @@ export async function POST(request: NextRequest) {
           : `${cleanCat} Practice Test`
       }
 
-      const tempTest: any = await (Test as any).create({
+      const tempTest = await Test.create({
         title: resolvedTitle,
         description: `${resolvedTitle} practice session`,
         categoryId: effectiveCategoryId,
@@ -248,7 +250,7 @@ export async function POST(request: NextRequest) {
       attemptId,
     };
 
-    let result: any;
+    let result: IResultDocument | null = null;
     if (attemptId) {
       result = await Result.findOneAndUpdate(
         { userId: decoded.userId, attemptId },
@@ -257,6 +259,13 @@ export async function POST(request: NextRequest) {
       );
     } else {
       result = await Result.create(resultData);
+    }
+
+    if (!result) {
+      return NextResponse.json(
+        { success: false, error: "Failed to record result" },
+        { status: 500 }
+      );
     }
 
     // Update user XP, level, and streak for this completion event
@@ -270,7 +279,7 @@ export async function POST(request: NextRequest) {
       module: "result",
       status: "success",
       targetType: "result",
-      targetId: result._id.toString(),
+      targetId: result?._id ? (result._id as mongoose.Types.ObjectId).toString() : "",
       targetLabel: finalTestName,
       details: {
         testId: effectiveTestId ? effectiveTestId.toString() : null,
@@ -487,6 +496,34 @@ export async function POST(request: NextRequest) {
 
         await Leaderboard.bulkWrite(bulkOps)
       }
+    }
+
+    // Trigger in-app notification for test completion
+    try {
+      await createNotification({
+        userId: decoded.userId,
+        title: `Test Completed: ${finalTestName}`,
+        message: `You scored ${Math.round(accuracy)}% (${correctAnswers}/${totalQuestions} correct) and earned +${xpEarned} XP!`,
+        type: "test",
+        link: result?._id ? `/results/${result._id}` : null,
+        data: {
+          resultId: result?._id ? (result._id as mongoose.Types.ObjectId).toString() : null,
+          accuracy,
+          xpEarned,
+        },
+      })
+
+      if (newLevel > previousLevel) {
+        await createNotification({
+          userId: decoded.userId,
+          title: `Leveled Up! Level ${newLevel} 🚀`,
+          message: `Congratulations! Your aptitude practice paid off. You have unlocked Level ${newLevel}!`,
+          type: "achievement",
+          link: "/dashboard",
+        })
+      }
+    } catch (notifErr) {
+      console.error("Failed to send notification on result submit:", notifErr)
     }
 
     return NextResponse.json({
