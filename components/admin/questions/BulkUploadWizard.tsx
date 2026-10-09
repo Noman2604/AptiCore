@@ -58,8 +58,26 @@ export function BulkUploadWizard({
 
   const downloadSample = async () => {
     try {
-      const xlsx = await import("xlsx")
-      const ws = xlsx.utils.json_to_sheet([
+      const ExcelJS = (await import("exceljs")).default
+      const workbook = new ExcelJS.Workbook()
+      const worksheet = workbook.addWorksheet("Questions")
+
+      worksheet.columns = [
+        { header: "questionText", key: "questionText", width: 35 },
+        { header: "questionType", key: "questionType", width: 15 },
+        { header: "difficultyLevel", key: "difficultyLevel", width: 15 },
+        { header: "option1", key: "option1", width: 20 },
+        { header: "option2", key: "option2", width: 20 },
+        { header: "option3", key: "option3", width: 20 },
+        { header: "option4", key: "option4", width: 20 },
+        { header: "correctAnswer", key: "correctAnswer", width: 20 },
+        { header: "explanation", key: "explanation", width: 35 },
+        { header: "marks", key: "marks", width: 10 },
+        { header: "negativeMarks", key: "negativeMarks", width: 15 },
+        { header: "timeLimitSeconds", key: "timeLimitSeconds", width: 18 },
+      ]
+
+      worksheet.addRows([
         {
           questionText: "What is 2+2?",
           questionType: "mcq",
@@ -68,7 +86,7 @@ export function BulkUploadWizard({
           option2: "4",
           option3: "5",
           option4: "6",
-          correctOptions: "2",
+          correctAnswer: "4",
           explanation: "2+2=4",
           marks: 4,
           negativeMarks: 1,
@@ -82,7 +100,7 @@ export function BulkUploadWizard({
           option2: "b",
           option3: "e",
           option4: "z",
-          correctOptions: "1,3",
+          correctAnswer: "a,e",
           explanation: "A and E are vowels",
           marks: 4,
           negativeMarks: 1,
@@ -99,9 +117,18 @@ export function BulkUploadWizard({
           timeLimitSeconds: 60,
         },
       ])
-      const wb = xlsx.utils.book_new()
-      xlsx.utils.book_append_sheet(wb, ws, "Sample")
-      xlsx.writeFile(wb, "bulk_upload_sample.xlsx")
+      const buffer = await workbook.xlsx.writeBuffer()
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = "bulk_upload_sample.xlsx"
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
     } catch (error) {
       toast.error("Failed to generate sample file")
     }

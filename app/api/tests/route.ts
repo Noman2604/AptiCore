@@ -81,6 +81,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (user.role !== "admin" && user.role !== "super_admin") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden - Admin access required" },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
     const {
       title,

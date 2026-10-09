@@ -219,11 +219,18 @@ export async function POST(request: NextRequest) {
       test = tempTest
     }
 
+    const safeTotalQuestions = Math.max(0, Math.min(Number(totalQuestions) || 0, 500))
+    const safeAttempted = Math.max(0, Math.min(Number(attemptedQuestions) || 0, safeTotalQuestions))
+    const safeCorrect = Math.max(0, Math.min(Number(correctAnswers) || 0, safeAttempted))
+    const safeSkipped = Math.max(0, safeTotalQuestions - safeAttempted)
+    const safeTotalMarks = Math.max(0, Number(totalMarks) || (safeTotalQuestions > 0 ? safeTotalQuestions * 4 : 0))
+    const safeMarksObtained = Math.max(0, Math.min(Number(marksObtained) || 0, safeTotalMarks))
+
     const accuracy =
-      typeof providedAccuracy === "number"
-        ? providedAccuracy
-        : totalQuestions > 0
-          ? Math.round((correctAnswers / totalQuestions) * 100)
+      typeof providedAccuracy === "number" && providedAccuracy >= 0 && providedAccuracy <= 100
+        ? Math.round(providedAccuracy)
+        : safeTotalQuestions > 0
+          ? Math.round((safeCorrect / safeTotalQuestions) * 100)
           : 0
 
     const finalTestName =
@@ -234,15 +241,15 @@ export async function POST(request: NextRequest) {
     const resultData = {
       userId: decoded.userId,
       testId: effectiveTestId,
-      totalQuestions,
+      totalQuestions: safeTotalQuestions,
       testName: finalTestName,
-      attemptedQuestions: attemptedQuestions || 0,
-      correctAnswers: correctAnswers || 0,
-      skippedQuestions: skippedQuestions || 0,
+      attemptedQuestions: safeAttempted,
+      correctAnswers: safeCorrect,
+      skippedQuestions: safeSkipped,
       accuracy,
-      marksObtained: marksObtained || 0,
-      totalMarks: totalMarks || 0,
-      timeSpentSeconds: timeSpentSeconds || 0,
+      marksObtained: safeMarksObtained,
+      totalMarks: safeTotalMarks,
+      timeSpentSeconds: Math.max(0, Math.min(Number(timeSpentSeconds) || 0, 86400)),
       status: "completed" as const,
       answers: normalizedAnswers,
       startedAt: startedAt || new Date(),

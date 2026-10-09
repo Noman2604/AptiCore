@@ -20,6 +20,15 @@ export const transporter = nodemailer.createTransport({
   },
 })
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
+}
+
 export async function sendVerificationEmail({
   to,
   name,
@@ -34,6 +43,8 @@ export async function sendVerificationEmail({
   const verificationUrl = `${baseUrl}/auth/verify-email?email=${encodeURIComponent(
     to
   )}&token=${token}`
+
+  const safeName = escapeHtml(name || "there")
 
   const html = `
     <!DOCTYPE html>
@@ -138,7 +149,7 @@ export async function sendVerificationEmail({
       <div class="container">
         <div class="logo">Apti<span>Core</span></div>
         <h1>Verify Your Email Address</h1>
-        <p>Hi ${name || "there"},</p>
+        <p>Hi ${safeName},</p>
         <p>Welcome to <strong>AptiCore</strong>! Please verify your email address to activate your account and start practicing aptitude tests and contests.</p>
         
         <div class="otp-box">
@@ -173,19 +184,14 @@ export async function sendVerificationEmail({
     html,
   }
 
-  // Always log OTP and verification link in console for rapid development/debugging
-  console.log("\n==========================================")
-  console.log(`📧 [EMAIL VERIFICATION] Sent to: ${to} (${name})`)
-  console.log(`🔑 Verification OTP Code: ${otp}`)
-  console.log(`🔗 One-Click URL: ${verificationUrl}`)
-  console.log("==========================================\n")
-
-  // If SMTP credentials are not configured yet, log warning and skip SMTP transport
+  // Only log in non-production environments when SMTP credentials are not yet configured
   if (
     !process.env.SMTP_USER ||
     process.env.SMTP_USER === "your-email@example.com"
   ) {
-    console.warn(`⚠️ [SMTP NOT CONFIGURED] Email simulated in terminal (no real email sent). Set SMTP credentials in .env.local to send real emails.\n`)
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(`⚠️ [SMTP NOT CONFIGURED] Email simulated in dev mode. Set SMTP credentials in .env.local.\n`)
+    }
     return { simulated: true, otp, verificationUrl }
   }
 

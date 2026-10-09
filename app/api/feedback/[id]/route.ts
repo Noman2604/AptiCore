@@ -16,7 +16,7 @@ async function getFeedbackById(id: string) {
 
 // GET /api/feedback/[id] - Fetch one feedback/comment
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -31,9 +31,28 @@ export async function GET(
       )
     }
 
+    const auth = getAuth(request)
+    const itemUserId = (item.userId as any)?._id?.toString() || item.userId?.toString()
+    const isOwner = auth && itemUserId === auth.userId
+    const isSuperAdmin = auth && auth.role === "super_admin"
+
+    if (!item.isPublic && !isOwner && !isSuperAdmin) {
+      return NextResponse.json(
+        { success: false, error: "Feedback not found" },
+        { status: 404 }
+      )
+    }
+
+    const sanitized = item.toObject() as any
+    if (sanitized.isAnonymous && !isSuperAdmin) {
+      sanitized.userId = { name: "Anonymous" }
+    } else if (!isSuperAdmin && !isOwner && sanitized.userId) {
+      delete sanitized.userId.email
+    }
+
     return NextResponse.json({
       success: true,
-      data: item,
+      data: sanitized,
     })
   } catch (error) {
     console.error("Get feedback by id error:", error)

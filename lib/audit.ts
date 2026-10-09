@@ -22,7 +22,16 @@ interface LogActivityParams {
 
 function sanitizeDetails(details: Record<string, any>): Record<string, any> {
   const sanitized = { ...details }
-  const sensitiveKeys = ["password", "token", "verificationCode", "verificationToken"]
+  const sensitiveKeys = [
+    "password",
+    "token",
+    "otp",
+    "verificationCode",
+    "verificationToken",
+    "hashedOtp",
+    "hashedToken",
+    "secret",
+  ]
   for (const key of sensitiveKeys) {
     if (key in sanitized) {
       sanitized[key] = "***"

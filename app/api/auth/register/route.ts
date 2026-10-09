@@ -7,18 +7,41 @@ import UserProfile, { IUserProfileDocument } from "@/lib/models/UserProfile"
 import { generateVerificationData } from "@/lib/tokens"
 import { sendVerificationEmail } from "@/lib/mail"
 import { logActivity } from "@/lib/audit"
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req)
+    const rateLimit = checkRateLimit(`register:ip:${ip}`, 5, 10 * 60 * 1000)
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Registration limit reached for this IP. Please try again in ${rateLimit.retryAfterSeconds} seconds.`,
+        },
+        { status: 429 }
+      )
+    }
+
     await connectDB()
 
-    const { name, email, password, role } = await req.json()
+    const { name, email, password } = await req.json()
 
     if (!name || !email || !password) {
       return NextResponse.json(
         {
           success: false,
           error: "Name, email, and password are required",
+        },
+        { status: 400 }
+      )
+    }
+
+    if (typeof password !== "string" || password.length < 6) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Password must be at least 6 characters long",
         },
         { status: 400 }
       )
@@ -38,18 +61,14 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    console.log(`\n[AUTH:REGISTER] Registering new user: ${email} (${name})`)
-
     const { otp, token, hashedOtp, hashedToken, expiresAt } =
       generateVerificationData()
-
-    console.log(`[AUTH:REGISTER] Generated OTP: ${otp} for ${email}`)
 
     const user = await User.create({
       name: name.trim(),
       email: email.toLowerCase().trim(),
       password,
-      role: role || "user",
+      role: "user",
       isActive: true,
       isEmailVerified: false,
       verificationCode: hashedOtp,

@@ -5,15 +5,49 @@ import User from "@/lib/models/user"
 import { connectDB } from "@/lib/db"
 import { generateAccessToken } from "@/lib/jwt"
 import { logActivity } from "@/lib/audit"
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 
 export async function POST(req: NextRequest) {
   let email = ""
   try {
+    const ip = getClientIp(req)
+    const ipLimit = checkRateLimit(`login:ip:${ip}`, 20, 60 * 1000)
+    if (!ipLimit.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Too many login attempts from this IP. Please try again in ${ipLimit.retryAfterSeconds} seconds.`,
+        },
+        { status: 429 }
+      )
+    }
+
     await connectDB()
 
     const body = await req.json()
-    email = body.email
-    const password = body.password
+    email = typeof body.email === "string" ? body.email.toLowerCase().trim() : ""
+    const password = typeof body.password === "string" ? body.password : ""
+
+    if (!email || !password) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Email and password are required",
+        },
+        { status: 400 }
+      )
+    }
+
+    const accountLimit = checkRateLimit(`login:account:${email}`, 5, 60 * 1000)
+    if (!accountLimit.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Too many failed login attempts for this account. Please wait ${accountLimit.retryAfterSeconds}s.`,
+        },
+        { status: 429 }
+      )
+    }
 
     const user = await User.findOne({
       email,
@@ -98,16 +132,24 @@ export async function POST(req: NextRequest) {
       status: "success",
     })
 
+    const sanitizedUser = user.toObject() as any
+    delete sanitizedUser.password
+    delete sanitizedUser.verificationCode
+    delete sanitizedUser.verificationToken
+
     const response = NextResponse.json({
       success: true,
       data: {
-        user: user.toObject(),
+        user: sanitizedUser,
       },
     })
     response.cookies.set({
       name: "accessToken",
       value: accessToken,
       httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
       maxAge: 60 * 60 * 24 * 7,
     })
 

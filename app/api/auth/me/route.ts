@@ -1,6 +1,6 @@
 // app/api/auth/me/route.ts
 import { NextRequest, NextResponse } from "next/server"
-import jwt from "jsonwebtoken"
+import { verifyAccessToken } from "@/lib/jwt"
 import User from "@/lib/models/user"
 import { connectDB } from "@/lib/db"
 
@@ -20,9 +20,15 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      userId: string
-      role: string
+    const decoded = verifyAccessToken(token)
+    if (!decoded) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Unauthorized",
+        },
+        { status: 401 }
+      )
     }
 
     const user = await User.findById(decoded.userId).select("-password")
