@@ -25,14 +25,38 @@ export async function PUT(
     const body = await request.json()
     const { name, email, role, isActive, profile } = body
 
+    const oldUser = await User.findById(id).lean()
+    if (!oldUser) {
+      return NextResponse.json(
+        { success: false, error: "User not found" },
+        { status: 404 }
+      )
+    }
+
     const updates: Record<string, unknown> = {}
     if (name !== undefined) updates.name = name
     if (email !== undefined) updates.email = email
-    if (role !== undefined) updates.role = role
     if (isActive !== undefined) updates.isActive = isActive
 
-    const oldUser = await User.findById(id).lean()
-    
+    // Only super_admin can modify roles
+    if (role !== undefined) {
+      if (currentUser.role !== "super_admin") {
+        return NextResponse.json(
+          { success: false, error: "Only Super Admins can modify user roles" },
+          { status: 403 }
+        )
+      }
+      updates.role = role
+    }
+
+    // Standard admin cannot modify super_admin accounts
+    if (oldUser.role === "super_admin" && currentUser.role !== "super_admin") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden - Cannot modify a Super Admin account" },
+        { status: 403 }
+      )
+    }
+
     const user = await User.findByIdAndUpdate(id, updates, {
       returnDocument: 'after',
       runValidators: true,
@@ -130,18 +154,25 @@ export async function DELETE(
     await connectDB()
 
     const { id } = await params
-    const user = await User.findByIdAndUpdate(
-      id,
-      { isActive: false },
-      { returnDocument: 'after' }
-    ).select("-password")
+    const targetUser = await User.findById(id)
 
-    if (!user) {
+    if (!targetUser) {
       return NextResponse.json(
         { success: false, error: "User not found" },
         { status: 404 }
       )
     }
+
+    if (targetUser.role === "super_admin" && currentUser.role !== "super_admin") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden - Cannot deactivate a Super Admin account" },
+        { status: 403 }
+      )
+    }
+
+    targetUser.isActive = false
+    await targetUser.save()
+    const user = targetUser
     
     await logActivity({
       req: request,

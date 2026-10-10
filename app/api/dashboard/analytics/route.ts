@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import connectDB from "@/lib/db"
-import jwt from "jsonwebtoken"
+import { verifyAccessToken } from "@/lib/jwt"
 import User from "@/lib/models/user"
 import UserProfile from "@/lib/models/UserProfile"
 import Result from "@/lib/models/Result"
@@ -23,9 +23,15 @@ export async function GET(request: NextRequest) {
                 { status: 401 }
             )
         }
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-            userId: string
-            role: string
+        const decoded = verifyAccessToken(token)
+        if (!decoded) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: "Invalid or expired token",
+                },
+                { status: 401 }
+            )
         }
 
         const userId = decoded.userId

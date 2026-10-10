@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import jwt from "jsonwebtoken"
+import { verifyAccessToken } from "@/lib/jwt"
 
 import connectDB from "@/lib/db"
 import UserProfile from "@/lib/models/UserProfile"
-
-interface JwtPayload {
-  userId: string
-}
 
 async function getUserId(request: NextRequest) {
   const token = request.cookies.get("accessToken")?.value
@@ -15,7 +11,10 @@ async function getUserId(request: NextRequest) {
     throw new Error("Unauthorized")
   }
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload
+  const decoded = verifyAccessToken(token)
+  if (!decoded) {
+    throw new Error("Unauthorized")
+  }
 
   return decoded.userId
 }
@@ -129,11 +128,9 @@ export async function PATCH(request: NextRequest) {
       {
         returnDocument: 'after',
         upsert: true,
-        runValidators: false,
+        runValidators: true,
       }
     )
-
-    console.log("Updated profile:", profile)
 
     const { logActivity } = await import("@/lib/audit")
     await logActivity({

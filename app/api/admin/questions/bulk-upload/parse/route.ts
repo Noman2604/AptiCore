@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from "next/server"
-import * as xlsx from "xlsx"
+import ExcelJS from "exceljs"
+import { getAuthUser } from "@/lib/auth-guard"
 
 const OPTION_BASED_TYPES = ["mcq", "true_false", "msq"]
 const ALLOWED_TYPES = ["mcq", "msq", "true_false", "fill_blank", "numerical", "coding"]
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024 // 5 MB
 
 export async function POST(req: NextRequest) {
   try {
+    const user = getAuthUser(req)
+    if (!user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    }
+
+    if (user.role !== "admin" && user.role !== "super_admin") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden - Admin access required" },
+        { status: 403 }
+      )
+    }
+
     const formData = await req.formData()
     const file = formData.get("file") as File
     const categoryId = formData.get("categoryId") as string
@@ -13,6 +27,21 @@ export async function POST(req: NextRequest) {
 
     if (!file) {
       return NextResponse.json({ success: false, error: "No file provided" }, { status: 400 })
+    }
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      return NextResponse.json(
+        { success: false, error: "File size exceeds 5MB limit" },
+        { status: 400 }
+      )
+    }
+
+    const fileName = file.name || ""
+    if (!fileName.endsWith(".xlsx") && !fileName.endsWith(".xls")) {
+      return NextResponse.json(
+        { success: false, error: "Only .xlsx and .xls Excel files are allowed" },
+        { status: 400 }
+      )
     }
 
     if (!categoryId || !subcategoryId) {
@@ -23,26 +52,58 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())
-    const workbook = xlsx.read(buffer, { type: "buffer" })
+    const workbook = new ExcelJS.Workbook()
+    await workbook.xlsx.load(buffer as any)
 
-   
-    const worksheet = workbook.Sheets["Questions"]
+    // Lookup worksheet by name or fallback to first sheet
+    const worksheet =
+      workbook.getWorksheet("Questions") ||
+      workbook.getWorksheet("Sample") ||
+      workbook.worksheets[0]
+
     if (!worksheet) {
       return NextResponse.json(
         {
           success: false,
-          error: `No sheet named "Questions" found in the uploaded file. Found sheets: ${workbook.SheetNames.join(", ")}`,
+          error: "No worksheet found in the uploaded file.",
         },
         { status: 400 }
       )
     }
 
-  
-    const rows = xlsx.utils.sheet_to_json<any>(worksheet, { defval: "" })
+    // Extract headers from first row
+    const headers: Record<number, string> = {}
+    const headerRow = worksheet.getRow(1)
+    headerRow.eachCell((cell, colNumber) => {
+      headers[colNumber] = String(cell.value || "").trim()
+    })
+
+    const rows: any[] = []
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return // Skip header row
+      const rowObj: Record<string, any> = {}
+      let hasData = false
+      row.eachCell((cell, colNumber) => {
+        const key = headers[colNumber]
+        if (key) {
+          let cellVal = cell.value
+          if (cellVal && typeof cellVal === "object") {
+            if ("text" in cellVal) cellVal = (cellVal as any).text
+            else if ("result" in cellVal) cellVal = (cellVal as any).result
+          }
+          const strVal = cellVal !== null && cellVal !== undefined ? String(cellVal).trim() : ""
+          rowObj[key] = strVal
+          if (strVal) hasData = true
+        }
+      })
+      if (hasData) {
+        rows.push(rowObj)
+      }
+    })
 
     if (rows.length === 0) {
       return NextResponse.json(
-        { success: false, error: "The Questions sheet has no data rows." },
+        { success: false, error: "The worksheet has no data rows." },
         { status: 400 }
       )
     }

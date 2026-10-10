@@ -85,12 +85,41 @@ export async function PATCH(
       )
     }
 
+    if (user.role !== "admin" && user.role !== "super_admin") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden - Admin access required" },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
+
+    // Whitelist allowed fields to prevent NoSQL operator injection
+    const allowedFields = [
+      "questionText",
+      "questionType",
+      "options",
+      "correctAnswer",
+      "explanation",
+      "difficultyLevel",
+      "marks",
+      "negativeMarks",
+      "timeLimitSeconds",
+      "isActive",
+      "categoryId",
+      "subcategoryId",
+    ]
+    const updates: Record<string, unknown> = {}
+    for (const field of allowedFields) {
+      if (field in body) {
+        updates[field] = body[field]
+      }
+    }
 
     // Fetch the old question first for diffing
     const oldQuestion = await Question.findById(id).lean()
 
-    const question = await Question.findByIdAndUpdate(id, body, {
+    const question = await Question.findByIdAndUpdate(id, { $set: updates }, {
       returnDocument: "after",
       runValidators: true,
     })
@@ -178,6 +207,13 @@ export async function DELETE(
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
+      )
+    }
+
+    if (user.role !== "admin" && user.role !== "super_admin") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden - Admin access required" },
+        { status: 403 }
       )
     }
 

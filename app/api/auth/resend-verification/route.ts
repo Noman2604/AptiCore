@@ -69,12 +69,8 @@ export async function POST(req: Request) {
       }
     }
 
-    console.log(`\n[AUTH:RESEND] Resending verification code for: ${normalizedEmail}`)
-
     const { otp, token, hashedOtp, hashedToken, expiresAt } =
       generateVerificationData()
-
-    console.log(`[AUTH:RESEND] New OTP: ${otp} for ${normalizedEmail}`)
 
     user.verificationCode = hashedOtp
     user.verificationToken = hashedToken

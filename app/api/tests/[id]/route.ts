@@ -25,6 +25,20 @@ export async function GET(
       )
     }
 
+    if (!test.isPublished) {
+      const authUser = getAuthUser(request)
+      const isPrivileged =
+        authUser &&
+        (["admin", "super_admin"].includes(authUser.role) ||
+          test.createdBy?.toString() === authUser.userId)
+      if (!isPrivileged) {
+        return NextResponse.json(
+          { success: false, error: "Test not found" },
+          { status: 404 }
+        )
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: test,
@@ -51,6 +65,13 @@ export async function PUT(
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
+      )
+    }
+
+    if (user.role !== "admin" && user.role !== "super_admin") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden - Admin access required" },
+        { status: 403 }
       )
     }
 
@@ -133,6 +154,13 @@ export async function DELETE(
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
+      )
+    }
+
+    if (user.role !== "admin" && user.role !== "super_admin") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden - Admin access required" },
+        { status: 403 }
       )
     }
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import jwt from "jsonwebtoken"
+import { verifyAccessToken } from "@/lib/jwt"
 
 interface JwtPayload {
   userId: string
@@ -14,18 +14,59 @@ export function proxy(req: NextRequest) {
 
   // User already logged in
   if (token) {
-    try {
-      jwt.verify(token, process.env.JWT_SECRET!)
-
-      if (authRoutes.includes(pathname)) {
-        return NextResponse.redirect(new URL("/dashboard", req.url))
-      }
-    } catch {
-      // Invalid token
+    const verified = verifyAccessToken(token)
+    if (verified && authRoutes.includes(pathname)) {
+      return NextResponse.redirect(new URL("/dashboard", req.url))
     }
   }
 
-  // Protected Routes
+  // CSRF validation on mutating API requests
+  if (pathname.startsWith("/api/") && !["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+    const origin = req.headers.get("origin")
+    if (origin) {
+      try {
+        const originHost = new URL(origin).host
+        const reqHost = req.headers.get("host")
+        if (reqHost && originHost !== reqHost) {
+          return NextResponse.json(
+            { success: false, error: "Cross-site request forgery blocked" },
+            { status: 403 }
+          )
+        }
+      } catch {
+        return NextResponse.json(
+          { success: false, error: "Invalid origin header" },
+          { status: 403 }
+        )
+      }
+    }
+  }
+
+  // API Protected Routes
+  if (pathname.startsWith("/api/admin") || pathname.startsWith("/api/super-admin")) {
+    if (!token) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    }
+    const decodedApi = verifyAccessToken(token)
+    if (!decodedApi) {
+      return NextResponse.json({ success: false, error: "Invalid or expired token" }, { status: 401 })
+    }
+    if (pathname.startsWith("/api/super-admin") && decodedApi.role !== "super_admin") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden - Super Admin required" },
+        { status: 403 }
+      )
+    }
+    if (pathname.startsWith("/api/admin") && !["admin", "super_admin"].includes(decodedApi.role)) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden - Admin required" },
+        { status: 403 }
+      )
+    }
+    return NextResponse.next()
+  }
+
+  // Protected Page Routes
   const protectedRoutes = ["/dashboard", "/admin", "/super-admin"]
 
   const isProtected = protectedRoutes.some((route) =>
@@ -40,9 +81,14 @@ export function proxy(req: NextRequest) {
     return NextResponse.next()
   }
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload
+  const decoded = verifyAccessToken(token)
+  if (!decoded) {
+    const response = NextResponse.redirect(new URL("/auth/login", req.url))
+    response.cookies.delete("accessToken")
+    return response
+  }
 
+  try {
     // Admin Only
     const role = decoded.role
 
@@ -103,5 +149,8 @@ export const config = {
     "/dashboard/:path*",
     "/admin/:path*",
     "/super-admin/:path*",
+
+    "/api/admin/:path*",
+    "/api/super-admin/:path*",
   ],
 }

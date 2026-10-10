@@ -5,7 +5,7 @@ import XPHistory from "@/lib/models/XPHistory"
 import UserAchievement from "@/lib/models/UserAchievement"
 import Feedback from "@/lib/models/Feedback"
 import "@/lib/models/Achievement"
-import jwt from "jsonwebtoken"
+import { verifyAccessToken } from "@/lib/jwt"
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,9 +21,15 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       )
     }
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      userId: string
-      role: string
+    const decoded = verifyAccessToken(token)
+    if (!decoded) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid or expired token",
+        },
+        { status: 401 }
+      )
     }
 
     const userId = decoded.userId

@@ -6,9 +6,22 @@ import { connectDB } from "@/lib/db"
 import { generateAccessToken } from "@/lib/jwt"
 import { hashToken } from "@/lib/tokens"
 import { logActivity } from "@/lib/audit"
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit"
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = getClientIp(req)
+    const ipLimit = checkRateLimit(`verify:ip:${ip}`, 15, 15 * 60 * 1000)
+    if (!ipLimit.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Too many verification attempts from this IP. Please try again in ${ipLimit.retryAfterSeconds} seconds.`,
+        },
+        { status: 429 }
+      )
+    }
+
     await connectDB()
 
     const body = await req.json()
@@ -25,7 +38,18 @@ export async function POST(req: NextRequest) {
     }
 
     const normalizedEmail = email.toLowerCase().trim()
-    console.log(`\n[AUTH:VERIFY] Attempting verification for: ${normalizedEmail} with ${otp ? `OTP: ${otp}` : `Token: ${token}`}`)
+
+    // Limit attempts per email to 5 per 15 minutes to prevent OTP brute-force
+    const emailLimit = checkRateLimit(`verify:email:${normalizedEmail}`, 5, 15 * 60 * 1000)
+    if (!emailLimit.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Too many invalid attempts for this email. Please request a new code in ${emailLimit.retryAfterSeconds}s.`,
+        },
+        { status: 429 }
+      )
+    }
 
     // Find user including sensitive verification fields
     const user = await User.findOne({ email: normalizedEmail }).select(
@@ -33,7 +57,6 @@ export async function POST(req: NextRequest) {
     )
 
     if (!user) {
-      console.warn(`[AUTH:VERIFY] User not found: ${normalizedEmail}`)
       return NextResponse.json(
         {
           success: false,
@@ -44,7 +67,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (user.isEmailVerified) {
-      console.log(`[AUTH:VERIFY] User already verified: ${normalizedEmail}`)
       // If already verified, grant session token if needed
       const accessToken = generateAccessToken({
         userId: user._id.toString(),
@@ -61,6 +83,9 @@ export async function POST(req: NextRequest) {
         name: "accessToken",
         value: accessToken,
         httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
         maxAge: 60 * 60 * 24 * 7,
       })
 
@@ -158,6 +183,9 @@ export async function POST(req: NextRequest) {
       name: "accessToken",
       value: accessToken,
       httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
       maxAge: 60 * 60 * 24 * 7,
     })
 

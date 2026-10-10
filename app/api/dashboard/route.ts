@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
+import mongoose from "mongoose"
 import connectDB from "@/lib/db"
-import jwt from "jsonwebtoken"
+import { verifyAccessToken } from "@/lib/jwt"
 import User from "@/lib/models/user"
 import UserProfile from "@/lib/models/UserProfile"
 import Result from "@/lib/models/Result"
@@ -8,12 +9,14 @@ import Leaderboard from "@/lib/models/Leaderboard"
 import UserAchievement from "@/lib/models/UserAchievement"
 import Test from "@/lib/models/Test"
 import Category from "@/lib/models/Category"
+import Subcategory from "@/lib/models/Subcategory"
 
 
 export async function GET(request: NextRequest) {
     try {
         await connectDB()
         void Category
+        void Subcategory
         const token = request.cookies.get("accessToken")?.value
         if (!token) {
             return NextResponse.json(
@@ -25,9 +28,15 @@ export async function GET(request: NextRequest) {
             )
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-            userId: string
-            role: string
+        const decoded = verifyAccessToken(token)
+        if (!decoded) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: "Invalid or expired token",
+                },
+                { status: 401 }
+            )
         }
 
         const userId = decoded.userId
@@ -49,6 +58,7 @@ export async function GET(request: NextRequest) {
             allTests,
             leaderboard,
             userachievements,
+            userStatsAgg,
         ] = await Promise.all([
             User.findById(userId)
                 .select("_id name email role")
@@ -60,14 +70,25 @@ export async function GET(request: NextRequest) {
             Result.find({ userId, status: "completed" })
                 .sort({ createdAt: -1 })
                 .limit(5)
+                .populate({
+                    path: "testId",
+                    select: "title categoryId subcategory",
+                    populate: [
+                        { path: "categoryId", select: "name slug" },
+                        { path: "subcategory", select: "name slug" },
+                    ],
+                })
                 .lean(),
 
             Result.find({ userId, status: "completed" })
-                .select("accuracy totalMarks marksObtained status createdAt timeSpentSeconds attemptedQuestions totalQuestions testName testId")
+                .select("accuracy totalMarks marksObtained status createdAt timeSpentSeconds attemptedQuestions correctAnswers skippedQuestions totalQuestions testName testId")
                 .populate({
                     path: "testId",
-                    select: "title categoryId",
-                    populate: { path: "categoryId", select: "name slug" },
+                    select: "title categoryId subcategory",
+                    populate: [
+                        { path: "categoryId", select: "name slug" },
+                        { path: "subcategory", select: "name slug" },
+                    ],
                 })
                 .lean(),
 
@@ -95,6 +116,19 @@ export async function GET(request: NextRequest) {
                         "name description iconUrl criteriaType criteriaValue pointsReward rarity",
                 })
                 .lean(),
+
+            Result.aggregate([
+                { $match: { userId: new mongoose.Types.ObjectId(userId), status: "completed" } },
+                {
+                    $group: {
+                        _id: null,
+                        totalAttempted: { $sum: "$attemptedQuestions" },
+                        totalCorrect: { $sum: "$correctAnswers" },
+                        totalQuestions: { $sum: "$totalQuestions" },
+                        totalTimeSpentSeconds: { $sum: "$timeSpentSeconds" },
+                    },
+                },
+            ]),
         ])
         if (!user) {
             return NextResponse.json(
@@ -169,6 +203,12 @@ export async function GET(request: NextRequest) {
                     totalXP: profile?.totalXP || 0,
                     level: profile?.level || 1,
                     currentStreak: profile?.currentStreak || 0,
+                },
+                stats: {
+                    totalAttempted: userStatsAgg[0]?.totalAttempted || 0,
+                    totalCorrect: userStatsAgg[0]?.totalCorrect || 0,
+                    totalQuestions: userStatsAgg[0]?.totalQuestions || 0,
+                    totalTimeSpentSeconds: userStatsAgg[0]?.totalTimeSpentSeconds || 0,
                 },
                 recentResults: recentResults || [],
                 allResults: allResults || [],

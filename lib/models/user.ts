@@ -72,6 +72,22 @@ const UserSchema = new Schema<IUserDocument>(
   },
   {
     timestamps: true,
+    toJSON: {
+      transform(_doc, ret: any) {
+        delete ret.password
+        delete ret.verificationCode
+        delete ret.verificationToken
+        return ret
+      },
+    },
+    toObject: {
+      transform(_doc, ret: any) {
+        delete ret.password
+        delete ret.verificationCode
+        delete ret.verificationToken
+        return ret
+      },
+    },
   }
 )
 
@@ -81,17 +97,12 @@ UserSchema.methods.comparePassword = function (
   return bcrypt.compare(password, this.password)
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 UserSchema.pre("save", async function (this: IUserDocument) {
   if (!this.isModified("password")) {
     return
   }
-  try {
-    const salt = await bcrypt.genSalt(12)
-    this.password = await bcrypt.hash(this.password, salt)
-  } catch (error) {
-    console.error("Error hashing password:", error)
-  }
+  const salt = await bcrypt.genSalt(12)
+  this.password = await bcrypt.hash(this.password, salt)
 })
 
 const User: Model<IUserDocument> =
