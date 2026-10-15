@@ -1,15 +1,9 @@
 import jwt from "jsonwebtoken"
 import { JwtPayload } from "@/types/auth"
+import { env } from "@/lib/env"
 
 const getJwtSecret = (): string => {
-  const secret = process.env.JWT_SECRET
-  if (!secret) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("FATAL: JWT_SECRET environment variable is missing in production!")
-    }
-    return "apticore-dev-secret-only-never-use-in-production-12345"
-  }
-  return secret
+  return env.JWT_SECRET
 }
 
 export const generateAccessToken = (payload: {

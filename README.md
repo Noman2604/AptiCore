@@ -1,13 +1,13 @@
-# AptiCore 🚀
+# AptiCore 
 > **Enterprise-Grade Placement Prep & Aptitude Assessment Platform — 24,600+ Questions Across Quantitative Aptitude, Logical Reasoning, Verbal Ability & Technical Coding**
 
 AptiCore is a modern, high-performance aptitude test preparation and assessment platform engineered for students, universities, and job seekers aiming for top campus placements (TCS, Infosys, Wipro, Amazon, Google, etc.). It features full-screen proctored mock tests, dynamic analytics, gamified XP progression, interactive weekly contests, Excel/CSV bulk question management, verified email security, and comprehensive role-based administrative consoles.
 
 ---
 
-## ✨ Features
+## Features
 
-### 🎓 Student Experience
+### Student Experience
 - **Interactive Landing Page**: Top reading progress bar, 3D mouse-tilt Hero mock test card, continuous recruiter company ticker, and GPU-accelerated scroll reveals.
 - **Smart Proctored Test Runner**: Full-screen assessment engine supporting 6 question types (MCQ, MSQ, True/False, Fill in Blank, Numerical, Coding) with persistent countdown timer, section rails, question palette, review flags, negative marking, auto-saving progress, and anti-cheat tab-switch detection.
 - **Question Bookmarks & Revision Queue**: Dedicated dashboard bookmark center (`/dashboard/bookmark`) allowing students to filter, search, tags, and practice saved questions with detailed explanations.
@@ -17,7 +17,7 @@ AptiCore is a modern, high-performance aptitude test preparation and assessment 
 - **User Feedback**: Built-in feedback modal allowing students to rate and comment on questions, tests, or platform features.
 - **Mobile-First UX**: Responsive collapsible sidebar drawer on tablets/iPads (<1024px) and a sticky mobile action bar for instant test launching.
 
-### 🛡️ Administrative & Platform Governance
+### Administrative & Platform Governance
 - **Question Bank & Bulk Excel Upload**: Create, edit, and duplicate questions with a high-speed multi-stage Excel/CSV bulk upload engine (`.xlsx`, `.xls`, `.csv`) featuring client-side parsing, schema preview, and batch ingestion.
 - **Test Creation & Publishing**: Configure custom test durations, negative marking, question pools, randomizations, and passing criteria with server-side pagination, search, and CSV export.
 - **Role-Based Access Control (RBAC)**: 3-tier user governance (`user`, `admin`, `super_admin`) with fine-grained policy enforcement.
@@ -25,7 +25,7 @@ AptiCore is a modern, high-performance aptitude test preparation and assessment 
 - **Content Moderation & Feedback**: Review user-submitted question error reports and feedback comments with status management and resolution notes.
 - **System Settings**: Global maintenance mode, registration toggles, XP rate multipliers, and feature switches.
 
-### 🌐 Security, Production & SEO Readiness
+### Security, Production & SEO Readiness
 - **Verified Authentication**: Secure signup with 6-digit OTP and 1-click token email verification powered by Nodemailer/SMTP with rate-limited resend cooldowns.
 - **Search Engine Optimization**: Page-specific `<title>` & `<meta name="description">` tags, dynamic `robots.txt` generator (`app/robots.ts`), and 19-route dynamic XML sitemap (`app/sitemap.ts`).
 - **Social Sharing**: High-contrast 1200x630 Open Graph and Twitter Cards asset (`public/og-image.png`).
@@ -35,7 +35,7 @@ AptiCore is a modern, high-performance aptitude test preparation and assessment 
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Domain | Technology |
 |---|---|
@@ -56,7 +56,7 @@ AptiCore is a modern, high-performance aptitude test preparation and assessment 
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Clone & Install Dependencies
 ```bash
@@ -116,7 +116,7 @@ npm run start
 
 ---
 
-## 📂 Project Architecture
+## Project Architecture
 
 ```
 AptiCore/
@@ -174,7 +174,7 @@ AptiCore/
 
 ---
 
-## 📖 Documentation Hub
+## Documentation Hub
 
 Detailed documentation is available in the [`docs/`](file:///docs/) directory:
 
@@ -187,6 +187,6 @@ Detailed documentation is available in the [`docs/`](file:///docs/) directory:
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License.

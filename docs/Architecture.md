@@ -107,16 +107,31 @@ AptiCore/
 |   |-- dashboardSidebar.tsx     # Responsive collapsible sidebar (drawer <1024px)
 |   |-- ScrollReveal.tsx         # GPU-accelerated IntersectionObserver reveals
 |   |-- AnimatedCounter.tsx      # Smooth numerical count-up easing
+|   |-- providers/               # Context & Query wrappers
+|   |   `-- QueryProvider.tsx    # TanStack QueryClient provider with caching rules
 |   |-- CookieBanner.tsx         # GDPR cookie consent banner
 |   |-- Analytics.tsx            # Google Analytics 4 tracking script
 |   `-- StickyMobileCTA.tsx      # Mobile floating bottom action sheet
-|-- hooks/                       # Custom React hooks
+|-- services/                    # Domain Service Layer (business logic & API decoupling)
+|   |-- api-client.ts            # Centralized Axios client with error normalization
+|   |-- auth.service.ts          # Authentication service
+|   |-- category.service.ts      # Category and subcategory service
+|   |-- test.service.ts          # Test questions and submission service
+|   `-- index.ts                 # Barrel export
+|-- stores/                      # Zustand Global State Management
+|   |-- ui-store.ts              # Global UI state (sidebar, drawers, search)
+|   |-- test-store.ts            # Practice test execution state (timer, answers, tab switches)
+|   `-- index.ts                 # Barrel export
+|-- hooks/                       # Custom React & TanStack Query hooks
+|   |-- use-categories.ts        # Category React Query hooks (useCategoriesQuery)
+|   |-- use-tests.ts             # Test React Query hooks (useTestQuestionsQuery, useSubmitTestMutation)
 |   |-- use-mobile.ts            # Responsive breakpoint hook (1024px threshold)
 |   `-- use-toast.ts             # Toast notification hook
 |-- lib/                         # Core library code
 |   |-- models/                  # 21 Mongoose schemas & TypeScript models
+|   |-- env.ts                   # Centralized type-safe environment configuration (Zod)
+|   |-- api-response.ts          # Standardized API response envelope & error handler
 |   |-- db.ts                    # MongoDB connection with HMR caching singleton
-|   |-- api.ts                   # Axios instance with credentials
 |   |-- mail.ts                  # Nodemailer verification email dispatch
 |   |-- jwt.ts                   # JWT token generation & verification
 |   |-- tokens.ts                # Cryptographic OTP & token generators

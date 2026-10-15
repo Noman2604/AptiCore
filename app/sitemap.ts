@@ -1,9 +1,8 @@
 import type { MetadataRoute } from "next"
+import { env } from "@/lib/env"
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    (process.env.APP_URL ? process.env.APP_URL : "https://apticore.in")
+  const baseUrl = env.NEXT_PUBLIC_BASE_URL
   const currentDate = new Date()
 
   const routes: {

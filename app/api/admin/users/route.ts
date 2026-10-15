@@ -31,13 +31,13 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .lean()
     const profiles = await UserProfile.find({
-      userId: { $in: users.map((user) => user._id) },
+      userId: { $in: users.map((user: any) => user._id) },
     }).lean()
     const profileByUserId = new Map(
-      profiles.map((profile) => [profile.userId.toString(), profile])
+      profiles.map((profile: any) => [profile.userId.toString(), profile])
     )
 
-    const data = users.map((user) => ({
+    const data = users.map((user: any) => ({
       ...user,
       _id: user._id.toString(),
       profile: profileByUserId.get(user._id.toString()) ?? null,

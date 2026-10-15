@@ -70,7 +70,7 @@ export async function createBroadcastNotification({
 
     if (!users || users.length === 0) return 0
 
-    const docs = users.map((u) => ({
+    const docs = users.map((u: any) => ({
       userId: u._id,
       title,
       message,
