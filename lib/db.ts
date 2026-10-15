@@ -1,7 +1,7 @@
 import mongoose from "mongoose"
+import { env } from "@/lib/env"
 
-const MONGODB_URI =
-  process.env.MONGODB_URI || " "
+const MONGODB_URI = env.MONGODB_URI
 
 interface MongooseCache {
   conn: typeof mongoose | null

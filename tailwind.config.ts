@@ -9,9 +9,10 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
-        mono: ["var(--font-mono)", "monospace"],
-        display: ["var(--font-display)", "sans-serif"],
+        serif: ["var(--font-serif)", "Instrument Serif", "Georgia", "serif"],
+        display: ["var(--font-display)", "Instrument Serif", "Georgia", "serif"],
+        sans: ["var(--font-sans)", "DM Sans", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "JetBrains Mono", "monospace"],
       },
       colors: {
         surface: {

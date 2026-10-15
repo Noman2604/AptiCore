@@ -4,10 +4,12 @@ import { ThemeProvider } from "@/components/theme-provider"
 import NetworkStatus from "@/components/NetworkStatus"
 import CelebrationProvider from "@/components/ui/celebration-provider"
 import { Toaster } from "@/components/ui/sonner"
-import CookieBanner from "@/components/CookieBanner"
 import Analytics from "@/components/Analytics"
+import QueryProvider from "@/components/providers/QueryProvider"
+import { env } from "@/lib/env"
+import CookieBanner from "@/components/CookieBanner"
 
-const siteUrl = process.env.NEXT_PUBLIC_BASE_URL || (process.env.APP_URL ? process.env.APP_URL : "https://apticore.in")
+const siteUrl = env.NEXT_PUBLIC_BASE_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -92,21 +94,23 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
         <link
-          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
       </head>
 
-      <body className="min-h-screen w-full max-w-full bg-background text-foreground antialiased selection:bg-primary/10 selection:text-primary">
+      <body className="min-h-screen max-w-full bg-background text-foreground antialiased selection:bg-primary/10 selection:text-primary">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <NetworkStatus>
-            <CelebrationProvider>
-              <div id="root" className="w-full max-w-full overflow-x-hidden">{children}</div>
-              <Toaster richColors position="top-right" />
-              <CookieBanner />
-              <Analytics />
-            </CelebrationProvider>
-          </NetworkStatus>
+          <QueryProvider>
+            <NetworkStatus>
+              <CelebrationProvider>
+                <div id="root" className="max-w-full overflow-x-hidden">{children}</div>
+                <Toaster richColors position="top-right" />
+                <CookieBanner />
+                <Analytics />
+              </CelebrationProvider>
+            </NetworkStatus>
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>

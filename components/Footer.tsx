@@ -54,7 +54,7 @@ const socials = [
 export default function Footer() {
   return (
     <footer className="relative mt-16 overflow-hidden border-t border-border bg-card/60 dark:border-[#212a37] dark:bg-[#0a0e14] text-foreground transition-colors duration-200">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(110,231,201,0.06),transparent_30%),radial-gradient(circle_at_top_right,rgba(139,124,246,0.06),transparent_28%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(110,231,201,0.1),transparent_30%),radial-gradient(circle_at_top_right,rgba(139,124,246,0.1),transparent_28%),linear-gradient(to_bottom,transparent,rgba(10,14,20,0.4))]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(110,231,201,0.06),transparent_30%),radial-gradient(circle_at_top_right,rgba(139,124,246,0.06),transparent_28%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(110,231,201,0.1),transparent_30%),radial-gradient(circle_at_top_right,rgba(139,124,246,0.1),transparent_28%)]" />
 
       <div className="relative mx-auto max-w-8xl px-4 py-12 sm:px-6 lg:px-4 lg:py-12">
         <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr]">
@@ -67,7 +67,7 @@ export default function Footer() {
                 height={32}
                 className="h-8 w-8 rounded-lg"
               />
-              <span className="bg-linear-to-r from-emerald-600 to-indigo-600 dark:from-[#6ee7c9] dark:to-[#8b7cf6] bg-clip-text font-[Space_Grotesk,sans-serif] text-2xl font-bold tracking-tight text-transparent">
+              <span className="font-[Space_Grotesk,sans-serif] text-2xl font-bold tracking-tight text-emerald-600 dark:text-[#6ee7c9]">
                 AptiCore
               </span>
             </Link>

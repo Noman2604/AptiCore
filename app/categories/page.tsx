@@ -43,6 +43,7 @@ interface Subcategory {
   slug: string
   description?: string
   displayOrder?: number
+  questionCount?: number
 }
 
 interface Category {
@@ -53,6 +54,7 @@ interface Category {
   colorCode?: string
   iconUrl?: string
   displayOrder?: number
+  questionCount?: number
   subcategories?: Subcategory[]
 }
 
@@ -319,13 +321,26 @@ function CategoriesContent() {
                       <p className="text-xs text-[--ac-text-2]">
                         Launch a full assessment covering randomized questions across all {subCount} {activeCategory.name} subtopics.
                       </p>
-                      <Link
-                        href={`/dashboard/tests/runner?category=${encodeURIComponent(activeCategory.slug)}`}
-                        className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-[#6ee7c9] to-[#57c9a8] py-3 text-xs font-bold text-[#06120d] shadow-sm transition hover:brightness-105 active:scale-[0.99]"
-                      >
-                        <Play className="h-3.5 w-3.5 fill-[#06120d]" />
-                        <span>Start Full Category Test</span>
-                      </Link>
+                      {((activeCategory.questionCount ?? 0) > 0) ? (
+                        <Link
+                          href={`/dashboard/tests/runner?category=${encodeURIComponent(activeCategory.slug)}`}
+                          className="mt-2 flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-[#6ee7c9] to-[#57c9a8] py-3 text-xs font-bold text-[#06120d] shadow-sm transition hover:brightness-105 active:scale-[0.99]"
+                        >
+                          <Play className="h-3.5 w-3.5 fill-[#06120d]" />
+                          <span>Start Full Category Test</span>
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled
+                          aria-disabled="true"
+                          title="Test not present (No questions available)"
+                          className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-[--ac-border]/60 bg-[--ac-surface]/40 py-3 text-xs font-semibold text-[--ac-text-3] cursor-not-allowed opacity-50 shadow-none select-none"
+                        >
+                          <Play className="h-3.5 w-3.5 opacity-30 fill-current" />
+                          <span>Start Full Category Test</span>
+                        </button>
+                      )}
 
                       <Link
                         href={`/dashboard/tests?category=${encodeURIComponent(activeCategory.slug)}`}
@@ -419,13 +434,26 @@ function CategoriesContent() {
                       </div>
 
                       <div className="mt-5 border-t border-[--ac-border] pt-4">
-                        <Link
-                          href={`/dashboard/tests/runner?category=${encodeURIComponent(activeCategory.slug)}&subcategory=${encodeURIComponent(sub.slug)}`}
-                          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[--ac-surface] py-2 text-xs font-semibold text-[--ac-text] transition-all hover:bg-[#6ee7c9] hover:text-[#06120d]"
-                        >
-                          <Play className="h-3 w-3 fill-current" />
-                          <span>Practice Topic</span>
-                        </Link>
+                        {((sub.questionCount ?? 0) > 0) ? (
+                          <Link
+                            href={`/dashboard/tests/runner?category=${encodeURIComponent(activeCategory.slug)}&subcategory=${encodeURIComponent(sub.slug)}`}
+                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[--ac-surface] py-2 text-xs font-semibold text-[--ac-text] transition-all hover:bg-[#6ee7c9] hover:text-[#06120d]"
+                          >
+                            <Play className="h-3 w-3 fill-current" />
+                            <span>Practice Topic</span>
+                          </Link>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled
+                            aria-disabled="true"
+                            title="Test not present (No questions available)"
+                            className="flex w-full items-center justify-center gap-2 rounded-xl border border-[--ac-border]/60 bg-[--ac-surface]/40 py-2 text-xs font-semibold text-[--ac-text-3] cursor-not-allowed opacity-50 shadow-none select-none"
+                          >
+                            <Play className="h-3 w-3 opacity-30 fill-current" />
+                            <span>Practice Topic</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -606,13 +634,26 @@ function CategoriesContent() {
                           <span>Explore Track</span>
                           <ChevronRight className="h-3.5 w-3.5" />
                         </button>
-                        <Link
-                          href={`/dashboard/tests/runner?category=${encodeURIComponent(category.slug)}`}
-                          className="flex items-center justify-center gap-1.5 rounded-xl bg-[#6ee7c9] py-2 text-xs font-bold text-[#06120d] transition hover:brightness-105"
-                        >
-                          <Play className="h-3 w-3 fill-[#06120d]" />
-                          <span>Quick Test</span>
-                        </Link>
+                        {((category.questionCount ?? 0) > 0) ? (
+                          <Link
+                            href={`/dashboard/tests/runner?category=${encodeURIComponent(category.slug)}`}
+                            className="flex items-center justify-center gap-1.5 rounded-xl bg-[#6ee7c9] py-2 text-xs font-bold text-[#06120d] transition hover:brightness-105"
+                          >
+                            <Play className="h-3 w-3 fill-[#06120d]" />
+                            <span>Quick Test</span>
+                          </Link>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled
+                            aria-disabled="true"
+                            title="Test not present (No questions available)"
+                            className="flex items-center justify-center gap-1.5 rounded-xl border border-[--ac-border]/60 bg-[--ac-surface]/40 py-2 text-xs font-semibold text-[--ac-text-3] cursor-not-allowed opacity-50 shadow-none select-none"
+                          >
+                            <Play className="h-3 w-3 opacity-30 fill-current" />
+                            <span>Quick Test</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   )

@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Add rank based on sorted leaderboard
-        const leaderboardWithRank = leaderboard.map((entry, index) => ({
+        const leaderboardWithRank = leaderboard.map((entry: any, index: number) => ({
             ...entry,
             rank: index + 1,
         }))

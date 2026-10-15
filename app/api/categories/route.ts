@@ -3,6 +3,7 @@ import connectDB from "@/lib/db"
 import Category from "@/lib/models/Category"
 import Subcategory from "@/lib/models/Subcategory"
 import Question from "@/lib/models/Question"
+import { apiSuccess, handleApiError, apiCreated, apiBadRequest } from "@/lib/api-response"
 
 // GET Categories
 export async function GET(request: NextRequest) {
@@ -18,37 +19,41 @@ export async function GET(request: NextRequest) {
       displayOrder: 1,
       name: 1,
     })
-    const questionCounts = await Question.aggregate([
-      { $match: { isActive: true } },
-      { $group: { _id: "$categoryId", count: { $sum: 1 } } },
+    const [catQuestionCounts, subQuestionCounts] = await Promise.all([
+      Question.aggregate([
+        { $match: { isActive: true } },
+        { $group: { _id: "$categoryId", count: { $sum: 1 } } },
+      ]),
+      Question.aggregate([
+        { $match: { isActive: true } },
+        { $group: { _id: "$subcategoryId", count: { $sum: 1 } } },
+      ]),
     ])
+
     const questionCountByCategory = new Map<string, number>()
-    questionCounts.forEach(({ _id, count }) => {
-      questionCountByCategory.set(String(_id), count)
+    catQuestionCounts.forEach(({ _id, count }) => {
+      if (_id) questionCountByCategory.set(String(_id), count)
+    })
+
+    const questionCountBySubcategory = new Map<string, number>()
+    subQuestionCounts.forEach(({ _id, count }) => {
+      if (_id) questionCountBySubcategory.set(String(_id), count)
     })
 
     const categoriesWithSubs = categories.map((cat) => ({
       ...cat.toObject(),
       questionCount: questionCountByCategory.get(cat._id.toString()) ?? 0,
-      subcategories: subcategories.filter(
-        (sub) => sub.categoryId.toString() === cat._id.toString()
-      ),
+      subcategories: subcategories
+        .filter((sub) => sub.categoryId.toString() === cat._id.toString())
+        .map((sub) => ({
+          ...sub.toObject(),
+          questionCount: questionCountBySubcategory.get(sub._id.toString()) ?? 0,
+        })),
     }))
 
-    return NextResponse.json({
-      success: true,
-      data: categoriesWithSubs,
-    })
+    return apiSuccess(categoriesWithSubs)
   } catch (error) {
-    console.error("Get categories error:", error)
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to fetch categories",
-      },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }
 
@@ -70,13 +75,7 @@ export async function POST(request: NextRequest) {
     } = body
 
     if (!name || !slug) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Name and slug are required",
-        },
-        { status: 400 }
-      )
+      return apiBadRequest("Name and slug are required")
     }
 
     const existingCategory = await Category.findOne({
@@ -84,13 +83,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingCategory) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Category with this name or slug already exists",
-        },
-        { status: 409 }
-      )
+      return apiBadRequest("Category with this name or slug already exists")
     }
 
     const category = await Category.create({
@@ -115,23 +108,8 @@ export async function POST(request: NextRequest) {
       details: { name, slug },
     })
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Category created successfully",
-        data: category,
-      },
-      { status: 201 }
-    )
+    return apiCreated(category)
   } catch (error) {
-    console.error("Create category error:", error)
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to create category",
-      },
-      { status: 500 }
-    )
+    return handleApiError(error)
   }
 }

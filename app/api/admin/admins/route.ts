@@ -27,14 +27,14 @@ export async function GET(request: NextRequest) {
       .lean()
 
     const profiles = await UserProfile.find({
-      userId: { $in: admins.map((admin) => admin._id) },
+      userId: { $in: admins.map((admin: any) => admin._id) },
     }).lean()
 
     const profileByUserId = new Map(
-      profiles.map((profile) => [profile.userId.toString(), profile])
+      profiles.map((profile: any) => [profile.userId.toString(), profile])
     )
 
-    const data = admins.map((admin) => ({
+    const data = admins.map((admin: any) => ({
       ...admin,
       _id: admin._id.toString(),
       profile: profileByUserId.get(admin._id.toString()) ?? null,

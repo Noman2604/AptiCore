@@ -212,13 +212,20 @@ function DashboardTestsContent() {
     const subsWithCounts: SubcategoryWithQuestions[] = (
       detailCategory.subcategories || []
     ).map((sub) => {
+      const subIdStr = sub._id?.toString()
       const subQuestions = detailQuestions.filter((q) => {
-        const currentSubId = (q.subcategoryId as any)?._id || q.subcategoryId
-        return currentSubId === sub._id
+        const currentSubId =
+          (q.subcategoryId as any)?._id?.toString() ||
+          q.subcategoryId?.toString()
+        return Boolean(currentSubId && subIdStr && currentSubId === subIdStr)
       })
+      const count =
+        subQuestions.length > 0
+          ? subQuestions.length
+          : (sub as any).questionCount || 0
       return {
         ...sub,
-        questionCount: subQuestions.length,
+        questionCount: count,
         questions: subQuestions,
       }
     })
@@ -407,39 +414,56 @@ function DashboardTestsContent() {
                 </span>
               </div>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {adminTests.map((test) => (
-                  <div
-                    key={test._id}
-                    className="flex flex-col rounded-2xl border border-amber-500/30 bg-card/80 p-5 shadow-xs backdrop-blur-sm transition hover:border-amber-500/60 hover:shadow-md"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-[Space_Grotesk,sans-serif] text-base font-bold text-foreground">
-                        {test.title}
-                      </h3>
-                      <span className="shrink-0 rounded-full border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[9.5px] font-semibold tracking-wider text-amber-400 uppercase">
-                        Admin Test
-                      </span>
-                    </div>
-                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                      {test.description || "Curated placement assessment test"}
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                      <span>{test.totalQuestions} questions</span>
-                      <span>·</span>
-                      <span>{test.durationMinutes} min</span>
-                      <span>·</span>
-                      <span className="capitalize">{test.difficultyLevel}</span>
-                    </div>
-                    <div className="flex-1" />
-                    <Link
-                      href={`/dashboard/tests/runner?category=${encodeURIComponent(detailCategory.slug)}`}
-                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-amber-400 to-amber-500 py-2.5 text-xs font-bold text-black transition hover:brightness-105"
+                {adminTests.map((test) => {
+                  const hasTest = (test.totalQuestions || 0) > 0
+
+                  return (
+                    <div
+                      key={test._id}
+                      className="flex flex-col rounded-2xl border border-amber-500/30 bg-card/80 p-5 shadow-xs backdrop-blur-sm transition hover:border-amber-500/60 hover:shadow-md"
                     >
-                      <Play className="h-3.5 w-3.5 fill-black" />
-                      <span>Start Test</span>
-                    </Link>
-                  </div>
-                ))}
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-[Space_Grotesk,sans-serif] text-base font-bold text-foreground">
+                          {test.title}
+                        </h3>
+                        <span className="shrink-0 rounded-full border border-amber-500/35 bg-amber-500/10 px-2 py-0.5 text-[9.5px] font-semibold tracking-wider text-amber-400 uppercase">
+                          Admin Test
+                        </span>
+                      </div>
+                      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                        {test.description || "Curated placement assessment test"}
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        <span>{test.totalQuestions || 0} questions</span>
+                        <span>·</span>
+                        <span>{test.durationMinutes} min</span>
+                        <span>·</span>
+                        <span className="capitalize">{test.difficultyLevel}</span>
+                      </div>
+                      <div className="flex-1" />
+                      {hasTest ? (
+                        <Link
+                          href={`/dashboard/tests/runner?category=${encodeURIComponent(detailCategory.slug)}`}
+                          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-amber-400 to-amber-500 py-2.5 text-xs font-bold text-black transition hover:brightness-105"
+                        >
+                          <Play className="h-3.5 w-3.5 fill-black" />
+                          <span>Start Test</span>
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled
+                          aria-disabled="true"
+                          title="Test not present (No questions available)"
+                          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-border/60 bg-muted/40 py-2.5 text-xs font-semibold text-muted-foreground/50 shadow-none cursor-not-allowed opacity-50 select-none"
+                        >
+                          <Play className="h-3.5 w-3.5 opacity-30 fill-current" />
+                          <span>Start Test</span>
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
@@ -520,6 +544,7 @@ function DashboardTestsContent() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredSubcategories.length > 0 ? (
                 filteredSubcategories.map((sub) => {
+                  const hasTest = (sub.questionCount || 0) > 0
                   const isCompleted = completedSubcategories.includes(sub._id)
                   const runnerUrl = buildTestUrl(detailCategory.slug, sub.slug)
 
@@ -537,6 +562,10 @@ function DashboardTestsContent() {
                             <span className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-500">
                               <CheckCircle2 className="h-3 w-3" /> Done
                             </span>
+                          ) : !hasTest ? (
+                            <span className="shrink-0 rounded-full border border-border/80 bg-muted/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                              No Test
+                            </span>
                           ) : (
                             <span className="shrink-0 rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[10px] text-muted-foreground">
                               {sub.slug}
@@ -553,9 +582,9 @@ function DashboardTestsContent() {
                           <div className="flex items-center gap-1">
                             <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
                             <span>
-                              {sub.questionCount > 0
+                              {hasTest
                                 ? `${sub.questionCount} Questions`
-                                : "Practice Mode"}
+                                : "0 Questions"}
                             </span>
                           </div>
                           <div className="flex items-center gap-1">
@@ -570,21 +599,34 @@ function DashboardTestsContent() {
                       </div>
 
                       <div className="mt-5">
-                        <Link href={runnerUrl} className="block w-full">
+                        {hasTest ? (
+                          <Link href={runnerUrl} className="block w-full">
+                            <button
+                              type="button"
+                              className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold shadow-xs transition ${
+                                isCompleted
+                                  ? "border border-border bg-muted text-foreground hover:bg-muted/80"
+                                  : "bg-linear-to-br from-[#6ee7c9] to-[#3ecf8e] text-[#06120d] hover:brightness-105"
+                              }`}
+                            >
+                              <Play className="h-3.5 w-3.5 fill-current" />
+                              <span>
+                                {isCompleted ? "Practice Again" : "Start Test"}
+                              </span>
+                            </button>
+                          </Link>
+                        ) : (
                           <button
                             type="button"
-                            className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold shadow-xs transition ${
-                              isCompleted
-                                ? "border border-border bg-muted text-foreground hover:bg-muted/80"
-                                : "bg-linear-to-br from-[#6ee7c9] to-[#3ecf8e] text-[#06120d] hover:brightness-105"
-                            }`}
+                            disabled
+                            aria-disabled="true"
+                            title="Test not present (No questions available for this topic)"
+                            className="flex w-full items-center justify-center gap-2 rounded-xl border border-border/60 bg-muted/40 py-2.5 text-xs font-semibold text-muted-foreground/50 shadow-none cursor-not-allowed opacity-50 select-none"
                           >
-                            <Play className="h-3.5 w-3.5 fill-current" />
-                            <span>
-                              {isCompleted ? "Practice Again" : "Start Test"}
-                            </span>
+                            <Play className="h-3.5 w-3.5 opacity-30 fill-current" />
+                            <span>Start Test</span>
                           </button>
-                        </Link>
+                        )}
                       </div>
                     </div>
                   )

@@ -346,13 +346,26 @@ export default function TestsPage() {
                       </div>
                     </div>
 
-                    <Link
-                      href={mock.href}
-                      className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-500 hover:text-white"
-                    >
-                      <Play className="h-3 w-3 fill-current" />
-                      <span>Start Mock Exam</span>
-                    </Link>
+                    {(mock.questions || 0) > 0 ? (
+                      <Link
+                        href={mock.href}
+                        className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-500 hover:text-white"
+                      >
+                        <Play className="h-3 w-3 fill-current" />
+                        <span>Start Mock Exam</span>
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        aria-disabled="true"
+                        title="Test not present (No questions available)"
+                        className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg border border-border/60 bg-muted/40 px-4 py-2 text-xs font-semibold text-muted-foreground/50 cursor-not-allowed opacity-50 shadow-none select-none"
+                      >
+                        <Play className="h-3 w-3 opacity-30 fill-current" />
+                        <span>Start Mock Exam</span>
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
